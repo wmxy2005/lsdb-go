@@ -42,9 +42,34 @@ export class ApiError extends Error {
   }
 }
 
+type ApiRequestOptions = RequestOptions & {
+  auth?: boolean;
+};
+
+async function readErrorResponse(error: any) {
+  if (error?.data !== undefined) {
+    return error.data;
+  }
+
+  const response = error?.response;
+  if (!response) {
+    return undefined;
+  }
+
+  if (typeof response.clone === 'function') {
+    return response.clone().json();
+  }
+
+  if (typeof response.json === 'function') {
+    return response.json();
+  }
+
+  return undefined;
+}
+
 export async function apiRequest<T>(
   path: string,
-  options: RequestOptions = {},
+  options: ApiRequestOptions = {},
 ): Promise<T> {
   const {
     method = 'GET',
@@ -52,6 +77,8 @@ export async function apiRequest<T>(
     data,
     auth = true,
     withCredentials,
+    headers: optionHeaders,
+    ...requestOptions
   } = options;
   const headers: Record<string, string> = {};
   if (data !== undefined) {
@@ -64,11 +91,26 @@ export async function apiRequest<T>(
     }
   }
 
-  return request<T>(path, {
-    method,
-    params,
-    data,
-    headers,
-    withCredentials,
-  });
+  try {
+    return await request<T>(path, {
+      ...requestOptions,
+      method,
+      params,
+      data,
+      headers: {
+        ...(optionHeaders as Record<string, string> | undefined),
+        ...headers,
+      },
+      withCredentials,
+    });
+  } catch (error: any) {
+    if (error?.response?.status === 401) {
+      const data = await readErrorResponse(error);
+      if (data !== undefined) {
+        return data as T;
+      }
+    }
+
+    throw error;
+  }
 }

@@ -61,7 +61,7 @@ foreach ($line in $lines) {
         $filteredLines += $line
     }
 }
-$filteredLines += "FRONTEND_DIST=./dist"
+$filteredLines += "LSDB_FRONTEND_DIST=./dist"
 Set-Content -Path $OutputEnvPath -Value $filteredLines -Encoding utf8
 
 if (Test-Path $DesktopDir) {

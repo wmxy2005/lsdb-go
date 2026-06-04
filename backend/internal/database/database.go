@@ -25,6 +25,9 @@ func Migrate(db *sql.DB) error {
 	)`); err != nil {
 		return err
 	}
+	if err := migrateItemTimestamps(db); err != nil {
+		return err
+	}
 	hasUID, hasUserID, err := itemfaviColumns(db)
 	if err != nil {
 		return err
@@ -35,22 +38,45 @@ func Migrate(db *sql.DB) error {
 	return err
 }
 
+func migrateItemTimestamps(db *sql.DB) error {
+	columns, err := tableColumns(db, "items")
+	if err != nil {
+		return err
+	}
+	if len(columns) == 0 {
+		return nil
+	}
+	for _, name := range []string{"createAt", "updateAt"} {
+		if !columns[name] {
+			if _, err := db.Exec(`ALTER TABLE items ADD COLUMN ` + name + ` TEXT`); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func itemfaviColumns(db *sql.DB) (bool, bool, error) {
-	rows, err := db.Query(`PRAGMA table_info(itemfavi)`)
+	columns, err := tableColumns(db, "itemfavi")
 	if err != nil {
 		return false, false, err
 	}
-	defer rows.Close()
-	var hasUID, hasUserID bool
-	for rows.Next() {
-		var cid, notnull, pk int
-		var name, typ string
-		var dflt any
-		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
-			return false, false, err
-		}
-		hasUID = hasUID || name == "uId"
-		hasUserID = hasUserID || name == "userId"
+	return columns["uId"], columns["userId"], nil
+}
+
+func tableColumns(db *sql.DB, table string) (map[string]bool, error) {
+	rows, err := db.Query(`SELECT name FROM pragma_table_info(?)`, table)
+	if err != nil {
+		return nil, err
 	}
-	return hasUID, hasUserID, rows.Err()
+	defer rows.Close()
+	columns := map[string]bool{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		columns[name] = true
+	}
+	return columns, rows.Err()
 }

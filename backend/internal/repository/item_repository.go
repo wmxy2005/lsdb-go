@@ -30,9 +30,9 @@ func (r *ItemRepository) List(q model.ItemQuery) (model.ItemListResult, error) {
 		return model.ItemListResult{}, err
 	}
 	offset := (q.Page - 1) * q.PageSize
-	listSQL := `SELECT a.id,a.base,a.category,a.subcategory,a.name,a.title,a.date,a.thumbnail,a.roll,a.trailer,a.tag,a.tag2,a.tag3,a.extra,a.content,a.images,a.type,b.id AS favi
+	listSQL := `SELECT a.id,a.base,a.category,a.subcategory,a.name,a.createAt,a.updateAt,a.title,a.date,a.thumbnail,a.roll,a.trailer,a.tag,a.tag2,a.tag3,a.extra,a.content,a.images,a.type,b.id AS favi
 		FROM items AS a LEFT JOIN itemfavi AS b ON a.id = b.itemId AND b.userId = ? AND b.expired=0
-		WHERE ` + whereSQL + ` ` + sortClause(q.Sort) + ` LIMIT ? OFFSET ?`
+		WHERE ` + whereSQL + ` ` + sortClause(q.Sort, q.Favi) + ` LIMIT ? OFFSET ?`
 	listArgs := append([]any{q.UserID}, args...)
 	listArgs = append(listArgs, q.PageSize, offset)
 	rows, err := r.db.Query(listSQL, listArgs...)
@@ -52,15 +52,15 @@ func (r *ItemRepository) List(q model.ItemQuery) (model.ItemListResult, error) {
 }
 
 func (r *ItemRepository) Get(id string, userID int64) (model.Item, error) {
-	row := r.db.QueryRow(`SELECT a.id,a.base,a.category,a.subcategory,a.name,a.title,a.date,a.thumbnail,a.roll,a.trailer,a.tag,a.tag2,a.tag3,a.extra,a.content,a.images,a.type,b.id AS favi
+	row := r.db.QueryRow(`SELECT a.id,a.base,a.category,a.subcategory,a.name,a.createAt,a.updateAt,a.title,a.date,a.thumbnail,a.roll,a.trailer,a.tag,a.tag2,a.tag3,a.extra,a.content,a.images,a.type,b.id AS favi
 		FROM items AS a LEFT JOIN itemfavi AS b ON a.id = b.itemId AND b.userId = ? AND b.expired=0
 		WHERE a.id = ?`, userID, id)
 	return scanItem(row)
 }
 
 func (r *ItemRepository) Create(req model.ItemWrite) (int64, error) {
-	res, err := r.db.Exec(`INSERT INTO items(base,category,subcategory,name,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	res, err := r.db.Exec(`INSERT INTO items(base,category,subcategory,name,createAt,updateAt,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
+		VALUES(?,?,?,?,datetime(CURRENT_TIMESTAMP,'localtime'),datetime(CURRENT_TIMESTAMP,'localtime'),?,?,?,?,?,?,?,?,?,?,?,?)`,
 		value(req.Base), value(req.Category), value(req.Subcategory), value(req.Name), value(req.Title), ptrValue(req.Date),
 		ptrValue(req.Thumbnail), ptrValue(req.Roll), ptrValue(req.Trailer), value(req.TagValue()), value(req.Tag2Value()), value(req.Tag3Value()), ptrValue(req.Extra), value(req.Content), value(req.ImagesValue()), ptrIntValue(req.Type))
 	if err != nil {
@@ -101,6 +101,7 @@ func (r *ItemRepository) Update(id string, req model.ItemWrite) error {
 	if len(fields) == 0 {
 		return sql.ErrNoRows
 	}
+	fields = append(fields, `updateAt = datetime(CURRENT_TIMESTAMP,'localtime')`)
 	args = append(args, id)
 	_, err := r.db.Exec(`UPDATE items SET `+strings.Join(fields, ", ")+` WHERE id = ?`, args...)
 	return err
@@ -151,27 +152,41 @@ func buildFilters(q model.ItemQuery) ([]string, []any, map[string]string) {
 	return where, args, params
 }
 
-func sortClause(sort string) string {
+func sortClause(sort string, isFavi bool) string {
 	switch sort {
 	case "date":
+		if isFavi {
+			return `ORDER BY b.datetime DESC, a.date DESC, a.id DESC`
+		}
 		return `ORDER BY a.date DESC, a.id DESC`
 	case "dateAsc":
+		if isFavi {
+			return `ORDER BY b.datetime ASC, a.date ASC, a.id ASC`
+		}
 		return `ORDER BY a.date ASC, a.id ASC`
 	case "idAsc":
+		if isFavi {
+			return `ORDER BY b.id ASC, a.id ASC`
+		}
 		return `ORDER BY a.id ASC`
 	default:
+		if isFavi {
+			return `ORDER BY b.id DESC, a.id ASC`
+		}
 		return `ORDER BY a.id DESC`
 	}
 }
 
 func scanItem(r scanner) (model.Item, error) {
 	var item model.Item
-	var date, thumbnail, roll, trailer, extra, content, images, tag, tag2, tag3 sql.NullString
+	var createAt, updateAt, date, thumbnail, roll, trailer, extra, content, images, tag, tag2, tag3 sql.NullString
 	var typ, favi sql.NullInt64
-	err := r.Scan(&item.ID, &item.Base, &item.Category, &item.Subcategory, &item.Name, &item.Title, &date, &thumbnail, &roll, &trailer, &tag, &tag2, &tag3, &extra, &content, &images, &typ, &favi)
+	err := r.Scan(&item.ID, &item.Base, &item.Category, &item.Subcategory, &item.Name, &createAt, &updateAt, &item.Title, &date, &thumbnail, &roll, &trailer, &tag, &tag2, &tag3, &extra, &content, &images, &typ, &favi)
 	if err != nil {
 		return item, err
 	}
+	item.CreateAt = nullStringPtr(createAt)
+	item.UpdateAt = nullStringPtr(updateAt)
 	item.Date = nullStringPtr(date)
 	item.Thumbnail = nullStringPtr(thumbnail)
 	item.Roll = nullStringPtr(roll)

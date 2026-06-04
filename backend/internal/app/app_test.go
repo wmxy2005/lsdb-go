@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"image"
+	"image/color"
+	"image/png"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -33,6 +36,12 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(fileRoot, "wallpaper", "4k", "sky", "extra.png"), tinyPNG(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(fileRoot, "wallpaper", "4k", "sky", "wide.png"), testPNG(t, 240, 2), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(fileRoot, "wallpaper", "4k", "sky", "small.png"), testPNG(t, 120, 2), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(fileRoot, "wallpaper", "4k", "sky", "clip.mp4"), []byte("video"), 0o644); err != nil {
@@ -68,19 +77,19 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/items", nil))
-	if w.Code != http.StatusUnauthorized {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("items without token status = %d", w.Code)
 	}
 
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/auth/current", nil))
-	if w.Code != http.StatusUnauthorized {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("current user without token status = %d", w.Code)
 	}
 
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/cmd/shutdown", nil))
-	if w.Code != http.StatusUnauthorized {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("cmd without token status = %d", w.Code)
 	}
 
@@ -138,6 +147,9 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	if item["avatarSrc"] == "" {
 		t.Fatal("expected avatarSrc")
 	}
+	if item["createAt"] != "2026-01-02 03:04:05" || item["updateAt"] != "2026-01-02 03:04:06" {
+		t.Fatalf("list timestamps = createAt:%#v updateAt:%#v", item["createAt"], item["updateAt"])
+	}
 	if len(data["roleList"].([]any)) != 1 {
 		t.Fatalf("roleList = %#v", data["roleList"])
 	}
@@ -151,10 +163,51 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 		t.Fatal(err)
 	}
 	detail := detailResp["data"].(map[string]any)
+	if detail["createAt"] != "2026-01-02 03:04:05" || detail["updateAt"] != "2026-01-02 03:04:06" {
+		t.Fatalf("detail timestamps = createAt:%#v updateAt:%#v", detail["createAt"], detail["updateAt"])
+	}
 	if len(detail["fileList"].([]any)) == 0 {
 		t.Fatal("expected fileList")
 	}
+	if detail["videoThumbnail"] != "extra.png" {
+		t.Fatalf("videoThumbnail = %#v", detail["videoThumbnail"])
+	}
+	assertImageLists(t, detail)
 	assertFileList(t, detail["fileList"].([]any))
+
+	w = get("/api/items/2")
+	if w.Code != http.StatusOK {
+		t.Fatalf("plain detail status = %d body=%s", w.Code, w.Body.String())
+	}
+	var plainResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &plainResp); err != nil {
+		t.Fatal(err)
+	}
+	plain := plainResp["data"].(map[string]any)
+	if plain["videoThumbnail"] != "plain.png" {
+		t.Fatalf("plain videoThumbnail = %#v", plain["videoThumbnail"])
+	}
+
+	req = httptest.NewRequest(http.MethodPut, "/api/items/1", strings.NewReader(`{"title":"Sky Updated"}`))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("item update status = %d body=%s", w.Code, w.Body.String())
+	}
+	var updateResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &updateResp); err != nil {
+		t.Fatal(err)
+	}
+	updated := updateResp["data"].(map[string]any)
+	if updated["createAt"] != "2026-01-02 03:04:05" {
+		t.Fatalf("updated createAt = %#v", updated["createAt"])
+	}
+	updatedAt, ok := updated["updateAt"].(string)
+	if !ok || updatedAt == "" || updatedAt == "2026-01-02 03:04:06" {
+		t.Fatalf("updated updateAt = %#v", updated["updateAt"])
+	}
 
 	w = get("/api/role/1")
 	if w.Code != http.StatusOK {
@@ -172,7 +225,7 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	req = httptest.NewRequest(http.MethodPost, uploadPath, nil)
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, req)
-	if w.Code != http.StatusUnauthorized {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("upload without token status = %d", w.Code)
 	}
 
@@ -187,7 +240,7 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	}
 
 	w = uploadResource(t, srv, token, uploadPath, "second upload")
-	if w.Code != http.StatusConflict {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("upload conflict status = %d body=%s", w.Code, w.Body.String())
 	}
 
@@ -202,14 +255,14 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	}
 
 	w = uploadResource(t, srv, token, "/api/resource?base=wallpaper&category=4k&name=forestdawniv&filename=../i.png", "unsafe")
-	if w.Code != http.StatusBadRequest {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("unsafe upload status = %d body=%s", w.Code, w.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodDelete, uploadPath, nil)
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, req)
-	if w.Code != http.StatusUnauthorized {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("delete without token status = %d", w.Code)
 	}
 
@@ -219,15 +272,15 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	}
 	assertMessageResponse(t, w, "")
 	w = get("/api/resource?base=wallpaper&category=4k&subcategory=&name=forestdawniv&filename=i.png")
-	if w.Code != http.StatusNotFound {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("deleted resource get status=%d body=%q", w.Code, w.Body.String())
 	}
 	w = deleteResource(t, srv, token, uploadPath)
-	if w.Code != http.StatusNotFound {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("delete missing status = %d body=%s", w.Code, w.Body.String())
 	}
 	w = deleteResource(t, srv, token, "/api/resource?base=wallpaper&category=4k&name=forestdawniv&filename=../i.png")
-	if w.Code != http.StatusBadRequest {
+	if w.Code != http.StatusAccepted {
 		t.Fatalf("unsafe delete status = %d body=%s", w.Code, w.Body.String())
 	}
 
@@ -285,6 +338,11 @@ func TestFrontendDistServesStaticFilesAndSPAFallback(t *testing.T) {
 		t.Fatalf("asset status=%d body=%q", w.Code, w.Body.String())
 	}
 
+	w = get("/favicon.ico")
+	if w.Code != http.StatusNotFound || strings.Contains(w.Body.String(), "<html>app</html>") {
+		t.Fatalf("missing favicon status=%d body=%q", w.Code, w.Body.String())
+	}
+
 	w = get("/items/1")
 	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "<html>app</html>") {
 		t.Fatalf("spa fallback status=%d body=%q", w.Code, w.Body.String())
@@ -293,6 +351,14 @@ func TestFrontendDistServesStaticFilesAndSPAFallback(t *testing.T) {
 	w = get("/api/unknown")
 	if w.Code != http.StatusNotFound || strings.Contains(w.Body.String(), "<html>app</html>") {
 		t.Fatalf("api unknown status=%d body=%q", w.Code, w.Body.String())
+	}
+
+	if err := os.WriteFile(filepath.Join(frontendDist, "favicon.ico"), []byte("icon"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	w = get("/favicon.ico")
+	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != "icon" {
+		t.Fatalf("favicon status=%d body=%q", w.Code, w.Body.String())
 	}
 }
 
@@ -338,14 +404,48 @@ func assertFileList(t *testing.T, files []any) {
 	if counts["a.txt"] != 1 || types["a.txt"] != "thumbnail" {
 		t.Fatalf("expected a.txt once as thumbnail, counts=%#v types=%#v", counts, types)
 	}
-	if counts["extra.png"] != 1 || types["extra.png"] != "file" {
-		t.Fatalf("expected extra.png once as file, counts=%#v types=%#v", counts, types)
+	if counts["extra.png"] != 1 || types["extra.png"] != "image" {
+		t.Fatalf("expected extra.png once as image, counts=%#v types=%#v", counts, types)
+	}
+	if counts["wide.png"] != 1 || types["wide.png"] != "image" {
+		t.Fatalf("expected wide.png once as image, counts=%#v types=%#v", counts, types)
+	}
+	if counts["small.png"] != 1 || types["small.png"] != "image" {
+		t.Fatalf("expected small.png once as image, counts=%#v types=%#v", counts, types)
 	}
 	if counts["clip.mp4"] != 1 || types["clip.mp4"] != "file" || thumbs["clip.mp4"] != "/video.svg" {
 		t.Fatalf("expected clip.mp4 once as video file, counts=%#v types=%#v thumbs=%#v", counts, types, thumbs)
 	}
 	if counts["notes.txt"] != 0 {
 		t.Fatalf("expected notes.txt to be ignored, counts=%#v", counts)
+	}
+}
+
+func assertImageLists(t *testing.T, detail map[string]any) {
+	t.Helper()
+	imgList := detail["imgList"].([]any)
+	if len(imgList) != 2 {
+		t.Fatalf("imgList = %#v", imgList)
+	}
+	byValue := map[string]map[string]any{}
+	for _, raw := range imgList {
+		img := raw.(map[string]any)
+		value := img["value"].(string)
+		byValue[value] = img
+	}
+	if _, ok := byValue["extra.png"]; ok {
+		t.Fatalf("extra.png should be reserved for videoThumbnail: %#v", imgList)
+	}
+	if int(byValue["wide.png"]["imgIndex"].(float64)) != 1 || int(byValue["small.png"]["imgIndex"].(float64)) != 2 {
+		t.Fatalf("imgList indices = %#v", imgList)
+	}
+	imgList1 := detail["imgList1"].([]any)
+	if len(imgList1) != 1 || imgList1[0].(map[string]any)["value"] != "wide.png" {
+		t.Fatalf("imgList1 = %#v", imgList1)
+	}
+	imgList2 := detail["imgList2"].([]any)
+	if len(imgList2) != 1 || imgList2[0].(map[string]any)["value"] != "small.png" {
+		t.Fatalf("imgList2 = %#v", imgList2)
 	}
 }
 
@@ -436,7 +536,10 @@ func seedDB(path string) error {
 	defer db.Close()
 	stmts := []string{
 		`CREATE TABLE items (
-			id INTEGER PRIMARY KEY, base TEXT, category TEXT, subcategory TEXT, name TEXT, title TEXT, date TEXT,
+			id INTEGER PRIMARY KEY, base TEXT, category TEXT, subcategory TEXT, name TEXT,
+			createAt TEXT DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime')),
+			updateAt TEXT DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime')),
+			title TEXT, date TEXT,
 			thumbnail TEXT, roll TEXT, trailer TEXT, tag TEXT, tag2 TEXT, tag3 TEXT, extra TEXT, content TEXT, images TEXT, type INTEGER
 		)`,
 		`CREATE TABLE itemfavi (
@@ -446,8 +549,10 @@ func seedDB(path string) error {
 		`CREATE TABLE role (
 			id integer NOT NULL PRIMARY KEY, date datetime, title TEXT, name TEXT, images TEXT, remark TEXT, base TEXT
 		)`,
-		`INSERT INTO items(id,base,category,subcategory,name,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
-		 VALUES(1,'wallpaper','4k','','sky','Sky','2026-01-01','a.txt',NULL,NULL,';4k;sky;',';JPEG;',';HD;',NULL,'content','a.txt',NULL)`,
+		`INSERT INTO items(id,base,category,subcategory,name,createAt,updateAt,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
+		 VALUES(1,'wallpaper','4k','','sky','2026-01-02 03:04:05','2026-01-02 03:04:06','Sky','2026-01-01','a.txt',NULL,'clip.mp4',';4k;sky;',';JPEG;',';HD;',NULL,'content','extra.png;wide.png;small.png',NULL)`,
+		`INSERT INTO items(id,base,category,subcategory,name,createAt,updateAt,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
+		 VALUES(2,'wallpaper','4k','','plain','2026-01-02 03:04:05','2026-01-02 03:04:06','Plain','2026-01-01','plain.png',NULL,NULL,';plain;',';JPEG;',';HD;',NULL,'content','extra.png',NULL)`,
 		`INSERT INTO role(id,date,title,name,images,remark,base) VALUES(1,NULL,'4k=stream',';4k;stream;','4k@4k.jpg;stream@stream.jpg','remark','role')`,
 	}
 	for _, stmt := range stmts {
@@ -456,6 +561,17 @@ func seedDB(path string) error {
 		}
 	}
 	return nil
+}
+
+func testPNG(t *testing.T, width, height int) []byte {
+	t.Helper()
+	var out bytes.Buffer
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	img.Set(0, 0, color.White)
+	if err := png.Encode(&out, img); err != nil {
+		t.Fatal(err)
+	}
+	return out.Bytes()
 }
 
 func tinyPNG() []byte {

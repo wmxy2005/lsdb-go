@@ -17,6 +17,8 @@ type Item struct {
 	Category    string  `json:"category"`
 	Subcategory string  `json:"subcategory"`
 	Name        string  `json:"name"`
+	CreateAt    *string `json:"createAt"`
+	UpdateAt    *string `json:"updateAt"`
 	Title       string  `json:"title"`
 	Date        *string `json:"date"`
 	Thumbnail   *string `json:"thumbnail"`

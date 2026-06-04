@@ -107,6 +107,8 @@ func (s *ItemService) ItemMap(item model.Item, detail bool) map[string]any {
 		"category":    item.Category,
 		"subcategory": item.Subcategory,
 		"name":        item.Name,
+		"createAt":    item.CreateAt,
+		"updateAt":    item.UpdateAt,
 		"title":       item.Title,
 		"date":        item.Date,
 		"thumbnail":   item.Thumbnail,
@@ -126,7 +128,7 @@ func (s *ItemService) ItemMap(item model.Item, detail bool) map[string]any {
 		"isFavi":      item.Favi != nil,
 	}
 	if item.Thumbnail != nil && *item.Thumbnail != "" {
-		m["thumbnailPath"] = filepath.Join("sample", item.Base, item.Category, item.Subcategory, item.Name, *item.Thumbnail)
+		// m["thumbnailPath"] = filepath.Join(item.Base, item.Category, item.Subcategory, item.Name, *item.Thumbnail)
 		w, h := s.resources.ImageSize(item.Base, item.Category, item.Subcategory, item.Name, *item.Thumbnail)
 		m["thumbnailW"] = w
 		m["thumbnailH"] = h
@@ -136,7 +138,12 @@ func (s *ItemService) ItemMap(item model.Item, detail bool) map[string]any {
 		m["thumbnailH"] = 0
 	}
 	if detail {
-		m["imgList"] = s.imgList(item)
+		imgList, videoThumbnail := s.detailImages(item)
+		imgList1, imgList2 := splitImageLists(imgList)
+		m["videoThumbnail"] = videoThumbnail
+		m["imgList"] = imgList
+		m["imgList1"] = imgList1
+		m["imgList2"] = imgList2
 		m["fileList"] = s.fileList(item)
 	}
 	return m
@@ -144,14 +151,12 @@ func (s *ItemService) ItemMap(item model.Item, detail bool) map[string]any {
 
 func (s *ItemService) avatarSrc(item model.Item) string {
 	checks := []struct {
+		base        string
 		category    string
 		subcategory string
-	}{{category: item.Category}, {category: item.Category, subcategory: item.Subcategory}}
+	}{{base: item.Base, category: item.Category, subcategory: item.Subcategory}, {base: item.Base, category: item.Category}, {base: item.Base}}
 	for _, chk := range checks {
-		if chk.category == "" && chk.subcategory == "" {
-			continue
-		}
-		path, err := s.resources.Resolve(item.Base, chk.category, chk.subcategory, "", "logo.png")
+		path, err := s.resources.Resolve(chk.base, chk.category, chk.subcategory, "", "logo.png")
 		if err == nil && FileExists(path) {
 			return s.resources.URL(item.Base, chk.category, chk.subcategory, "", "logo.png", false)
 		}
@@ -166,6 +171,41 @@ func (s *ItemService) imgList(item model.Item) []map[string]any {
 		out = append(out, map[string]any{"imgIndex": i, "value": img, "width": w, "height": h})
 	}
 	return out
+}
+
+func (s *ItemService) detailImages(item model.Item) ([]map[string]any, string) {
+	videoThumbnail := ""
+	if item.Thumbnail != nil {
+		videoThumbnail = *item.Thumbnail
+	}
+	images := SplitFiles(item.Images)
+	skipFirst := item.Trailer != nil && *item.Trailer != "" && len(images) > 0
+	if skipFirst {
+		videoThumbnail = images[0]
+	}
+	out := make([]map[string]any, 0, len(images))
+	for i, img := range images {
+		if skipFirst && i == 0 {
+			continue
+		}
+		w, h := s.resources.ImageSize(item.Base, item.Category, item.Subcategory, item.Name, img)
+		out = append(out, map[string]any{"imgIndex": i, "value": img, "width": w, "height": h})
+	}
+	return out, videoThumbnail
+}
+
+func splitImageLists(images []map[string]any) ([]map[string]any, []map[string]any) {
+	var wide []map[string]any
+	var narrow []map[string]any
+	for _, img := range images {
+		width, _ := img["width"].(int)
+		if width >= 200 {
+			wide = append(wide, img)
+		} else {
+			narrow = append(narrow, img)
+		}
+	}
+	return wide, narrow
 }
 
 func avatar(base string) string {

@@ -258,6 +258,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     lineHeight: '20px',
     padding: '12px 16px',
+    height: 500,
     overflowY: 'auto',
     overflowX: 'auto',
   },

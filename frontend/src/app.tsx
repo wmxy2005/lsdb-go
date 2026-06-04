@@ -19,7 +19,7 @@ import { useState } from 'react';
 import SearchInput from './pages/items/components/Search';
 import { setToken } from './services/lsdb/client';
 
-const { authCurrent } = lsdbServices.LsdbController;
+const { authCurrent, authLogout } = lsdbServices.LsdbController;
 
 // 全局初始化数据配置，用于 Layout 用户信息和权限初始化
 // 更多信息见文档：https://umijs.org/docs/api/runtime-config#getinitialstate
@@ -152,13 +152,11 @@ export const layout: RunTimeLayoutConfig = (initialState) => {
       render: (props, dom) => {
         if (initialState?.initialState?.userId > 0) {
           const onLogoutClick = async () => {
-            const res = await fetch(CONFIG.apiUrl + '/api/login?logout=true', {
-              method: 'POST',
-              credentials: 'include',
-            });
-            if (res.status == 200) {
+            const res = await authLogout()
+            if (res?.success) {
+              setToken(null)
               await initialState.refresh();
-              //console.log(initialState.initialState);
+              // console.log(initialState.initialState);
               navigate('../login', { replace: true });
             }
           };

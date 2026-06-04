@@ -18,6 +18,13 @@ export async function authLogin(
   });
 }
 
+export async function authLogout() {
+  return apiRequest<LSDB.Result_string_>(CONFIG.apiUrl + '/api/auth/logout', {
+    method: 'POST',
+    credentials: 'include',
+  });
+}
+
 export async function authCurrent(
   params: {},
   options?: { [key: string]: any },

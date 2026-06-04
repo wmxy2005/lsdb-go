@@ -24,9 +24,9 @@ export default defineConfig({
     title: false,
     useLocalStorage: true,
   },
-  apiRoute: {
-    platform: 'vercel',
-  },
+  // apiRoute: {
+  //   platform: 'vercel',
+  // },
   routes: [
     {
       path: '/',
@@ -44,42 +44,42 @@ export default defineConfig({
       path: '/tool',
       component: './Tool',
     },
-    {
-      name: 'speedTest',
-      path: '/speedTest',
-      component: './SpeedTest',
-    },
-    {
-      name: 'submenu',
-      path: '/sub',
-      routes: [
-        {
-          path: '/sub/home',
-          name: 'submenu1',
-          component: './Home',
-        },
-        {
-          path: '/sub/access',
-          name: 'submenu2',
-          component: './Access',
-        },
-      ]
-    },
-    {
-      name: 'home',
-      path: '/home',
-      component: './Home',
-    },
-    {
-      name: 'access',
-      path: '/access',
-      component: './Access',
-    },
-    {
-      name: 'table',
-      path: '/table',
-      component: './Table',
-    },
+    // {
+    //   name: 'speedTest',
+    //   path: '/speedTest',
+    //   component: './SpeedTest',
+    // },
+    // {
+    //   name: 'submenu',
+    //   path: '/sub',
+    //   routes: [
+    //     {
+    //       path: '/sub/home',
+    //       name: 'submenu1',
+    //       component: './Home',
+    //     },
+    //     {
+    //       path: '/sub/access',
+    //       name: 'submenu2',
+    //       component: './Access',
+    //     },
+    //   ]
+    // },
+    // {
+    //   name: 'home',
+    //   path: '/home',
+    //   component: './Home',
+    // },
+    // {
+    //   name: 'access',
+    //   path: '/access',
+    //   component: './Access',
+    // },
+    // {
+    //   name: 'table',
+    //   path: '/table',
+    //   component: './Table',
+    // },
     {
       name: 'login',
       path: '/login',

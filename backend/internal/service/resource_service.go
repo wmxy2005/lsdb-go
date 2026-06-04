@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	_ "golang.org/x/image/webp"
 )
 
 type ResourceService struct{ fileRoot string }

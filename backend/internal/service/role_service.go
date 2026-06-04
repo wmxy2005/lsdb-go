@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strconv"
 	"strings"
 
 	"lsdb-go/backend/internal/model"
@@ -37,7 +38,7 @@ func (s *RoleService) Get(id string) (map[string]any, error) {
 			"nameIndex": i,
 			"name":      pieces[0],
 			"image":     pieces[1],
-			"imageSrc":  s.resources.URL(role.Base, "", "", "e1", pieces[1], true),
+			"imageSrc":  s.resources.URL(role.Base, "", "", "e"+strconv.FormatInt(role.ID, 10), pieces[1], true),
 		})
 	}
 	data["imageList"] = images
@@ -65,7 +66,7 @@ func (s *RoleService) ListForTags(tags []string) ([]map[string]any, string, erro
 				imgName := roleImageForName(role.Images, name)
 				m["image"] = imgName
 				if imgName != "" {
-					m["imageSrc"] = s.resources.URL(role.Base, "", "", "e1", imgName, true)
+					m["imageSrc"] = s.resources.URL(role.Base, "", "", "e"+strconv.FormatInt(role.ID, 10), imgName, true)
 				} else {
 					m["imageSrc"] = ""
 				}
@@ -82,11 +83,17 @@ func roleBaseMap(role model.Role) map[string]any {
 }
 
 func roleImageForName(images, name string) string {
+	var defaultImage = ""
 	for _, part := range SplitFiles(images) {
 		pieces := strings.SplitN(part, "@", 2)
-		if len(pieces) == 2 && pieces[0] == name {
-			return pieces[1]
+		if len(pieces) == 2 {
+			if pieces[0] == name {
+				return pieces[1]
+			}
+			if defaultImage == "" {
+				defaultImage = pieces[1]
+			}
 		}
 	}
-	return ""
+	return defaultImage
 }

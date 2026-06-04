@@ -53,6 +53,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  Masonry,
   message,
   theme,
 } from 'antd';
@@ -550,6 +551,8 @@ export default function ItemPage() {
       );
     });
   const imgList = itemData?.imgList;
+  const imgList1 = itemData?.imgList1;
+  const imgList2 = itemData?.imgList2;
   const imgs = imgList?.map((imgItem: any) => {
     return (
       <Image
@@ -721,7 +724,7 @@ export default function ItemPage() {
                     maxZoomLevel: 2,
                   }}
                 >
-                  {imgList?.map((imgItem: any) => {
+                  {imgList1?.map((imgItem: any) => {
                     let imgUrl = resolveUrl(
                       itemData?.base,
                       itemData?.category,
@@ -751,6 +754,19 @@ export default function ItemPage() {
                   })}
                 </Gallery>
               </Flex>
+              <div>
+              <Masonry
+                columns={{ xs: 3, sm: 4, md: 6, lg: 12, xl: 12}}
+                gutter={4}
+                items={imgList2?.map((imgItem : any) => ({
+                  key: `img2-${imgItem?.imgIndex}`,
+                  data: imgItem,
+                }))}
+                itemRender={(imgItem : any ) => (
+                  <img src={`${resolveUrl(itemData?.base, itemData?.category, itemData?.subcategory, itemData?.name, imgItem?.data.value)}`} alt="sample" style={{ width: '100%' }} />
+                )}
+              />
+              </div>
 
               <FloatButton.Group
                 shape="circle"
