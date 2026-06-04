@@ -1,0 +1,7 @@
+.innerhtml img {
+  max-width: 100%
+}
+
+.innerhtml img[src=''], img:not([src]) {
+	//opacity: 0;
+}

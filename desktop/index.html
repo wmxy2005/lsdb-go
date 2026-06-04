@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LSDB 服务器</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">LSDB</p>
+          <h1>服务器控制台</h1>
+          <p class="subtitle">管理本机后端服务、运行日志和环境配置。</p>
+        </div>
+        <div class="status" id="status">
+          <span class="status-dot"></span>
+          <span id="status-text">正在检查</span>
+        </div>
+      </header>
+
+      <section class="toolbar card">
+        <div>
+          <p class="label">后端服务</p>
+          <p class="path" id="server-path">正在读取程序路径...</p>
+        </div>
+        <div class="actions">
+          <button class="button primary" id="start-button">启动服务</button>
+          <button class="button danger" id="stop-button">停止服务</button>
+          <button class="button" id="restart-button">重新启动</button>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="控制台页面">
+        <button class="tab active" data-tab="logs">运行日志</button>
+        <button class="tab" data-tab="settings">环境配置</button>
+      </nav>
+
+      <section class="panel card active" id="logs-panel">
+        <div class="panel-header">
+          <div>
+            <p class="label">server.exe 输出</p>
+            <p class="hint">实时显示标准输出和错误输出。</p>
+          </div>
+          <button class="button small" id="clear-button">清空日志</button>
+        </div>
+        <pre class="logs" id="logs"></pre>
+      </section>
+
+      <section class="panel card" id="settings-panel">
+        <div class="panel-header">
+          <div>
+            <p class="label">.env 文件</p>
+            <p class="hint">保存后重新启动服务，配置才会生效。</p>
+          </div>
+          <div class="actions">
+            <button class="button small" id="reload-env-button">重新载入</button>
+            <button class="button primary small" id="save-env-button">保存配置</button>
+          </div>
+        </div>
+        <textarea class="env-editor" id="env-editor" spellcheck="false"></textarea>
+      </section>
+
+      <footer id="message" class="message"></footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

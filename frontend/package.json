@@ -1,0 +1,49 @@
+{
+  "private": true,
+  "author": "Eddy Yang <eddy.yang@mac.gz>",
+  "scripts": {
+    "dev": "max dev",
+    "build": "max build",
+    "format": "prettier --cache --write .",
+    "prepare": "husky && husky install",
+    "postinstall": "max setup",
+    "setup": "max setup",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.1.1",
+    "@ant-design/pro-components": "3.1.1-1",
+    "@umijs/max": "^4.6.39",
+    "antd": "^6.3.5",
+    "bcryptjs": "^2.4.3",
+    "chart.js": "^4.5.1",
+    "dayjs": "^1.11.13",
+    "image-size": "^1.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "mime": "^4.0.6",
+    "photoswipe": "^5.4.4",
+    "rc-tween-one": "^3.0.6",
+    "react": "18.2.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-cookies": "^0.1.1",
+    "react-dom": "18.2.0",
+    "react-photoswipe-gallery": "^3.0.2",
+    "use-media-antd-query": "^1.1.0",
+    "xgplayer": "3.0.24"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "husky": "^9",
+    "lint-staged": "^13.2.0",
+    "prettier": "^2.8.7",
+    "prettier-plugin-organize-imports": "^3.2.2",
+    "prettier-plugin-packagejson": "^2.4.3",
+    "typescript": "^5.0.3"
+  },
+  "lint-staged": {
+    "*.{js,css,md}": "prettier --write"
+  }
+}

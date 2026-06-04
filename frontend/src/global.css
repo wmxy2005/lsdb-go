@@ -1,0 +1,42 @@
+.ant-pro-top-nav-header-menu {
+	line-height: 55px;
+}
+.ant-pro-top-nav-header-menu .ant-menu-item-selected::after, .ant-pro-top-nav-header-menu .ant-menu-item:hover::after{
+	border-bottom-width: 2px !important;
+	border-bottom-color: rgb(214 93 58) !important;
+}
+.ant-drawer-body .ant-layout-sider {
+	background: #f5f5f5 !important;
+}
+.ant-drawer-mask, .ant-drawer-content-wrapper {
+	position: fixed !important;
+}
+.ant-drawer-body .ant-layout-sider .ant-pro-sider-extra {
+	margin-inline: 0 !important;
+}
+
+.ant-page-header-wide, .ant-pro-grid-content-wide, .ant-pro-top-nav-header-wide {
+	max-width: 1320px !important;
+}
+.ant-pro-page-container-children-container {
+	padding-inline: 16px !important;
+}
+.ant-page-header {
+	padding-inline-start: 16px !important;
+	padding-inline-end: 16px !important;
+}
+@media all and (max-width:576.02px){
+	.ant-page-header {
+		padding-inline-start: 16px !important;
+		padding-inline-end: 16px !important;
+	}
+	.ant-pro-page-container-children-container {
+		padding-inline: 16px;
+	}
+	.ant-layout-content {
+		padding-inline: 0 !important;
+	}
+	.ant-pro-form-login-container {
+		padding-inline: 10px !important;
+	}
+}
