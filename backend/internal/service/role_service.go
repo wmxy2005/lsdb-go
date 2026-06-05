@@ -45,10 +45,10 @@ func (s *RoleService) Get(id string) (map[string]any, error) {
 	return data, nil
 }
 
-func (s *RoleService) ListForTags(tags []string) ([]map[string]any, string, error) {
-	roles, sqlText, err := s.roles.List()
+func (s *RoleService) ListForTags(tags []string) ([]map[string]any, error) {
+	roles, err := s.roles.ListForTagNames(tags)
 	if err != nil {
-		return nil, sqlText, err
+		return nil, err
 	}
 	tagSet := map[string]bool{}
 	for _, t := range tags {
@@ -75,7 +75,7 @@ func (s *RoleService) ListForTags(tags []string) ([]map[string]any, string, erro
 			}
 		}
 	}
-	return out, sqlText, nil
+	return out, nil
 }
 
 func roleBaseMap(role model.Role) map[string]any {

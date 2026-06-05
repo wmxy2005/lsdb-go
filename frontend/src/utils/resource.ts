@@ -1,10 +1,17 @@
 import querystring from 'querystring';
 import { CONFIG, DIR_SEP } from '@/constants';
-import { useModel } from '@umijs/max';
 
 export function resolvePath(resBase: any, base: string, category: string, subcategory: string, name: string, filename: string) {
-    let filepath = (resBase ? resBase + DIR_SEP : '') + base + DIR_SEP + (category?.trim() == '' ? "" : category + DIR_SEP) + (subcategory?.trim() == '' ? "" : subcategory + DIR_SEP) + (name?.trim() == '' ? "" : name + DIR_SEP) + filename;
-	return filepath;
+    const parts: string[] = [];
+    if (resBase != null && String(resBase).trim() !== '') {
+      parts.push(String(resBase).trim());
+    }
+    for (const segment of [base, category, subcategory, name, filename]) {
+      if (segment != null && String(segment).trim() !== '') {
+        parts.push(String(segment).trim());
+      }
+    }
+    return parts.join(DIR_SEP);
 }
 
 export function resolveUrl(base: string, category: string, subcategory: string, name: string, filename: string) {

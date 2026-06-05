@@ -65,7 +65,7 @@ func (h *ResourceHandler) Upload(c *gin.Context) {
 	defer src.Close()
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 
@@ -81,13 +81,13 @@ func (h *ResourceHandler) Upload(c *gin.Context) {
 			response.Fail(c, http.StatusConflict, 409, "resource already exists")
 			return
 		}
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, src); err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (h *ResourceHandler) Delete(c *gin.Context) {
 		return
 	}
 	if err := os.Remove(path); err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 

@@ -2,6 +2,11 @@
 
 Tauri 桌面程序用于管理与自身同目录下的 `server.exe` 和 `.env`。
 
+> 项目总览见根目录 [README](../README.md)，部署见 [docs/DEPLOY.md](../docs/DEPLOY.md)。
+
+- **版本**：`0.1.0`（`package.json`、`tauri.conf.json`、`Cargo.toml`）
+- **维护者**：`wmxy2005`
+
 ## 功能
 
 - 启动、停止和重新启动后端服务
@@ -28,7 +33,14 @@ pnpm tauri dev
 在仓库根目录执行：
 
 ```powershell
+# 交互选择构建目标
 powershell -ExecutionPolicy Bypass -File .\build.ps1
+
+# 非交互（CI/脚本）
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -All
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Frontend
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Backend
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Desktop
 ```
 
-脚本会构建前后端和桌面程序，并将桌面可执行文件、`server.exe`、`.env` 和前端静态资源统一放入 `build/`。
+无参数时会显示菜单，可选择全部或单独构建 Frontend、Backend、Desktop。脚本会将桌面可执行文件、`server.exe`、`.env` 和前端静态资源统一放入 `build/`。

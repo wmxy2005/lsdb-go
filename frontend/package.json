@@ -1,6 +1,6 @@
 {
   "private": true,
-  "author": "Eddy Yang <eddy.yang@mac.gz>",
+  "author": "wmxy2005",
   "scripts": {
     "dev": "max dev",
     "build": "max build",

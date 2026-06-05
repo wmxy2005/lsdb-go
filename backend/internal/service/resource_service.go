@@ -6,18 +6,41 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	_ "golang.org/x/image/webp"
 )
 
-type ResourceService struct{ fileRoot string }
+type imageConfigDecoder func(r io.Reader) (image.Config, string, error)
+
+type imageSizeEntry struct {
+	width   int
+	height  int
+	modTime time.Time
+	size    int64
+}
+
+type ResourceService struct {
+	fileRoot     string
+	sizeCache    sync.Map
+	decodeConfig imageConfigDecoder
+}
 
 func NewResourceService(fileRoot string) *ResourceService {
-	return &ResourceService{fileRoot: fileRoot}
+	return NewResourceServiceWithDecoder(fileRoot, image.DecodeConfig)
+}
+
+func NewResourceServiceWithDecoder(fileRoot string, decoder imageConfigDecoder) *ResourceService {
+	if decoder == nil {
+		decoder = image.DecodeConfig
+	}
+	return &ResourceService{fileRoot: fileRoot, decodeConfig: decoder}
 }
 
 func (s *ResourceService) Resolve(base, category, subcategory, name, filename string) (string, error) {
@@ -69,15 +92,40 @@ func (s *ResourceService) ImageSize(base, category, subcategory, name, filename 
 	if err != nil {
 		return 0, 0
 	}
+	return s.imageSizeForPath(path)
+}
+
+func (s *ResourceService) imageSizeForPath(path string) (int, int) {
+	st, err := os.Stat(path)
+	if err != nil || st.IsDir() {
+		s.sizeCache.Delete(path)
+		return 0, 0
+	}
+
+	if raw, ok := s.sizeCache.Load(path); ok {
+		entry := raw.(imageSizeEntry)
+		if entry.modTime.Equal(st.ModTime()) && entry.size == st.Size() {
+			return entry.width, entry.height
+		}
+	}
+
 	f, err := os.Open(path)
 	if err != nil {
 		return 0, 0
 	}
 	defer f.Close()
-	cfg, _, err := image.DecodeConfig(f)
+
+	cfg, _, err := s.decodeConfig(f)
 	if err != nil {
 		return 0, 0
 	}
+
+	s.sizeCache.Store(path, imageSizeEntry{
+		width:   cfg.Width,
+		height:  cfg.Height,
+		modTime: st.ModTime(),
+		size:    st.Size(),
+	})
 	return cfg.Width, cfg.Height
 }
 

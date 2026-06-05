@@ -691,20 +691,32 @@ const ItemPage: React.FC = () => {
       <Alert
         title={
           <Space wrap>
-            <Flex gap="4px 0" wrap>
+            <Flex gap="4px" wrap>
               {pageInfo?.keyword?.map((keyword: any) => {
-                return <Tag key={'keyword-' + keyword}>{keyword}</Tag>;
+                return (
+                  <Tag key={'keyword-' + keyword} variant="outlined">
+                    {keyword}
+                  </Tag>
+                );
               })}
               {pageInfo?.category?.map((category: any) => {
                 return (
-                  <Tag key={'category-' + category} color={'red'}>
+                  <Tag
+                    key={'category-' + category}
+                    color={'red'}
+                    variant="outlined"
+                  >
                     {category}
                   </Tag>
                 );
               })}
               {pageInfo?.tag?.map((tag: any) => {
                 return (
-                  <Tag key={tag.type + '-' + tag} color={'green'}>
+                  <Tag
+                    key={tag.type + '-' + tag}
+                    color={'green'}
+                    variant="outlined"
+                  >
                     {tag}
                   </Tag>
                 );

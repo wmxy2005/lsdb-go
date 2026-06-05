@@ -1,5 +1,4 @@
-import { CONFIG } from '@/constants';
-import { shutdown } from '@/services/lsdb/LsdbController';
+import { getPcStats, shutdown } from '@/services/lsdb/LsdbController';
 import { PageContainer } from '@ant-design/pro-components';
 import { useAccess, useIntl } from '@umijs/max';
 import { Alert, Button, Card, Flex, message, Switch, Typography } from 'antd';
@@ -26,22 +25,15 @@ const ToolPage: React.FC = () => {
   };
 
   const updatePcData = async () => {
-    let success = false;
-    let timeLabel = false;
-    let newValue = false;
     try {
-      const res = await fetch(CONFIG.apiUrl + '/api/pc');
-      if (res.status == 200) {
-        let resjson = await res.json();
-        console.log(resjson);
-        success = true;
-        timeLabel = resjson?.time;
-        newValue = resjson?.cpu;
+      const res = await getPcStats();
+      if (res?.success) {
+        return [true, res.data?.time, res.data?.cpu];
       }
     } catch (err) {
       console.error(err);
     }
-    return [success, timeLabel, newValue];
+    return [false, false, false];
   };
 
   return (

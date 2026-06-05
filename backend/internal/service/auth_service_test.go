@@ -1,9 +1,58 @@
 package service
 
 import (
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
+	"lsdb-go/backend/internal/database"
+	"lsdb-go/backend/internal/repository"
 )
+
+func openAuthTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := database.Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
+
+func TestRegisterValidation(t *testing.T) {
+	db := openAuthTestDB(t)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+	svc := NewAuthService(repository.NewUserRepository(db), []byte("secret"), 7, 2)
+
+	_, err := svc.Register("alice", "short")
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestRegisterDuplicateUsername(t *testing.T) {
+	db := openAuthTestDB(t)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+	svc := NewAuthService(repository.NewUserRepository(db), []byte("secret"), 7, 2)
+
+	if _, err := svc.Register("alice", "secret1"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := svc.Register("alice", "secret2")
+	if !errors.Is(err, ErrUsernameTaken) {
+		t.Fatalf("err = %v", err)
+	}
+}
 
 func TestSignTokenUsesConfiguredExpireDays(t *testing.T) {
 	svc := NewAuthService(nil, []byte("test-secret"), 2, 1)

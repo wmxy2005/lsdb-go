@@ -1,6 +1,7 @@
 import { CONFIG } from '@/constants';
 import '@/role.css';
 import lsdbServices from '@/services/lsdb';
+import { openFolder } from '@/services/lsdb/LsdbController';
 import { resolvePath, resolveTagColor, resolveTagUrl } from '@/utils/resource';
 import { CalendarOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
@@ -84,26 +85,19 @@ export default function RolePage() {
   const openFolderClick = async () => {
     setFolderOpen(true);
     try {
-      const res = await fetch(
-        CONFIG.apiUrl +
-          '/api/cmd?path=' +
-          resolvePath(
-            undefined,
-            roleData?.base,
-            '',
-            '',
-            'e' + roleData?.id,
-            '',
-          ),
-        {
-          method: 'POST',
-        },
+      const folderPath = resolvePath(
+        undefined,
+        roleData?.base,
+        '',
+        '',
+        'e' + roleData?.id,
+        '',
       );
-      if (res.status !== 200) {
-        let resjson = await res.json();
-        messageApi.error(resjson.message);
-      } else {
+      const res = await openFolder(folderPath);
+      if (res?.success) {
         messageApi.info('success');
+      } else {
+        messageApi.error(res?.message || 'Failed to open folder');
       }
     } catch (err) {
       console.error(err);
@@ -141,7 +135,7 @@ export default function RolePage() {
               );
             })}
           </Flex>
-          <Flex style={{ padding: '1em 0' }} wrap gap="4px 0">
+          <Flex style={{ padding: '1em 0' }} wrap gap="4px">
             {roleData?.nameList?.map((nameItem: any) => {
               // const tagUrl = resolveTagUrl(tag.type, tag.value);
               const tagClick = () => {
@@ -152,6 +146,7 @@ export default function RolePage() {
                   <Tag
                     color={resolveTagColor('tag', nameItem?.nameIndex)}
                     onClick={tagClick}
+                    variant="outlined"
                   >
                     {nameItem.name}
                   </Tag>

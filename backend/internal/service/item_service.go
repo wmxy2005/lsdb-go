@@ -33,9 +33,8 @@ func (s *ItemService) List(q model.ItemQuery) (map[string]any, error) {
 		list = append(list, s.ItemMap(item, false))
 	}
 	roleList := []map[string]any{}
-	roleSQL := ""
 	if len(q.Keyword) > 0 || len(q.Tag) > 0 {
-		roleList, roleSQL, err = s.roles.ListForTags(append(q.Tag, q.Keyword...))
+		roleList, err = s.roles.ListForTags(append(q.Tag, q.Keyword...))
 		if err != nil {
 			roleList = []map[string]any{}
 		}
@@ -49,10 +48,6 @@ func (s *ItemService) List(q model.ItemQuery) (map[string]any, error) {
 		title = strings.Join(q.Keyword, " ")
 	}
 	return map[string]any{
-		"params":      res.Params,
-		"sql1":        res.CountSQL,
-		"sql2":        res.ListSQL,
-		"sql3":        roleSQL,
 		"base":        q.Base,
 		"category":    q.Category,
 		"subcategory": q.Subcategory,
@@ -107,8 +102,8 @@ func (s *ItemService) ItemMap(item model.Item, detail bool) map[string]any {
 		"category":    item.Category,
 		"subcategory": item.Subcategory,
 		"name":        item.Name,
-		"createAt":    item.CreateAt,
-		"updateAt":    item.UpdateAt,
+		"created_at":  item.CreatedAt,
+		"updated_at":  item.UpdatedAt,
 		"title":       item.Title,
 		"date":        item.Date,
 		"thumbnail":   item.Thumbnail,

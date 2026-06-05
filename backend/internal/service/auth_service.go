@@ -7,8 +7,15 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"lsdb-go/backend/internal/repository"
+)
+
+var (
+	ErrInvalidInput       = errors.New("username and password length >= 6 are required")
+	ErrInvalidCredentials = errors.New("invalid username or password")
+	ErrUsernameTaken      = errors.New("username already exists")
 )
 
 type Claims struct {
@@ -37,7 +44,14 @@ func NewAuthService(users *repository.UserRepository, jwtSecret []byte, jwtExpir
 func (s *AuthService) Register(username, password string) (map[string]any, error) {
 	username = strings.TrimSpace(username)
 	if username == "" || len(password) < 6 {
-		return nil, errors.New("username and password length >= 6 are required")
+		return nil, ErrInvalidInput
+	}
+	_, err := s.users.FindByUsername(username)
+	if err == nil {
+		return nil, ErrUsernameTaken
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -54,10 +68,10 @@ func (s *AuthService) Login(username, password string) (map[string]any, error) {
 	username = strings.TrimSpace(username)
 	user, err := s.users.FindByUsername(username)
 	if err != nil {
-		return nil, errors.New("invalid username or password")
+		return nil, ErrInvalidCredentials
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return nil, errors.New("invalid username or password")
+		return nil, ErrInvalidCredentials
 	}
 	token, err := s.SignToken(user.ID, user.Username)
 	if err != nil {

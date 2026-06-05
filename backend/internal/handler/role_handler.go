@@ -1,10 +1,6 @@
 package handler
 
 import (
-	"database/sql"
-	"errors"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 
 	"lsdb-go/backend/internal/response"
@@ -18,11 +14,7 @@ func NewRoleHandler(roles *service.RoleService) *RoleHandler { return &RoleHandl
 func (h *RoleHandler) Get(c *gin.Context) {
 	data, err := h.roles.Get(c.Param("roleId"))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			response.Fail(c, http.StatusNotFound, 404, "role not found")
-			return
-		}
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErrNotFound(c, err, "role not found")
 		return
 	}
 	response.OK(c, data)

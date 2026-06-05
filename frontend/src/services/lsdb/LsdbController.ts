@@ -76,7 +76,7 @@ export async function queryItem(
 
 export async function newItem(data: any) {
   return apiRequest<LSDB.Result_string_>(CONFIG.apiUrl + CONFIG.detailUrl, {
-    method: 'PUT',
+    method: 'POST',
     data: {
       ...data,
     },
@@ -148,4 +148,11 @@ export async function shutdown(restart: boolean) {
       withCredentials: true,
     },
   );
+}
+
+export async function getPcStats() {
+  return apiRequest<LSDB.Result_PCInfo__>(CONFIG.apiUrl + '/api/pc', {
+    method: 'GET',
+    withCredentials: true,
+  });
 }

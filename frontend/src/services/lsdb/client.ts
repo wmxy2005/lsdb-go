@@ -31,6 +31,10 @@ export function setToken(token: string | null): void {
   }
 }
 
+export function apiMessage(res: { message?: string; errorMessage?: string }) {
+  return res?.message || res?.errorMessage || 'Failed';
+}
+
 export class ApiError extends Error {
   status: number;
   errorCode: number;
@@ -81,7 +85,7 @@ export async function apiRequest<T>(
     ...requestOptions
   } = options;
   const headers: Record<string, string> = {};
-  if (data !== undefined) {
+  if (data !== undefined && !(data instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
   if (auth) {
@@ -104,11 +108,9 @@ export async function apiRequest<T>(
       withCredentials,
     });
   } catch (error: any) {
-    if (error?.response?.status === 401) {
-      const data = await readErrorResponse(error);
-      if (data !== undefined) {
-        return data as T;
-      }
+    const data = await readErrorResponse(error);
+    if (data && typeof data === 'object' && 'success' in data) {
+      return data as T;
     }
 
     throw error;

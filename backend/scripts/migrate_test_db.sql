@@ -1,0 +1,32 @@
+-- One-time migration: align test.db with current GORM models (items / itemfavi).
+-- Prefer running from backend/: go run scripts/migrate_test_db.go
+-- Default DB path: LSDB_DB_PATH in backend/.env (see .env.example).
+-- Optional override: go run scripts/migrate_test_db.go data/other.db
+-- (auto-detects legacy columns; safe to inspect before applying)
+--
+-- Backup first:
+--   Copy-Item backend\data\test.db backend\data\test.db.bak
+--
+-- Manual equivalent (old_only schema with createAt/updateAt on items):
+--
+-- BEGIN TRANSACTION;
+-- ALTER TABLE items RENAME COLUMN createAt TO created_at;
+-- ALTER TABLE items RENAME COLUMN updateAt TO updated_at;
+-- ALTER TABLE itemfavi RENAME COLUMN userId TO user_id;
+-- ALTER TABLE itemfavi RENAME COLUMN itemId TO item_id;
+-- ALTER TABLE itemfavi RENAME COLUMN datetime TO updated_at;
+-- ALTER TABLE itemfavi ADD COLUMN created_at TEXT;
+-- UPDATE itemfavi SET created_at = updated_at WHERE created_at IS NULL;
+-- COMMIT;
+--
+-- If items lacks timestamp columns entirely (only id..type), add instead of rename:
+-- ALTER TABLE items ADD COLUMN created_at TEXT;
+-- ALTER TABLE items ADD COLUMN updated_at TEXT;
+--
+-- Deduplicate itemfavi before unique index (keep row with max id per user_id+item_id):
+-- DELETE FROM itemfavi WHERE id IN (
+--   SELECT f1.id FROM itemfavi f1
+--   INNER JOIN itemfavi f2
+--     ON f1.user_id = f2.user_id AND f1.item_id = f2.item_id AND f1.id < f2.id
+-- );
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_itemfavi_user_item ON itemfavi(user_id, item_id);

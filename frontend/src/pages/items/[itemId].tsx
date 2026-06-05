@@ -256,7 +256,7 @@ export default function ItemPage() {
       duration: 0,
     });
     try {
-      const { success, errorMessage } = await updateItem(itemData?.id, data);
+      const { success, message } = await updateItem(itemData?.id, data);
       if (success) {
         messageApi.open({
           key: 'itemUpdate',
@@ -271,7 +271,7 @@ export default function ItemPage() {
         messageApi.open({
           key: 'itemUpdate',
           type: 'error',
-          content: errorMessage,
+          content: message,
           duration: 2,
         });
         setUpdating(false);
@@ -462,21 +462,19 @@ export default function ItemPage() {
     return { lines, remainingBuffer };
   };
   const startSyncProcess = async () => {
-    const res = await fetch(
-      CONFIG.apiUrl +
-        '/api/cmd/sync?path=' +
-        resolvePath(
-          undefined,
-          itemData?.base,
-          itemData?.category,
-          itemData?.subcategory,
-          itemData?.name,
-          '',
-        ),
-      {
-        method: 'POST',
-      },
+    const syncPath = resolvePath(
+      undefined,
+      itemData?.base,
+      itemData?.category,
+      itemData?.subcategory,
+      itemData?.name,
+      '',
     );
+    const syncUrl =
+      CONFIG.apiUrl + '/api/cmd/sync?path=' + encodeURIComponent(syncPath);
+    const res = await fetch(syncUrl, {
+      method: 'POST',
+    });
     const json = await res.json();
     if (json.success) {
       return json.data;

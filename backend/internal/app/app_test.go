@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"image"
 	"image/color"
@@ -17,7 +16,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	_ "modernc.org/sqlite"
+	"gorm.io/gorm"
 
 	"lsdb-go/backend/internal/service"
 )
@@ -53,10 +52,6 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(fileRoot, "wallpaper", "4k", "logo.png"), tinyPNG(), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := seedDB(dbPath); err != nil {
-		t.Fatal(err)
-	}
-
 	t.Setenv("LSDB_DB_PATH", dbPath)
 	t.Setenv("LSDB_FILE_ROOT", fileRoot)
 	t.Setenv("LSDB_JWT_SECRET", "test-secret")
@@ -64,7 +59,10 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer srv.DB.Close()
+	defer func() { sqlDB, _ := srv.DB.DB(); sqlDB.Close() }()
+	if err := seedData(srv.DB); err != nil {
+		t.Fatal(err)
+	}
 
 	token := registerAndLogin(t, srv)
 	get := func(path string) *httptest.ResponseRecorder {
@@ -77,20 +75,48 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/items", nil))
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("items without token status = %d", w.Code)
 	}
 
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/auth/current", nil))
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("current user without token status = %d", w.Code)
 	}
 
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/cmd/shutdown", nil))
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("cmd without token status = %d", w.Code)
+	}
+
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/pc", nil))
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("pc without token status = %d", w.Code)
+	}
+
+	w = get("/api/pc")
+	if w.Code != http.StatusOK {
+		t.Fatalf("pc status = %d body=%s", w.Code, w.Body.String())
+	}
+	var pcResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &pcResp); err != nil {
+		t.Fatal(err)
+	}
+	if pcResp["success"] != true {
+		t.Fatalf("pc success = %#v", pcResp["success"])
+	}
+	pcData, ok := pcResp["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("pc data = %#v", pcResp["data"])
+	}
+	if pcData["cpu"].(float64) != 0 {
+		t.Fatalf("first pc cpu = %#v, want 0", pcData["cpu"])
+	}
+	if pcData["time"] == "" {
+		t.Fatalf("pc time should not be empty")
 	}
 
 	w = get("/api/auth/current")
@@ -147,8 +173,8 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	if item["avatarSrc"] == "" {
 		t.Fatal("expected avatarSrc")
 	}
-	if item["createAt"] != "2026-01-02 03:04:05" || item["updateAt"] != "2026-01-02 03:04:06" {
-		t.Fatalf("list timestamps = createAt:%#v updateAt:%#v", item["createAt"], item["updateAt"])
+	if item["created_at"] != "2026-01-02 03:04:05" || item["updated_at"] != "2026-01-02 03:04:06" {
+		t.Fatalf("list timestamps = created_at:%#v updated_at:%#v", item["created_at"], item["updated_at"])
 	}
 	if len(data["roleList"].([]any)) != 1 {
 		t.Fatalf("roleList = %#v", data["roleList"])
@@ -163,8 +189,8 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 		t.Fatal(err)
 	}
 	detail := detailResp["data"].(map[string]any)
-	if detail["createAt"] != "2026-01-02 03:04:05" || detail["updateAt"] != "2026-01-02 03:04:06" {
-		t.Fatalf("detail timestamps = createAt:%#v updateAt:%#v", detail["createAt"], detail["updateAt"])
+	if detail["created_at"] != "2026-01-02 03:04:05" || detail["updated_at"] != "2026-01-02 03:04:06" {
+		t.Fatalf("detail timestamps = created_at:%#v updated_at:%#v", detail["created_at"], detail["updated_at"])
 	}
 	if len(detail["fileList"].([]any)) == 0 {
 		t.Fatal("expected fileList")
@@ -201,12 +227,12 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 		t.Fatal(err)
 	}
 	updated := updateResp["data"].(map[string]any)
-	if updated["createAt"] != "2026-01-02 03:04:05" {
-		t.Fatalf("updated createAt = %#v", updated["createAt"])
+	if updated["created_at"] != "2026-01-02 03:04:05" {
+		t.Fatalf("updated created_at = %#v", updated["created_at"])
 	}
-	updatedAt, ok := updated["updateAt"].(string)
+	updatedAt, ok := updated["updated_at"].(string)
 	if !ok || updatedAt == "" || updatedAt == "2026-01-02 03:04:06" {
-		t.Fatalf("updated updateAt = %#v", updated["updateAt"])
+		t.Fatalf("updated updated_at = %#v", updated["updated_at"])
 	}
 
 	w = get("/api/role/1")
@@ -225,7 +251,7 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	req = httptest.NewRequest(http.MethodPost, uploadPath, nil)
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, req)
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("upload without token status = %d", w.Code)
 	}
 
@@ -240,7 +266,7 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	}
 
 	w = uploadResource(t, srv, token, uploadPath, "second upload")
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusConflict {
 		t.Fatalf("upload conflict status = %d body=%s", w.Code, w.Body.String())
 	}
 
@@ -255,14 +281,14 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	}
 
 	w = uploadResource(t, srv, token, "/api/resource?base=wallpaper&category=4k&name=forestdawniv&filename=../i.png", "unsafe")
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusBadRequest {
 		t.Fatalf("unsafe upload status = %d body=%s", w.Code, w.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodDelete, uploadPath, nil)
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, req)
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("delete without token status = %d", w.Code)
 	}
 
@@ -272,15 +298,15 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	}
 	assertMessageResponse(t, w, "")
 	w = get("/api/resource?base=wallpaper&category=4k&subcategory=&name=forestdawniv&filename=i.png")
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusNotFound {
 		t.Fatalf("deleted resource get status=%d body=%q", w.Code, w.Body.String())
 	}
 	w = deleteResource(t, srv, token, uploadPath)
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusNotFound {
 		t.Fatalf("delete missing status = %d body=%s", w.Code, w.Body.String())
 	}
 	w = deleteResource(t, srv, token, "/api/resource?base=wallpaper&category=4k&name=forestdawniv&filename=../i.png")
-	if w.Code != http.StatusAccepted {
+	if w.Code != http.StatusBadRequest {
 		t.Fatalf("unsafe delete status = %d body=%s", w.Code, w.Body.String())
 	}
 
@@ -290,6 +316,45 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	srv.Router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("favorite status = %d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestDuplicateRegisterSanitizedMessage(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("LSDB_DB_PATH", filepath.Join(tmp, "test.db"))
+	t.Setenv("LSDB_FILE_ROOT", filepath.Join(tmp, "files"))
+	t.Setenv("LSDB_JWT_SECRET", "test-secret")
+	srv, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { sqlDB, _ := srv.DB.DB(); sqlDB.Close() }()
+
+	body := `{"username":"alice","password":"secret1"}`
+	register := func() *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/register", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		srv.Router.ServeHTTP(w, req)
+		return w
+	}
+	if w := register(); w.Code != http.StatusOK {
+		t.Fatalf("first register status=%d body=%s", w.Code, w.Body.String())
+	}
+	w := register()
+	if w.Code != http.StatusConflict {
+		t.Fatalf("duplicate register status=%d body=%s", w.Code, w.Body.String())
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	msg, _ := resp["message"].(string)
+	if msg != "username already exists" {
+		t.Fatalf("message = %q", msg)
+	}
+	if strings.Contains(msg, "UNIQUE") || strings.Contains(strings.ToLower(w.Body.String()), "constraint") {
+		t.Fatalf("leaked SQL in body=%s", w.Body.String())
 	}
 }
 
@@ -319,7 +384,7 @@ func TestFrontendDistServesStaticFilesAndSPAFallback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer srv.DB.Close()
+	defer func() { sqlDB, _ := srv.DB.DB(); sqlDB.Close() }()
 
 	get := func(path string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -528,35 +593,16 @@ func parseTestToken(t *testing.T, secret []byte, raw string) *service.Claims {
 	return claims
 }
 
-func seedDB(path string) error {
-	db, err := sql.Open("sqlite", path)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+func seedData(db *gorm.DB) error {
 	stmts := []string{
-		`CREATE TABLE items (
-			id INTEGER PRIMARY KEY, base TEXT, category TEXT, subcategory TEXT, name TEXT,
-			createAt TEXT DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime')),
-			updateAt TEXT DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime')),
-			title TEXT, date TEXT,
-			thumbnail TEXT, roll TEXT, trailer TEXT, tag TEXT, tag2 TEXT, tag3 TEXT, extra TEXT, content TEXT, images TEXT, type INTEGER
-		)`,
-		`CREATE TABLE itemfavi (
-			id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, uId INTEGER DEFAULT 0, itemId INTEGER DEFAULT 0,
-			datetime text DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime')), expired integer DEFAULT 0
-		)`,
-		`CREATE TABLE role (
-			id integer NOT NULL PRIMARY KEY, date datetime, title TEXT, name TEXT, images TEXT, remark TEXT, base TEXT
-		)`,
-		`INSERT INTO items(id,base,category,subcategory,name,createAt,updateAt,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
+		`INSERT INTO items(id,base,category,subcategory,name,created_at,updated_at,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
 		 VALUES(1,'wallpaper','4k','','sky','2026-01-02 03:04:05','2026-01-02 03:04:06','Sky','2026-01-01','a.txt',NULL,'clip.mp4',';4k;sky;',';JPEG;',';HD;',NULL,'content','extra.png;wide.png;small.png',NULL)`,
-		`INSERT INTO items(id,base,category,subcategory,name,createAt,updateAt,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
+		`INSERT INTO items(id,base,category,subcategory,name,created_at,updated_at,title,date,thumbnail,roll,trailer,tag,tag2,tag3,extra,content,images,type)
 		 VALUES(2,'wallpaper','4k','','plain','2026-01-02 03:04:05','2026-01-02 03:04:06','Plain','2026-01-01','plain.png',NULL,NULL,';plain;',';JPEG;',';HD;',NULL,'content','extra.png',NULL)`,
 		`INSERT INTO role(id,date,title,name,images,remark,base) VALUES(1,NULL,'4k=stream',';4k;stream;','4k@4k.jpg;stream@stream.jpg','remark','role')`,
 	}
 	for _, stmt := range stmts {
-		if _, err := db.Exec(stmt); err != nil {
+		if err := db.Exec(stmt).Error; err != nil {
 			return err
 		}
 	}

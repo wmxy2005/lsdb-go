@@ -1,6 +1,7 @@
 import { CONFIG } from '@/constants';
 import lsdbServices from '@/services/lsdb';
-import { getToken } from '@/services/lsdb/client';
+import { apiRequest, getToken } from '@/services/lsdb/client';
+import { openFolder } from '@/services/lsdb/LsdbController';
 import { resolvePath, resolveUrl } from '@/utils/resource';
 import {
   CloseCircleOutlined,
@@ -23,7 +24,7 @@ import {
   ProFormTextArea,
   ProFormUploadButton,
 } from '@ant-design/pro-components';
-import { request, useIntl } from '@umijs/max';
+import { useIntl } from '@umijs/max';
 import { Button, Image, Popconfirm, Skeleton } from 'antd';
 import dayjs from 'dayjs';
 import PhotoSwipe from 'photoswipe';
@@ -171,6 +172,12 @@ const EditItem = (props: EditItemProps) => {
     setUpdating(true);
     const values = formRef.current?.getFieldsFormatValue?.();
     const data = { ...values };
+    // Cleared ProFormSelect values are omitted by getFieldsFormatValue; backend needs "" to clear.
+    (['thumbnail', 'roll', 'trailer'] as const).forEach((field) => {
+      if (!(field in data)) {
+        data[field] = formRef.current?.getFieldValue(field) ?? '';
+      }
+    });
     data.tags = tags;
     data.tags2 = tags2;
     data.tags3 = tags3;
@@ -181,7 +188,7 @@ const EditItem = (props: EditItemProps) => {
       duration: 0,
     });
     try {
-      const { success, errorMessage } =
+      const { success, message } =
         itemData?.id > 0
           ? await updateItem(itemData?.id, data)
           : await newItem(data);
@@ -198,7 +205,7 @@ const EditItem = (props: EditItemProps) => {
         showMessage({
           key: 'itemUpdate',
           type: 'error',
-          content: errorMessage,
+          content: message,
           duration: 2,
         });
         setUpdating(false);
@@ -256,37 +263,31 @@ const EditItem = (props: EditItemProps) => {
     setProcessing('');
   }
 
-  const openFolder = async () => {
+  const openFolderClick = async () => {
     setProcessing('open');
     try {
-      const res = await fetch(
-        CONFIG.apiUrl +
-          '/api/cmd?path=' +
-          resolvePath(
-            undefined,
-            itemData?.base,
-            itemData?.category,
-            itemData?.subcategory,
-            itemData?.name,
-            '',
-          ),
-        {
-          method: 'POST',
-        },
+      const res = await openFolder(
+        resolvePath(
+          undefined,
+          itemData?.base,
+          itemData?.category,
+          itemData?.subcategory,
+          itemData?.name,
+          '',
+        ),
       );
-      if (res.status !== 200) {
-        let resjson = await res.json();
+      if (res?.success) {
         showMessage({
           key: 'itemUpdate',
-          type: 'error',
-          content: resjson.message,
+          type: 'info',
+          content: 'success',
           duration: 2,
         });
       } else {
         showMessage({
           key: 'itemUpdate',
-          type: 'info',
-          content: 'success',
+          type: 'error',
+          content: res?.message || 'Failed to open folder',
           duration: 2,
         });
       }
@@ -330,7 +331,7 @@ const EditItem = (props: EditItemProps) => {
               ghost
               icon={<FolderOpenOutlined />}
               onClick={() => {
-                openFolder();
+                openFolderClick();
               }}
             >
               {intl.formatMessage({
@@ -524,7 +525,7 @@ const EditItem = (props: EditItemProps) => {
             });
 
             try{
-              const { success, errorMessage } = await request<any>(resolveUrl(itemData?.base, itemData?.category, itemData?.subcategory, itemData?.name, file.name), {
+              const { success, message } = await apiRequest<any>(resolveUrl(itemData?.base, itemData?.category, itemData?.subcategory, itemData?.name, file.name), {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json'
@@ -544,7 +545,7 @@ const EditItem = (props: EditItemProps) => {
                 messageApi.open({
                   key: 'itemUpdate',
                   type: 'error',
-                  content: errorMessage,
+                  content: message,
                   duration: 2,
                 });
                 setUpdating(false);
@@ -583,7 +584,7 @@ const EditItem = (props: EditItemProps) => {
           }
           formData.append('file', file);
           
-          request<any>(resolveUrl(itemData?.base, itemData?.category, itemData?.subcategory, itemData?.name, file.name), {
+          apiRequest<any>(resolveUrl(itemData?.base, itemData?.category, itemData?.subcategory, itemData?.name, file.name), {
             method: 'POST',
             data: formData,
             headers: {
@@ -706,7 +707,7 @@ const EditItem = (props: EditItemProps) => {
                   const token = getToken();
 
                   try {
-                    const { success, message } = await request<any>(
+                    const { success, message } = await apiRequest<any>(
                       resolveUrl(
                         itemData?.base,
                         itemData?.category,
@@ -735,6 +736,7 @@ const EditItem = (props: EditItemProps) => {
                       setUpdating(false);
                       return true;
                     } else {
+                      file.status = 'done';
                       showMessage({
                         key: 'itemUpdate',
                         type: 'error',
@@ -744,6 +746,7 @@ const EditItem = (props: EditItemProps) => {
                       setUpdating(false);
                     }
                   } catch (error) {
+                    file.status = 'done';
                     showMessage({
                       key: 'itemUpdate',
                       type: 'error',
@@ -780,7 +783,7 @@ const EditItem = (props: EditItemProps) => {
               formData.append('file', file);
               const token = getToken();
 
-              request<any>(
+              apiRequest<any>(
                 resolveUrl(
                   itemData?.base,
                   itemData?.category,
@@ -812,7 +815,9 @@ const EditItem = (props: EditItemProps) => {
                   showMessage({
                     key: 'itemUpdate',
                     type: result?.success ? 'success' : 'error',
-                    content: result?.message,
+                    content:
+                      result?.message ||
+                      (result?.success ? 'Uploaded!' : 'Failed to upload'),
                     duration: 2,
                   });
                   if (result?.success) {

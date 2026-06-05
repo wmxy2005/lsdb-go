@@ -2,7 +2,7 @@
 name = "lsdb-desktop"
 version = "0.1.0"
 description = "LSDB backend desktop controller"
-authors = ["LSDB"]
+authors = ["wmxy2005"]
 edition = "2021"
 
 [lib]

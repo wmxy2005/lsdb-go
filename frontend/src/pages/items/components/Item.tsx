@@ -150,6 +150,7 @@ const Item: React.FC<PropsWithChildren<ItemProps>> = (props: ItemProps) => {
         >
           <Tag
             color={resolveTagColor(tag.type, tag?.tagIndex)}
+            variant="outlined"
             onClick={tagClick}
           >
             {tagValue}

@@ -1,13 +1,13 @@
 package app
 
 import (
-	"database/sql"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"lsdb-go/backend/internal/config"
 	"lsdb-go/backend/internal/database"
@@ -18,7 +18,7 @@ import (
 )
 
 type Server struct {
-	DB     *sql.DB
+	DB     *gorm.DB
 	Router *gin.Engine
 	cfg    config.Config
 }
@@ -30,7 +30,10 @@ func New() (*Server, error) {
 		return nil, err
 	}
 	if err := database.Migrate(db); err != nil {
-		db.Close()
+		sqlDB, _ := db.DB()
+		if sqlDB != nil {
+			sqlDB.Close()
+		}
 		return nil, err
 	}
 
@@ -41,6 +44,7 @@ func New() (*Server, error) {
 
 	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpireDays, cfg.JWTRefreshDays)
 	commandSvc := service.NewCommandService(cfg.FileRoot)
+	monitorSvc := service.NewMonitorService(cfg.MonitorIdleTimeout)
 	resourceSvc := service.NewResourceService(cfg.FileRoot)
 	roleSvc := service.NewRoleService(roleRepo, resourceSvc)
 	itemSvc := service.NewItemService(itemRepo, roleSvc, resourceSvc)
@@ -48,6 +52,7 @@ func New() (*Server, error) {
 
 	authHandler := handler.NewAuthHandler(authSvc)
 	commandHandler := handler.NewCommandHandler(commandSvc)
+	monitorHandler := handler.NewMonitorHandler(monitorSvc)
 	itemHandler := handler.NewItemHandler(itemSvc, favoriteSvc)
 	roleHandler := handler.NewRoleHandler(roleSvc)
 	resourceHandler := handler.NewResourceHandler(resourceSvc)
@@ -62,6 +67,7 @@ func New() (*Server, error) {
 	api.GET("/auth/current", authHandler.Current)
 	api.POST("/auth/logout", authHandler.Logout)
 	api.POST("/cmd/:type", commandHandler.Run)
+	api.GET("/pc", monitorHandler.GetPC)
 	api.POST("/resource", resourceHandler.Upload)
 	api.DELETE("/resource", resourceHandler.Delete)
 	api.GET("/items", itemHandler.List)
@@ -109,6 +115,10 @@ func registerFrontend(r *gin.Engine, dist string) {
 
 		if path, ok := frontendFilePath(distAbs, requestPath); ok {
 			http.ServeFile(c.Writer, c.Request, path)
+			return
+		}
+		if filepath.Ext(requestPath) != "" {
+			c.Status(http.StatusNotFound)
 			return
 		}
 		http.ServeFile(c.Writer, c.Request, indexPath)

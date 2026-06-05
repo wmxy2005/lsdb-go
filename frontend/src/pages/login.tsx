@@ -62,7 +62,7 @@ export default () => {
             try {
               const res = await authLogin({}, values);
               if (res.success === false) {
-                info(res?.errorMessage || '登录失败');
+                info(res?.message || '登录失败');
                 return;
               }
               setToken(res?.data?.token);

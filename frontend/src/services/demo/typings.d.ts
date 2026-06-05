@@ -22,25 +22,25 @@ declare namespace API {
 
   interface Result {
     success?: boolean;
-    errorMessage?: string;
+    message?: string;
     data?: Record<string, any>;
   }
 
   interface Result_PageInfo_UserInfo__ {
     success?: boolean;
-    errorMessage?: string;
+    message?: string;
     data?: PageInfo_UserInfo_;
   }
 
   interface Result_UserInfo_ {
     success?: boolean;
-    errorMessage?: string;
+    message?: string;
     data?: UserInfo;
   }
 
   interface Result_string_ {
     success?: boolean;
-    errorMessage?: string;
+    message?: string;
     data?: string;
   }
 

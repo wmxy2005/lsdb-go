@@ -4,6 +4,7 @@
 
 ```powershell
 cd backend
+go mod tidy
 go run ./cmd/server
 ```
 
@@ -21,24 +22,36 @@ Configuration is loaded from the `.env` file in the current working directory fi
 
 When running from `backend`, copy `.env.example` to `.env` and adjust values as needed.
 
-## Main APIs
+Path priority for `LSDB_DB_PATH`: CLI argument (scripts only) > `.env` > system environment variable > default (`data/test.db` when cwd is `backend`).
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/current`
-- `POST /api/auth/logout`
-- `GET /api/items`
-- `GET /api/items/:id`
-- `POST /api/items`
-- `PUT /api/items/:id`
-- `GET /api/favorites`
-- `POST /api/items/:id/favorite`
-- `DELETE /api/items/:id/favorite`
-- `GET /api/role/:roleId`
-- `GET /api/resource`
+## Database scripts
 
-`/api/resource` is public. All other APIs except register/login require `Authorization: Bearer <token>`.
+Run from `backend/` so scripts read `backend/.env`. Default database path is `LSDB_DB_PATH`; pass an optional path to override.
+
+| Script | Purpose |
+| --- | --- |
+| `scripts/migrate_test_db.go` | Legacy schema fix: rename camelCase columns, add timestamps, dedupe `itemfavi`, create `idx_itemfavi_user_item` unique index |
+| `scripts/verify_test_db.go` | Print row counts and sample rows from `items` / `itemfavi` |
+| `scripts/smoke_test_db.go` | Smoke test: GORM list + favorite add against the configured DB |
+
+```powershell
+cd backend
+go run scripts/migrate_test_db.go
+go run scripts/verify_test_db.go
+go run scripts/smoke_test_db.go
+
+# Override .env path
+go run scripts/migrate_test_db.go data/other.db
+```
+
+SQL reference: `scripts/migrate_test_db.sql`. Backup before migrating production data.
+
+## API
+
+See [../docs/API.md](../docs/API.md) for data models and full endpoint documentation.
 
 ## Frontend (API testing)
 
-See [`../frontend/README.md`](../frontend/README.md) for the Vite + React dev client used to exercise register, login, items list/detail, roles, favorites, and resource images.
+See `[../frontend/README.md](../frontend/README.md)` for the UmiJS + React dev client used to exercise register, login, items list/detail, roles, favorites, and resource images.
+
+Full project docs: `[../README.md](../README.md)` · `[../docs/API.md](../docs/API.md)` · `[../docs/DEPLOY.md](../docs/DEPLOY.md)` · `[../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md)`

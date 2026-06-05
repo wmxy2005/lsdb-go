@@ -25,7 +25,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 	data, err := h.auth.Register(req.Username, req.Password)
 	if err != nil {
-		response.Fail(c, http.StatusConflict, 409, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 	response.OK(c, data)
@@ -42,7 +42,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	data, err := h.auth.Login(req.Username, req.Password)
 	if err != nil {
-		response.Fail(c, http.StatusUnauthorized, 401, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 	response.OK(c, data)
@@ -54,7 +54,7 @@ func (h *AuthHandler) Current(c *gin.Context) {
 	data := gin.H{"id": userID, "username": username}
 	token, refreshed, err := h.auth.RefreshTokenIfNeeded(middleware.CurrentClaims(c))
 	if err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 	if refreshed {

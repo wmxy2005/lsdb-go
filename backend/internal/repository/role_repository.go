@@ -1,49 +1,46 @@
 package repository
 
 import (
-	"database/sql"
+	"strings"
+
+	"gorm.io/gorm"
 
 	"lsdb-go/backend/internal/model"
 )
 
-type RoleRepository struct{ db *sql.DB }
+type RoleRepository struct{ db *gorm.DB }
 
-func NewRoleRepository(db *sql.DB) *RoleRepository { return &RoleRepository{db: db} }
+func NewRoleRepository(db *gorm.DB) *RoleRepository { return &RoleRepository{db: db} }
 
 func (r *RoleRepository) Get(id string) (model.Role, error) {
-	row := r.db.QueryRow(`SELECT id,date,title,name,images,remark,base FROM role WHERE id = ?`, id)
-	return scanRole(row)
-}
-
-func (r *RoleRepository) List() ([]model.Role, string, error) {
-	sqlText := `SELECT id,date,title,name,images,remark,base FROM role ORDER BY id DESC`
-	rows, err := r.db.Query(sqlText)
-	if err != nil {
-		return nil, sqlText + ";", err
-	}
-	defer rows.Close()
-	var roles []model.Role
-	for rows.Next() {
-		role, err := scanRole(rows)
-		if err != nil {
-			return nil, sqlText + ";", err
-		}
-		roles = append(roles, role)
-	}
-	return roles, sqlText + ";", rows.Err()
-}
-
-func scanRole(r scanner) (model.Role, error) {
 	var role model.Role
-	var date, title, name, images, remark, base sql.NullString
-	if err := r.Scan(&role.ID, &date, &title, &name, &images, &remark, &base); err != nil {
-		return role, err
+	err := r.db.Where("id = ?", id).First(&role).Error
+	return role, err
+}
+
+func (r *RoleRepository) List() ([]model.Role, error) {
+	var roles []model.Role
+	err := r.db.Order("id DESC").Find(&roles).Error
+	return roles, err
+}
+
+func (r *RoleRepository) ListForTagNames(tags []string) ([]model.Role, error) {
+	seen := map[string]bool{}
+	var conds []string
+	var args []any
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" || seen[tag] {
+			continue
+		}
+		seen[tag] = true
+		conds = append(conds, "name LIKE ?")
+		args = append(args, "%;"+tag+";%")
 	}
-	role.Date = nullStringPtr(date)
-	role.Title = nullString(title)
-	role.Name = nullString(name)
-	role.Images = nullString(images)
-	role.Remark = nullString(remark)
-	role.Base = nullString(base)
-	return role, nil
+	if len(conds) == 0 {
+		return []model.Role{}, nil
+	}
+	var roles []model.Role
+	err := r.db.Where(strings.Join(conds, " OR "), args...).Order("id DESC").Find(&roles).Error
+	return roles, err
 }

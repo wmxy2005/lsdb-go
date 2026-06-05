@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"database/sql"
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"lsdb-go/backend/internal/middleware"
 	"lsdb-go/backend/internal/model"
@@ -27,7 +27,7 @@ func NewItemHandler(items *service.ItemService, favorites *service.FavoriteServi
 func (h *ItemHandler) List(c *gin.Context) {
 	data, err := h.items.List(itemQuery(c))
 	if err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 	response.OK(c, data)
@@ -36,13 +36,7 @@ func (h *ItemHandler) List(c *gin.Context) {
 func (h *ItemHandler) Get(c *gin.Context) {
 	data, err := h.items.Get(c.Param("id"), middleware.CurrentUserID(c))
 	if err != nil {
-		status := http.StatusInternalServerError
-		code := 500
-		msg := err.Error()
-		if errors.Is(err, sql.ErrNoRows) {
-			status, code, msg = http.StatusNotFound, 404, "item not found"
-		}
-		response.Fail(c, status, code, msg)
+		response.FailErrNotFound(c, err, "item not found")
 		return
 	}
 	response.OK(c, data)
@@ -56,7 +50,7 @@ func (h *ItemHandler) Create(c *gin.Context) {
 	}
 	data, err := h.items.Create(req, middleware.CurrentUserID(c))
 	if err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 	response.OK(c, data)
@@ -70,11 +64,11 @@ func (h *ItemHandler) Update(c *gin.Context) {
 	}
 	data, err := h.items.Update(c.Param("id"), req, middleware.CurrentUserID(c))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.Fail(c, http.StatusBadRequest, 400, "no fields to update")
 			return
 		}
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
 	response.OK(c, data)
@@ -88,19 +82,19 @@ func (h *ItemHandler) Favorites(c *gin.Context) {
 func (h *ItemHandler) AddFavorite(c *gin.Context) {
 	itemID := c.Param("id")
 	if err := h.favorites.Add(middleware.CurrentUserID(c), itemID); err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
-	response.OK(c, gin.H{"itemId": itemID, "isFavi": true})
+	response.OK(c, gin.H{"item_id": itemID, "isFavi": true})
 }
 
 func (h *ItemHandler) RemoveFavorite(c *gin.Context) {
 	itemID := c.Param("id")
 	if err := h.favorites.Remove(middleware.CurrentUserID(c), itemID); err != nil {
-		response.Fail(c, http.StatusInternalServerError, 500, err.Error())
+		response.FailErr(c, err)
 		return
 	}
-	response.OK(c, gin.H{"itemId": itemID, "isFavi": false})
+	response.OK(c, gin.H{"item_id": itemID, "isFavi": false})
 }
 
 func itemQuery(c *gin.Context) model.ItemQuery {

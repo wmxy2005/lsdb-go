@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -14,8 +15,9 @@ type Config struct {
 	FileRoot       string
 	FrontendDist   string
 	JWTSecret      []byte
-	JWTExpireDays  int
-	JWTRefreshDays int
+	JWTExpireDays      int
+	JWTRefreshDays     int
+	MonitorIdleTimeout time.Duration
 }
 
 func Load() Config {
@@ -26,8 +28,9 @@ func Load() Config {
 		FileRoot:       envDefault(env, "LSDB_FILE_ROOT", defaultPath(filepath.Join("backend", "data", "files"), filepath.Join("data", "files"))),
 		FrontendDist:   envDefault(env, "LSDB_FRONTEND_DIST", ""),
 		JWTSecret:      []byte(envDefault(env, "LSDB_JWT_SECRET", "dev-secret-change-me")),
-		JWTExpireDays:  envIntDefault(env, "LSDB_JWT_EXPIRE_DAYS", 7),
-		JWTRefreshDays: envIntDefault(env, "LSDB_JWT_REFRESH_DAYS", 2),
+		JWTExpireDays:      envIntDefault(env, "LSDB_JWT_EXPIRE_DAYS", 7),
+		JWTRefreshDays:     envIntDefault(env, "LSDB_JWT_REFRESH_DAYS", 2),
+		MonitorIdleTimeout: envDurationDefault(env, "LSDB_MONITOR_IDLE_TIMEOUT", 30*time.Second),
 	}
 }
 
@@ -37,6 +40,20 @@ func envDefault(dotEnv map[string]string, key, fallback string) string {
 	}
 	if v := os.Getenv(key); strings.TrimSpace(v) != "" {
 		return v
+	}
+	return fallback
+}
+
+func envDurationDefault(dotEnv map[string]string, key string, fallback time.Duration) time.Duration {
+	raw := envDefault(dotEnv, key, "")
+	if raw == "" {
+		return fallback
+	}
+	if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+		return d
+	}
+	if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+		return time.Duration(n) * time.Second
 	}
 	return fallback
 }

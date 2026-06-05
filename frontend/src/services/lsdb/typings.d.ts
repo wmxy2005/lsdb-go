@@ -18,6 +18,8 @@ declare namespace LSDB {
     subcategory?: string;
     name?: string;
     title?: string;
+    created_at?: string;
+    updated_at?: string;
     date?: Date;
     thumbnail?: string;
     tagList?: Array<any>;
@@ -110,5 +112,17 @@ declare namespace LSDB {
     message?: string;
     errorCode?: string;
     data?: ROLEInfo;
+  }
+
+  interface PCInfo {
+    time?: string;
+    cpu?: number;
+  }
+
+  interface Result_PCInfo__ {
+    success?: boolean;
+    message?: string;
+    errorCode?: string;
+    data?: PCInfo;
   }
 }

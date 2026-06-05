@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "LSDB 服务器",
+        "title": "LSDB Server",
         "width": 980,
-        "height": 720,
+        "height": 760,
         "minWidth": 760,
         "minHeight": 600
       }
