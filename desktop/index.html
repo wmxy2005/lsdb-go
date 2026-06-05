@@ -8,33 +8,73 @@
   <body>
     <main class="shell">
       <header class="app-header">
-        <div>
+        <div class="hero-copy">
           <p class="eyebrow">LSDB</p>
           <h1>服务器控制台</h1>
           <p class="subtitle">管理本机后端服务、运行日志和环境配置。</p>
         </div>
-        <div class="status" id="status">
-          <span class="status-dot"></span>
-          <span id="status-text">正在检查</span>
+        <div class="status-card" id="status">
+          <div class="status-line">
+            <span class="status-dot"></span>
+            <span id="status-text">正在检查</span>
+          </div>
+          <p class="status-detail" id="status-detail">正在读取服务状态</p>
         </div>
       </header>
 
       <section class="toolbar card">
-        <div>
+        <div class="service-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img">
+            <path d="M24 8 8 16l16 8 16-8-16-8Z" />
+            <path d="m12 24 12 6 12-6" />
+            <path d="m12 32 12 6 12-6" />
+          </svg>
+        </div>
+        <div class="service-copy">
           <p class="label">后端服务</p>
-          <p class="path" id="server-path">正在读取程序路径...</p>
+          <div class="path-row">
+            <p class="path" id="server-path">正在读取程序路径...</p>
+            <button class="icon-button" id="copy-path-button" type="button" aria-label="复制服务路径" title="复制服务路径">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="8" width="11" height="11" rx="2" />
+                <path d="M5 15V5h10" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="actions">
-          <button class="button primary" id="start-button">启动服务</button>
-          <button class="button danger" id="stop-button">停止服务</button>
-          <button class="button" id="restart-button">重新启动</button>
+          <button class="button primary" id="start-button" type="button">
+            <span class="button-icon" aria-hidden="true">▷</span>
+            启动服务
+          </button>
+          <button class="button danger" id="stop-button" type="button">
+            <span class="button-icon" aria-hidden="true">■</span>
+            停止服务
+          </button>
+          <button class="button" id="restart-button" type="button">
+            <span class="button-icon" aria-hidden="true">↻</span>
+            重新启动
+          </button>
         </div>
       </section>
 
-      <nav class="tabs" aria-label="控制台页面">
-        <button class="tab active" data-tab="logs">运行日志</button>
-        <button class="tab" data-tab="settings">环境配置</button>
-      </nav>
+      <div class="tab-bar">
+        <nav class="tabs" aria-label="控制台页面">
+          <button class="tab active" type="button" data-tab="logs">
+            <span class="tab-icon" aria-hidden="true">▤</span>
+            运行日志
+          </button>
+          <button class="tab" type="button" data-tab="settings">
+            <span class="tab-icon" aria-hidden="true">⚙</span>
+            环境配置
+          </button>
+        </nav>
+        <div class="theme-switcher" aria-label="主题模式">
+          <button class="theme-option active" type="button" data-theme-mode="system">系统</button>
+          <button class="theme-option" type="button" data-theme-mode="light">浅色</button>
+          <button class="theme-option" type="button" data-theme-mode="dark">深色</button>
+        </div>
+      </div>
 
       <section class="panel card active" id="logs-panel">
         <div class="panel-header">
@@ -42,7 +82,10 @@
             <p class="label">server.exe 输出</p>
             <p class="hint">实时显示标准输出和错误输出。</p>
           </div>
-          <button class="button small" id="clear-button">清空日志</button>
+          <button class="button small" id="clear-button" type="button">
+            <span class="button-icon" aria-hidden="true">⌫</span>
+            清空日志
+          </button>
         </div>
         <pre class="logs" id="logs"></pre>
       </section>
@@ -54,8 +97,8 @@
             <p class="hint">保存后重新启动服务，配置才会生效。</p>
           </div>
           <div class="actions">
-            <button class="button small" id="reload-env-button">重新载入</button>
-            <button class="button primary small" id="save-env-button">保存配置</button>
+            <button class="button small" id="reload-env-button" type="button">重新载入</button>
+            <button class="button primary small" id="save-env-button" type="button">保存配置</button>
           </div>
         </div>
         <textarea class="env-editor" id="env-editor" spellcheck="false"></textarea>
@@ -63,6 +106,22 @@
 
       <footer id="message" class="message"></footer>
     </main>
+    <footer class="app-footer" aria-label="应用状态">
+      <div class="footer-group">
+        <span class="footer-item">
+          <span class="footer-icon" aria-hidden="true">ⓘ</span>
+          LSDB Server v0.1.0
+        </span>
+        <span class="footer-separator">•</span>
+        <span class="footer-item">Tauri v2.0.0</span>
+      </div>
+      <div class="footer-group">
+        <span class="footer-item">
+          <span class="footer-icon" aria-hidden="true">▣</span>
+          日志保留：1,000 行
+        </span>
+      </div>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

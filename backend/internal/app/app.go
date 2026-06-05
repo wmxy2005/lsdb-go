@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -61,13 +62,19 @@ func New() (*Server, error) {
 	r.POST("/api/auth/register", authHandler.Register)
 	r.POST("/api/auth/login", authHandler.Login)
 	r.GET("/api/resource", resourceHandler.Get)
+	if cfg.CmdSkipAuth {
+		r.POST("/api/cmd/:type", commandHandler.Run)
+		r.GET("/api/pc", monitorHandler.GetPC)
+	}
 
 	api := r.Group("/api")
 	api.Use(middleware.AuthRequired(authSvc))
 	api.GET("/auth/current", authHandler.Current)
 	api.POST("/auth/logout", authHandler.Logout)
-	api.POST("/cmd/:type", commandHandler.Run)
-	api.GET("/pc", monitorHandler.GetPC)
+	if !cfg.CmdSkipAuth {
+		api.POST("/cmd/:type", commandHandler.Run)
+		api.GET("/pc", monitorHandler.GetPC)
+	}
 	api.POST("/resource", resourceHandler.Upload)
 	api.DELETE("/resource", resourceHandler.Delete)
 	api.GET("/items", itemHandler.List)
@@ -85,6 +92,9 @@ func New() (*Server, error) {
 }
 
 func (s *Server) Run() error {
+	for _, line := range listenAddressDiagnostics(s.cfg.Addr, localIPv4Addrs) {
+		log.Print(line)
+	}
 	return s.Router.Run(s.cfg.Addr)
 }
 

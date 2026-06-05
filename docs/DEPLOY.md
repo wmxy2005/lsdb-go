@@ -25,6 +25,8 @@
 | `LSDB_JWT_REFRESH_DAYS` | `2` | 签发超过该天数后访问 `/auth/current` 触发续期 |
 | `AUTO_RUN_SERVER` | 无（false） | 桌面端读取：`true` 则启动桌面端时自动拉起后端 |
 
+局域网访问推荐保持 `LSDB_ADDR=:8080`，然后在其它设备访问 `http://<本机局域网IP>:8080`，例如 `http://192.168.10.87:8080`。不要在其它设备上使用 `http://localhost:8080`，因为 `localhost` 指向访问设备自身。若配置为 `127.0.0.1:8080` 或 `localhost:8080`，后端只接受本机访问。
+
 `.env.example` 内容：
 ```ini
 LSDB_ADDR=:8080
@@ -65,6 +67,15 @@ LSDB_JWT_REFRESH_DAYS=2
 | 前端 dev | `8000` | UmiJS 默认（未显式配置，根据 Umi 默认推测） |
 | 桌面端 dev 前端 | `1420` | Vite，见 `tauri.conf.json` |
 
+Windows 局域网访问排查：
+
+```powershell
+netstat -ano | findstr :8080
+ipconfig
+```
+
+确认 Windows Defender Firewall 允许 `server.exe` 入站，或开放 TCP `8080` 入站端口。若使用 `LSDB_ADDR=:80`，启动可能需要管理员权限，也可能被 IIS、Apache、Nginx 等服务占用。
+
 ---
 
 ## 2. 构建与部署
@@ -91,7 +102,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Desktop
 1. 执行 `build.ps1 -All` 生成 `build/`。
 2. 将 `build/` 整体分发到目标 Windows 机器（含 `server.exe`、`.env`、`dist/`、数据库与 `files/` 资源、桌面 exe）。
 3. 直接运行桌面 exe（托盘托管后端），或直接运行 `server.exe`。
-4. 后端通过 `LSDB_FRONTEND_DIST=./dist` 托管前端，浏览器访问 `http://localhost:8080`。
+4. 后端通过 `LSDB_FRONTEND_DIST=./dist` 托管前端；本机浏览器访问 `http://localhost:8080`，局域网设备访问 `http://<本机局域网IP>:8080`。
 5. 静态托管规则：`dist/` 内存在的文件直接返回；无扩展名路径（如 `/items/1`）回退 `index.html`（SPA）；带扩展名且未命中的资源（如 `/favicon.ico`）返回 404。
 
 ```mermaid

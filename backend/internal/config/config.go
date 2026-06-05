@@ -10,28 +10,52 @@ import (
 )
 
 type Config struct {
-	Addr           string
-	DBPath         string
-	FileRoot       string
-	FrontendDist   string
-	JWTSecret      []byte
+	Addr               string
+	DBPath             string
+	FileRoot           string
+	FrontendDist       string
+	JWTSecret          []byte
 	JWTExpireDays      int
 	JWTRefreshDays     int
+	CmdSkipAuth        bool
 	MonitorIdleTimeout time.Duration
 }
 
+var executablePath = os.Executable
+
 func Load() Config {
-	env := loadDotEnv(".env")
+	env := loadRuntimeDotEnv()
 	return Config{
-		Addr:           envDefault(env, "LSDB_ADDR", ":8080"),
-		DBPath:         envDefault(env, "LSDB_DB_PATH", defaultPath(filepath.Join("backend", "data", "test.db"), filepath.Join("data", "test.db"))),
-		FileRoot:       envDefault(env, "LSDB_FILE_ROOT", defaultPath(filepath.Join("backend", "data", "files"), filepath.Join("data", "files"))),
-		FrontendDist:   envDefault(env, "LSDB_FRONTEND_DIST", ""),
-		JWTSecret:      []byte(envDefault(env, "LSDB_JWT_SECRET", "dev-secret-change-me")),
+		Addr:               envDefault(env, "LSDB_ADDR", ":8080"),
+		DBPath:             envDefault(env, "LSDB_DB_PATH", defaultPath(filepath.Join("backend", "data", "test.db"), filepath.Join("data", "test.db"))),
+		FileRoot:           envDefault(env, "LSDB_FILE_ROOT", defaultPath(filepath.Join("backend", "data", "files"), filepath.Join("data", "files"))),
+		FrontendDist:       envDefault(env, "LSDB_FRONTEND_DIST", ""),
+		JWTSecret:          []byte(envDefault(env, "LSDB_JWT_SECRET", "dev-secret-change-me")),
 		JWTExpireDays:      envIntDefault(env, "LSDB_JWT_EXPIRE_DAYS", 7),
 		JWTRefreshDays:     envIntDefault(env, "LSDB_JWT_REFRESH_DAYS", 2),
+		CmdSkipAuth:        envBoolDefault(env, "LSDB_CMD_SKIP_AUTH", false),
 		MonitorIdleTimeout: envDurationDefault(env, "LSDB_MONITOR_IDLE_TIMEOUT", 30*time.Second),
 	}
+}
+
+func loadRuntimeDotEnv() map[string]string {
+	paths := []string{".env"}
+	if exe, err := executablePath(); err == nil {
+		if dir := filepath.Dir(exe); dir != "." {
+			paths = append(paths, filepath.Join(dir, ".env"))
+		}
+	}
+	return loadDotEnvFiles(paths...)
+}
+
+func loadDotEnvFiles(paths ...string) map[string]string {
+	env := map[string]string{}
+	for i := len(paths) - 1; i >= 0; i-- {
+		for key, value := range loadDotEnv(paths[i]) {
+			env[key] = value
+		}
+	}
+	return env
 }
 
 func envDefault(dotEnv map[string]string, key, fallback string) string {
@@ -56,6 +80,14 @@ func envDurationDefault(dotEnv map[string]string, key string, fallback time.Dura
 		return time.Duration(n) * time.Second
 	}
 	return fallback
+}
+
+func envBoolDefault(dotEnv map[string]string, key string, fallback bool) bool {
+	b, err := strconv.ParseBool(envDefault(dotEnv, key, ""))
+	if err != nil {
+		return fallback
+	}
+	return b
 }
 
 func envIntDefault(dotEnv map[string]string, key string, fallback int) int {
@@ -92,7 +124,7 @@ func loadDotEnv(path string) map[string]string {
 		if !ok {
 			continue
 		}
-		key = strings.TrimSpace(key)
+		key = strings.TrimPrefix(strings.TrimSpace(key), "\ufeff")
 		value = strings.TrimSpace(value)
 		if key == "" {
 			continue

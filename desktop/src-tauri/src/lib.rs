@@ -1,16 +1,18 @@
 use serde::Serialize;
 use std::{
+    collections::VecDeque,
     env, fs,
     io::{BufRead, BufReader},
     path::PathBuf,
     process::{Child, Command, Stdio},
     sync::{Arc, Mutex},
     thread,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tauri::{
-    menu::{Menu, MenuItem},
-    tray::TrayIconBuilder,
+    image::Image,
+    menu::{IconMenuItem, Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, State, WindowEvent,
 };
 
@@ -20,12 +22,32 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+const LOG_HISTORY_LIMIT: usize = 1000;
+
 struct ServerProcess {
     child: Option<Child>,
+    started_at: Option<SystemTime>,
 }
 
 #[derive(Clone)]
 struct ServerManager(Arc<Mutex<ServerProcess>>);
+
+struct LogHistoryState {
+    entries: VecDeque<LogPayload>,
+    next_id: u64,
+}
+
+#[derive(Clone)]
+struct LogHistory(Arc<Mutex<LogHistoryState>>);
+
+#[derive(Clone)]
+struct FrontendReady(Arc<Mutex<bool>>);
+
+#[derive(Clone)]
+struct TrayMenuState {
+    start_item: IconMenuItem<tauri::Wry>,
+    stop_item: IconMenuItem<tauri::Wry>,
+}
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,12 +55,103 @@ struct ServerStatus {
     running: bool,
     pid: Option<u32>,
     server_path: String,
+    started_at_ms: Option<u128>,
 }
 
 #[derive(Clone, Serialize)]
 struct LogPayload {
+    id: u64,
     line: String,
     stream: &'static str,
+}
+
+fn blend_pixel(rgba: &mut [u8], width: u32, x: u32, y: u32, color: [u8; 3], alpha: f32) {
+    let index = ((y * width + x) * 4) as usize;
+    let alpha = alpha.clamp(0.0, 1.0);
+    rgba[index] = color[0];
+    rgba[index + 1] = color[1];
+    rgba[index + 2] = color[2];
+    rgba[index + 3] = (alpha * 255.0).round() as u8;
+}
+
+fn menu_icon<F>(background: [u8; 3], mut glyph_alpha: F) -> Image<'static>
+where
+    F: FnMut(f32, f32) -> f32,
+{
+    const SIZE: u32 = 24;
+    const CENTER: f32 = 11.5;
+    const RADIUS: f32 = 10.0;
+    const EDGE: f32 = 1.0;
+
+    let mut rgba = vec![0; (SIZE * SIZE * 4) as usize];
+    for y in 0..SIZE {
+        for x in 0..SIZE {
+            let px = x as f32 + 0.5;
+            let py = y as f32 + 0.5;
+            let distance = ((px - CENTER).powi(2) + (py - CENTER).powi(2)).sqrt();
+            let background_alpha = ((RADIUS + EDGE - distance) / EDGE).clamp(0.0, 1.0);
+            if background_alpha > 0.0 {
+                blend_pixel(&mut rgba, SIZE, x, y, background, background_alpha);
+            }
+
+            let alpha = glyph_alpha(px, py);
+            if alpha > 0.0 {
+                blend_pixel(&mut rgba, SIZE, x, y, [255, 255, 255], alpha);
+            }
+        }
+    }
+    Image::new_owned(rgba, SIZE, SIZE)
+}
+
+fn start_menu_icon() -> Image<'static> {
+    menu_icon([34, 197, 94], |x, y| {
+        let left = 8.0;
+        let top = 6.5;
+        let bottom = 17.5;
+        let right = 17.0;
+        let center_y = 12.0;
+
+        let half_height_at_x = (x - left) * (bottom - top) / (2.0 * (right - left));
+        let inside = x >= left && x <= right && (y - center_y).abs() <= half_height_at_x;
+        let edge = ((half_height_at_x - (y - center_y).abs()).min(x - left).min(right - x)) / 0.9;
+        if inside { edge.clamp(0.0, 1.0) } else { 0.0 }
+    })
+}
+
+fn stop_menu_icon() -> Image<'static> {
+    menu_icon([239, 68, 68], |x, y| {
+        let left = 7.5;
+        let right = 16.5;
+        let top = 7.5;
+        let bottom = 16.5;
+        let inside = x >= left && x <= right && y >= top && y <= bottom;
+        let edge = (x - left)
+            .min(right - x)
+            .min(y - top)
+            .min(bottom - y)
+            / 0.8;
+        if inside { edge.clamp(0.0, 1.0) } else { 0.0 }
+    })
+}
+
+fn show_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+fn toggle_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let is_visible = window.is_visible().unwrap_or(false);
+        let is_minimized = window.is_minimized().unwrap_or(false);
+        if is_visible && !is_minimized {
+            let _ = window.hide();
+        } else {
+            show_main_window(app);
+        }
+    }
 }
 
 fn server_dir() -> Result<PathBuf, String> {
@@ -101,33 +214,78 @@ fn status(manager: &ServerManager) -> Result<ServerStatus, String> {
             Ok(None) => Some(child.id()),
             Ok(Some(_)) => {
                 process.child = None;
+                process.started_at = None;
                 None
             }
             Err(error) => return Err(format!("无法检查后端状态: {error}")),
         },
-        None => None,
+        None => {
+            process.started_at = None;
+            None
+        }
+    };
+    let started_at_ms = if pid.is_some() {
+        process
+            .started_at
+            .and_then(|started_at| started_at.duration_since(UNIX_EPOCH).ok())
+            .map(|duration| duration.as_millis())
+    } else {
+        None
     };
     Ok(ServerStatus {
         running: pid.is_some(),
         pid,
         server_path: server_path()?.display().to_string(),
+        started_at_ms,
     })
 }
 
 fn emit_status(app: &AppHandle, manager: &ServerManager) {
     if let Ok(current) = status(manager) {
+        sync_tray_menu(app, &current);
         let _ = app.emit("server-status", current);
     }
 }
 
+fn sync_tray_menu(app: &AppHandle, current: &ServerStatus) {
+    if let Some(menu_state) = app.try_state::<TrayMenuState>() {
+        let _ = menu_state.start_item.set_enabled(!current.running);
+        let _ = menu_state.stop_item.set_enabled(current.running);
+    }
+}
+
 fn emit_log(app: &AppHandle, stream: &'static str, line: impl Into<String>) {
-    let _ = app.emit(
-        "log-line",
+    let line = line.into();
+    let payload = if let Some(history) = app.try_state::<LogHistory>() {
+        match history.0.lock() {
+            Ok(mut history) => {
+                let payload = LogPayload {
+                    id: history.next_id,
+                    line,
+                    stream,
+                };
+                history.next_id += 1;
+                history.entries.push_back(payload.clone());
+                while history.entries.len() > LOG_HISTORY_LIMIT {
+                    history.entries.pop_front();
+                }
+                payload
+            }
+            Err(_) => LogPayload {
+                id: 0,
+                line,
+                stream,
+            },
+        }
+    } else {
         LogPayload {
-            line: line.into(),
+            id: 0,
+            line,
             stream,
-        },
-    );
+        }
+    };
+
+    let _ = app.emit("log-line", payload);
 }
 
 fn stream_logs<R: std::io::Read + Send + 'static>(app: AppHandle, stream: &'static str, reader: R) {
@@ -180,6 +338,11 @@ fn start(app: &AppHandle, manager: &ServerManager) -> Result<ServerStatus, Strin
         .lock()
         .map_err(|_| "后端进程状态不可用".to_string())?
         .child = Some(child);
+    manager
+        .0
+        .lock()
+        .map_err(|_| "server process state unavailable".to_string())?
+        .started_at = Some(SystemTime::now());
     emit_log(app, "system", format!("server.exe 已启动，PID {pid}"));
     emit_status(app, manager);
 
@@ -208,6 +371,11 @@ fn stop(app: &AppHandle, manager: &ServerManager) -> Result<ServerStatus, String
         .map_err(|_| "后端进程状态不可用".to_string())?
         .child
         .take();
+    manager
+        .0
+        .lock()
+        .map_err(|_| "server process state unavailable".to_string())?
+        .started_at = None;
     if let Some(mut child) = child {
         let pid = child.id();
         child
@@ -217,6 +385,7 @@ fn stop(app: &AppHandle, manager: &ServerManager) -> Result<ServerStatus, String
         emit_log(app, "system", format!("server.exe 已停止，PID {pid}"));
     }
     let current = status(manager)?;
+    sync_tray_menu(app, &current);
     let _ = app.emit("server-status", current.clone());
     Ok(current)
 }
@@ -260,34 +429,108 @@ fn write_env(content: String) -> Result<(), String> {
     fs::write(&path, content).map_err(|error| format!("无法写入 {}: {error}", path.display()))
 }
 
+#[tauri::command]
+fn get_log_history(history: State<'_, LogHistory>) -> Result<Vec<LogPayload>, String> {
+    let history = history
+        .0
+        .lock()
+        .map_err(|_| "log history unavailable".to_string())?;
+    Ok(history.entries.iter().cloned().collect())
+}
+
+#[tauri::command]
+fn frontend_ready(
+    app: AppHandle,
+    manager: State<'_, ServerManager>,
+    ready: State<'_, FrontendReady>,
+) -> Result<ServerStatus, String> {
+    let should_check_auto_run = {
+        let mut ready = ready
+            .0
+            .lock()
+            .map_err(|_| "frontend ready state unavailable".to_string())?;
+        if *ready {
+            false
+        } else {
+            *ready = true;
+            true
+        }
+    };
+
+    if should_check_auto_run && auto_run_server_enabled()? {
+        emit_log(
+            &app,
+            "system",
+            "AUTO_RUN_SERVER=true, starting server.exe automatically",
+        );
+        if let Err(error) = start(&app, &manager) {
+            emit_log(&app, "system", error);
+        }
+    }
+
+    status(&manager)
+}
+
 pub fn run() {
-    let manager = ServerManager(Arc::new(Mutex::new(ServerProcess { child: None })));
+    let manager = ServerManager(Arc::new(Mutex::new(ServerProcess {
+        child: None,
+        started_at: None,
+    })));
+    let history = LogHistory(Arc::new(Mutex::new(LogHistoryState {
+        entries: VecDeque::with_capacity(LOG_HISTORY_LIMIT),
+        next_id: 1,
+    })));
+    let frontend_ready_state = FrontendReady(Arc::new(Mutex::new(false)));
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
         .manage(manager.clone())
+        .manage(history)
+        .manage(frontend_ready_state)
         .invoke_handler(tauri::generate_handler![
             get_server_status,
             start_server,
             stop_server,
             restart_server,
             read_env,
-            write_env
+            write_env,
+            get_log_history,
+            frontend_ready
         ])
         .setup(move |app| {
             let show = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;
-            let start_item = MenuItem::with_id(app, "start", "启动后端", true, None::<&str>)?;
-            let stop_item = MenuItem::with_id(app, "stop", "停止后端", true, None::<&str>)?;
+            let start_item = IconMenuItem::with_id(
+                app,
+                "start",
+                "启动后端",
+                true,
+                Some(start_menu_icon()),
+                None::<&str>,
+            )?;
+            let stop_item = IconMenuItem::with_id(
+                app,
+                "stop",
+                "停止后端",
+                true,
+                Some(stop_menu_icon()),
+                None::<&str>,
+            )?;
             let quit = MenuItem::with_id(app, "quit", "退出程序", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &start_item, &stop_item, &quit])?;
+            app.manage(TrayMenuState {
+                start_item: start_item.clone(),
+                stop_item: stop_item.clone(),
+            });
+            emit_status(app.handle(), &manager);
             let tray_manager = manager.clone();
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
+                .show_menu_on_left_click(false)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        show_main_window(app);
                     }
                     "start" => {
                         if let Err(error) = start(app, &tray_manager) {
@@ -305,18 +548,17 @@ pub fn run() {
                     }
                     _ => {}
                 })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        toggle_main_window(tray.app_handle());
+                    }
+                })
                 .build(app)?;
-
-            if auto_run_server_enabled()? {
-                emit_log(
-                    app.handle(),
-                    "system",
-                    "AUTO_RUN_SERVER=true，正在自动启动 server.exe",
-                );
-                if let Err(error) = start(app.handle(), &manager) {
-                    emit_log(app.handle(), "system", error);
-                }
-            }
 
             Ok(())
         })
