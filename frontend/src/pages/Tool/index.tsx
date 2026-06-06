@@ -1,8 +1,8 @@
-import { getPcStats, shutdown } from '@/services/lsdb/LsdbController';
+import { getPcStatsStreamUrl, shutdown } from '@/services/lsdb/LsdbController';
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import { Alert, Button, Card, Flex, message, Switch, Typography } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Monitor from './components/Monitor';
 
 type MonitorSample = {
@@ -10,20 +10,12 @@ type MonitorSample = {
   value: number | Record<string, number>;
 };
 
-const NETWORK_METRICS = [
-  {
-    key: 'uploadSpeed',
-    label: '上传速度',
-    color: 'rgb(54, 162, 235)',
-    fillColor: 'rgba(54, 162, 235, 0.2)',
-  },
-  {
-    key: 'downloadSpeed',
-    label: '下载速度',
-    color: 'rgb(255, 99, 132)',
-    fillColor: 'rgba(255, 99, 132, 0.2)',
-  },
-];
+type PCStreamSample = {
+  time?: string;
+  cpu?: number;
+  uploadSpeed?: number;
+  downloadSpeed?: number;
+};
 
 const formatMonitorValue = (value: number, unit: string) =>
   `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`;
@@ -35,12 +27,31 @@ const ToolPage: React.FC = () => {
   const [showMonitor, setShowMonitor] = useState<boolean>(false);
   const [cpuSample, setCpuSample] = useState<MonitorSample>();
   const [networkSample, setNetworkSample] = useState<MonitorSample>();
+  const networkMetrics = useMemo(
+    () => [
+      {
+        key: 'uploadSpeed',
+        label: intl.formatMessage({ id: 'tool.monitor.network.uploadSpeed' }),
+        color: 'rgb(54, 162, 235)',
+        fillColor: 'rgba(54, 162, 235, 0.2)',
+      },
+      {
+        key: 'downloadSpeed',
+        label: intl.formatMessage({
+          id: 'tool.monitor.network.downloadSpeed',
+        }),
+        color: 'rgb(255, 99, 132)',
+        fillColor: 'rgba(255, 99, 132, 0.2)',
+      },
+    ],
+    [intl],
+  );
 
   const shutdownClick = async (status: string) => {
     setLoading(status);
     const res = await shutdown(status === 'restart');
     if (res?.success) {
-      messageApi.info('success');
+      messageApi.info(intl.formatMessage({ id: 'success' }));
     } else {
       messageApi.error(res?.message);
     }
@@ -49,37 +60,63 @@ const ToolPage: React.FC = () => {
     }, 1000);
   };
 
-  const updatePcData = useCallback(async () => {
-    try {
-      const res = await getPcStats();
-      if (res?.success && res.data?.time) {
-        setCpuSample({
-          time: res.data.time,
-          value: res.data.cpu ?? 0,
-        });
-        setNetworkSample({
-          time: res.data.time,
-          value: {
-            uploadSpeed: res.data.uploadSpeed ?? 0,
-            downloadSpeed: res.data.downloadSpeed ?? 0,
-          },
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
-
   useEffect(() => {
     if (!showMonitor) {
       return;
     }
 
-    updatePcData();
-    const intervalId = setInterval(updatePcData, 1000);
+    const streamUrl = getPcStatsStreamUrl();
+    let active = true;
+    const eventSource = new EventSource(streamUrl, {
+      withCredentials: true,
+    });
 
-    return () => clearInterval(intervalId);
-  }, [showMonitor, updatePcData]);
+    const handleMessage = (event: MessageEvent<string>) => {
+      let data: PCStreamSample;
+      try {
+        data = JSON.parse(event.data) as PCStreamSample;
+      } catch (err) {
+        console.error(err);
+        return;
+      }
+      if (!active || !data.time) {
+        return;
+      }
+      setCpuSample({
+        time: data.time,
+        value: data.cpu ?? 0,
+      });
+      setNetworkSample({
+        time: data.time,
+        value: {
+          uploadSpeed: data.uploadSpeed ?? 0,
+          downloadSpeed: data.downloadSpeed ?? 0,
+        },
+      });
+    };
+
+    eventSource.onmessage = handleMessage;
+    eventSource.addEventListener('message', handleMessage);
+
+    eventSource.onerror = () => {
+      if (!active) {
+        return;
+      }
+      active = false;
+      eventSource.close();
+      setShowMonitor(false);
+      console.error('PC monitor SSE connection failed');
+      messageApi.error(
+        intl.formatMessage({ id: 'tool.monitor.connectionClosed' }),
+      );
+    };
+
+    return () => {
+      active = false;
+      eventSource.removeEventListener('message', handleMessage);
+      eventSource.close();
+    };
+  }, [intl, messageApi, showMonitor]);
 
   return (
     <PageContainer
@@ -125,10 +162,16 @@ const ToolPage: React.FC = () => {
             {intl.formatMessage({ id: 'restart' })}
           </Button>
           <Flex gap="large" align="left">
-            <Typography.Text strong>{'监控'}</Typography.Text>
+            <Typography.Text strong>
+              {intl.formatMessage({ id: 'tool.monitor.label' })}
+            </Typography.Text>
             <Switch
-              checkedChildren={'显示'}
-              unCheckedChildren={'隐藏'}
+              checkedChildren={intl.formatMessage({
+                id: 'tool.monitor.show',
+              })}
+              unCheckedChildren={intl.formatMessage({
+                id: 'tool.monitor.hide',
+              })}
               checked={showMonitor}
               onChange={(checked: boolean) => setShowMonitor(checked)}
               style={{ width: '5em' }}
@@ -137,20 +180,40 @@ const ToolPage: React.FC = () => {
           {showMonitor ? (
             <div style={styles.monitorGrid}>
               <Monitor
-                title="实时 CPU 占用率 (%)"
-                datasetLabel="CPU 占用率"
-                yAxisTitle="占用率 (%)"
+                title={intl.formatMessage({ id: 'tool.monitor.cpu.title' })}
+                datasetLabel={intl.formatMessage({
+                  id: 'tool.monitor.cpu.dataset',
+                })}
+                yAxisTitle={intl.formatMessage({
+                  id: 'tool.monitor.cpu.yAxis',
+                })}
+                xAxisTitle={intl.formatMessage({
+                  id: 'tool.monitor.xAxis',
+                })}
+                emptyValueText={intl.formatMessage({
+                  id: 'tool.monitor.emptyValue',
+                })}
                 min={0}
                 max={100}
                 sample={cpuSample}
                 valueFormatter={(value) => formatMonitorValue(value, '%')}
               />
               <Monitor
-                title="实时网络速度"
-                yAxisTitle="速度 (MB/s)"
+                title={intl.formatMessage({
+                  id: 'tool.monitor.network.title',
+                })}
+                yAxisTitle={intl.formatMessage({
+                  id: 'tool.monitor.network.yAxis',
+                })}
+                xAxisTitle={intl.formatMessage({
+                  id: 'tool.monitor.xAxis',
+                })}
+                emptyValueText={intl.formatMessage({
+                  id: 'tool.monitor.emptyValue',
+                })}
                 min={0}
                 autoScaleY
-                metrics={NETWORK_METRICS}
+                metrics={networkMetrics}
                 sample={networkSample}
                 valueFormatter={(value) => formatMonitorValue(value, 'MB/s')}
               />

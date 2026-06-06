@@ -65,6 +65,9 @@ func New() (*Server, error) {
 	if cfg.CmdSkipAuth {
 		r.POST("/api/cmd/:type", commandHandler.Run)
 		r.GET("/api/pc", monitorHandler.GetPC)
+		r.GET("/api/pc/stream", monitorHandler.StreamPC)
+	} else {
+		r.GET("/api/pc/stream", middleware.AuthHeaderOrQueryRequired(authSvc), monitorHandler.StreamPC)
 	}
 
 	api := r.Group("/api")

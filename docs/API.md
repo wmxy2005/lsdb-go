@@ -265,9 +265,16 @@ erDiagram
 - 非 Windows 平台返回错误（原意 400）。
 
 #### GET /api/pc（需鉴权）
-- 说明：返回整机 CPU 占用率缓存，供 `/tool` 页监控图表轮询。
-- 成功：`{ success: true, data: { time, cpu }, errorCode: 0 }`
+- 说明：返回整机 CPU 占用率与网络速度缓存，保留为监控调试与兼容接口。
+- 成功：`{ success: true, data: { time, cpu, uploadSpeed, downloadSpeed }, errorCode: 0 }`
   - `time`：采样时间，格式 `HH:MM:SS`
   - `cpu`：整机 CPU 占用百分比（0~100）
+  - `uploadSpeed` / `downloadSpeed`：上传/下载速度，单位 MB/s
 - 语义：HTTP 请求只读上一采样周期写入的缓存；goroutine 在收到请求后按需启动（每 1s 采样），超过 `LSDB_MONITOR_IDLE_TIMEOUT`（默认 30s）无新请求则自动停止。
 - 首次调用（或采样重启后尚无新样本）返回 `cpu: 0`。
+
+#### GET /api/pc/stream（需鉴权）
+- 说明：SSE 实时监控流，供 `/tool` 页监控图表使用。
+- 鉴权：浏览器 `EventSource` 无法设置 `Authorization` 头，需通过查询参数传 token：`/api/pc/stream?token=<jwt>`。`LSDB_CMD_SKIP_AUTH=true` 时可不传。
+- 事件：默认 `message` 事件，每 1s 推送一次 JSON：`{ time, cpu, uploadSpeed, downloadSpeed }`。
+- 连接关闭后停止刷新活跃时间；超过 `LSDB_MONITOR_IDLE_TIMEOUT` 后后端采样自动停止。

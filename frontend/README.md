@@ -148,7 +148,7 @@ pnpm build        # 产物输出到 frontend/dist
 
 ## 已知问题 / 注意事项
 
-- `pages/Tool` 的 CPU 监控调用 `GET /api/pc`（需登录）；首次返回 `cpu: 0`，关闭开关超过空闲超时后后端采样自动停止。
+- `pages/Tool` 的 CPU/网络监控使用 `GET /api/pc/stream` SSE 实时流（需登录）；首次返回 `cpu: 0`，关闭开关超过空闲超时后后端采样自动停止。`GET /api/pc` 仍保留为兼容接口。
 - `src/utils/{jwt.ts, prisma.ts}` 及依赖 `bcryptjs`、`jsonwebtoken` 可能为脚手架遗留，实际认证由后端完成（需确认是否使用）。
 - `DIR_SEP` 为 `/`，用于拼接传给后端的相对资源路径（`opendir` 等）；后端会规范化为本机路径。
 

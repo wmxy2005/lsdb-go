@@ -1,5 +1,5 @@
 import { CONFIG } from '@/constants';
-import { apiRequest } from './client';
+import { apiRequest, getToken } from './client';
 
 export async function authLogin(
   params: {},
@@ -145,4 +145,16 @@ export async function getPcStats() {
   return apiRequest<LSDB.Result_PCInfo__>(CONFIG.apiUrl + '/api/pc', {
     method: 'GET',
   });
+}
+
+export function getPcStatsStreamUrl() {
+  const baseUrl = CONFIG.apiUrl + '/api/pc/stream';
+  const token = getToken();
+  if (!token) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(
+    token,
+  )}`;
 }

@@ -45,6 +45,8 @@ interface MonitorProps {
   title: string;
   datasetLabel?: string;
   yAxisTitle?: string;
+  xAxisTitle: string;
+  emptyValueText: string;
   min?: number;
   max?: number;
   autoScaleY?: boolean;
@@ -69,19 +71,21 @@ function buildDataset(metric: Required<MonitorMetric>, maxDataPoints: number) {
   };
 }
 
-function defaultValueFormatter(value: number) {
+function defaultValueFormatter(value: number, emptyValueText: string) {
   return Number.isFinite(value)
     ? value.toLocaleString(undefined, {
         maximumFractionDigits: 2,
       })
-    : '--';
+    : emptyValueText;
 }
 
 export default function Monitor(props: MonitorProps) {
   const {
     title,
-    datasetLabel = 'Metric',
+    datasetLabel,
     yAxisTitle,
+    xAxisTitle,
+    emptyValueText,
     min = 0,
     max = 100,
     autoScaleY = false,
@@ -90,7 +94,7 @@ export default function Monitor(props: MonitorProps) {
     maxDataPoints = DEFAULT_MAX_DATA_POINTS,
     metrics,
     sample,
-    valueFormatter = defaultValueFormatter,
+    valueFormatter,
   } = props;
 
   const metricDefinitions = useMemo<Required<MonitorMetric>[]>(() => {
@@ -109,7 +113,7 @@ export default function Monitor(props: MonitorProps) {
     return [
       {
         key: 'value',
-        label: datasetLabel,
+        label: datasetLabel ?? '',
         color,
         fillColor,
       },
@@ -164,7 +168,7 @@ export default function Monitor(props: MonitorProps) {
           title: { display: Boolean(yAxisTitle), text: yAxisTitle },
         },
         x: {
-          title: { display: true, text: '系统时间' },
+          title: { display: true, text: xAxisTitle },
           ticks: { maxTicksLimit: 6 },
         },
       },
@@ -172,7 +176,7 @@ export default function Monitor(props: MonitorProps) {
         legend: { display: metricDefinitions.length > 1 },
       },
     }),
-    [metricDefinitions.length, min, yAxisMax, yAxisTitle],
+    [metricDefinitions.length, min, xAxisTitle, yAxisMax, yAxisTitle],
   );
 
   const currentValues = useMemo(
@@ -255,8 +259,10 @@ export default function Monitor(props: MonitorProps) {
             <span style={styles.valueLabel}>{item.label}</span>
             <span style={styles.valueText}>
               {item.value === undefined
-                ? '--'
-                : valueFormatter(item.value, item.key)}
+                ? emptyValueText
+                : valueFormatter
+                ? valueFormatter(item.value, item.key)
+                : defaultValueFormatter(item.value, emptyValueText)}
             </span>
           </div>
         ))}
