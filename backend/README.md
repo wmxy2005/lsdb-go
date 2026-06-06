@@ -21,7 +21,7 @@ Configuration is loaded from the `.env` file in the current working directory fi
 - `LSDB_FILE_ROOT`: resource root, default `backend/data/files`.
 - `LSDB_FRONTEND_DIST`: frontend build output directory. Empty by default; use `../frontend/dist` to serve the Vite build from the backend.
 - `LSDB_JWT_SECRET`: JWT signing secret, default development value.
-- `LSDB_CMD_SKIP_AUTH`: skip authentication for command and monitor endpoints, default `false`. When set to `true`, `/api/cmd/:type` and `/api/pc` are exposed without authentication; keep it disabled outside local or trusted environments.
+- `LSDB_CMD_SKIP_AUTH`: skip authentication for command, monitor, and speed test endpoints, default `false`. When set to `true`, `/api/cmd/:type`, `/api/pc`, and `/api/speedtest/*` are exposed without authentication; keep it disabled outside local or trusted environments.
 
 When running from `backend`, copy `.env.example` to `.env` and adjust values as needed. Packaged builds can keep `.env` next to `server.exe` (for example `build/.env`), including UTF-8 files with a BOM.
 

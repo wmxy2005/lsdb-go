@@ -1,0 +1,657 @@
+.speed-page-container .ant-pro-page-container-warp,
+.speed-page-container .ant-page-header,
+.speed-page-container .ant-pro-page-container-affix {
+  min-height: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.speed-page-container .ant-pro-page-container-children-container {
+  padding-top: 0;
+}
+
+.speed-page {
+  color: #0f172a;
+}
+
+.speed-hero {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(320px, 1.25fr) minmax(
+      260px,
+      0.9fr
+    );
+  gap: 24px;
+  align-items: center;
+  min-height: 360px;
+  padding: 22px 4px 10px;
+}
+
+.speed-hero-copy {
+  padding-left: 8px;
+}
+
+.speed-hero-copy h1.ant-typography {
+  margin-bottom: 14px;
+  color: #0f172a;
+  font-size: 38px;
+  line-height: 1.28;
+  letter-spacing: 0;
+}
+
+.speed-hero-copy .ant-typography {
+  max-width: 280px;
+  color: #536179;
+}
+
+.speed-hero-copy .ant-btn-primary {
+  min-width: 156px;
+  height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--speed-primary);
+  box-shadow: 0 14px 28px var(--speed-primary-shadow);
+}
+
+.speed-hero-copy .ant-btn-primary:not(:disabled):hover {
+  background: var(--speed-primary-hover);
+}
+
+.speed-hero-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 26px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.speed-hero-controls .anticon {
+  color: #1677ff;
+}
+
+.speed-size-select {
+  width: 124px;
+}
+
+.speed-size-select .ant-select-selector {
+  height: 34px !important;
+  border: 1px solid rgba(22, 119, 255, 0.2) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.speed-size-select .ant-select-selection-item {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 32px !important;
+}
+
+.speed-size-select .ant-select-arrow {
+  color: #1677ff;
+}
+
+.speed-size-select:not(.ant-select-disabled):hover .ant-select-selector,
+.speed-size-select.ant-select-focused .ant-select-selector {
+  border-color: rgba(22, 119, 255, 0.52) !important;
+  box-shadow: 0 12px 26px rgba(22, 119, 255, 0.16) !important;
+}
+
+.speed-size-dropdown {
+  padding: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+}
+
+.speed-size-dropdown .ant-select-item {
+  min-height: 32px;
+  border-radius: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.speed-size-dropdown .ant-select-item-option-selected {
+  background: rgba(22, 119, 255, 0.1);
+  color: #1677ff;
+}
+
+.speed-gauge-wrap {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
+.speed-gauge {
+  position: relative;
+  width: min(500px, 100%);
+  aspect-ratio: 480 / 310;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.speed-gauge-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.speed-gauge-arc-bg {
+  fill: none;
+  stroke: rgba(22, 119, 255, 0.12);
+  stroke-linecap: round;
+  stroke-width: 20;
+}
+
+.speed-gauge-arc-value {
+  fill: none;
+  stroke: url("#speedGaugeGradient");
+  stroke-linecap: butt;
+  stroke-width: 20;
+}
+
+.speed-gauge-tick,
+.speed-gauge-tick-major {
+  stroke: rgba(80, 112, 166, 0.32);
+  stroke-linecap: round;
+}
+
+.speed-gauge-tick {
+  stroke-width: 2.75;
+}
+
+.speed-gauge-tick-major {
+  stroke-width: 4.25;
+}
+
+.speed-gauge-tick-label {
+  fill: #0f172a;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.speed-gauge-end-dot {
+  fill: #ffffff;
+  stroke: currentColor;
+  stroke-width: 5;
+}
+
+.speed-gauge-content {
+  position: absolute;
+  right: 12%;
+  bottom: 4%;
+  left: 12%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.speed-gauge-label {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.speed-gauge-content strong {
+  max-width: 100%;
+  color: #0f172a;
+  font-size: 62px;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.speed-gauge-content strong.speed-gauge-value-compact {
+  font-size: 52px;
+}
+
+.speed-gauge-content strong.speed-gauge-value-dense {
+  font-size: 44px;
+}
+
+.speed-gauge-unit {
+  color: #334155;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.speed-gauge-scale-note {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.speed-sparkline {
+  display: block;
+  overflow: visible;
+  color: currentColor;
+}
+
+.speed-gauge-content .speed-sparkline {
+  width: min(150px, 62%);
+  height: 30px;
+  margin-top: 5px;
+}
+
+.speed-sparkline-fill {
+  fill: currentColor;
+  opacity: 0.08;
+}
+
+.speed-sparkline-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.speed-phase {
+  width: min(460px, 100%);
+  margin-top: 4px;
+  text-align: center;
+}
+
+.speed-phase .ant-progress {
+  margin-top: 4px;
+}
+
+.speed-phase .ant-progress-line {
+  display: block;
+}
+
+.speed-phase .ant-progress-outer {
+  padding-inline-end: 0 !important;
+}
+
+.speed-phase .ant-progress-bg {
+  min-width: 0;
+}
+
+.speed-side-metrics {
+  display: grid;
+  gap: 10px;
+}
+
+.speed-metric-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  width: 100%;
+  min-height: 78px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.speed-metric-card-with-chart {
+  grid-template-columns: 42px minmax(0, 1fr) 118px;
+}
+
+.speed-metric-card:hover {
+  border-color: rgba(22, 119, 255, 0.38);
+}
+
+.speed-metric-icon,
+.speed-summary-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 21px;
+}
+
+.speed-metric-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.speed-metric-body > span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.speed-metric-body strong {
+  color: #0f172a;
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speed-metric-body small {
+  margin-left: 6px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.speed-metric-card .speed-sparkline {
+  width: 118px;
+  height: 42px;
+  justify-self: end;
+}
+
+.speed-blue {
+  color: #1677ff;
+}
+
+.speed-purple {
+  color: #8a2be2;
+}
+
+.speed-cyan {
+  color: #13c2c2;
+}
+
+.speed-orange {
+  color: #fa8c16;
+}
+
+.speed-summary-card,
+.speed-panel {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.speed-summary-card {
+  margin-bottom: 16px;
+}
+
+.speed-summary-item {
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  border-right: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.speed-summary-item > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.speed-summary-item small {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.speed-summary-item strong {
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.speed-summary-item em {
+  color: #475569;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.speed-server {
+  color: #4864b1;
+  border-right: 0;
+}
+
+.speed-chart {
+  height: 254px;
+}
+
+.speed-results-card .ant-card-body {
+  height: 286px;
+}
+
+.speed-recent-list {
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 0;
+  height: 254px;
+  min-width: 0;
+}
+
+.speed-recent-row {
+  display: grid;
+  grid-template-columns: 26px minmax(74px, 1fr) minmax(86px, 0.9fr) minmax(
+      82px,
+      0.85fr
+    ) minmax(62px, 0.65fr) minmax(62px, 0.65fr) 16px;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  color: #0f172a;
+}
+
+.speed-recent-row:last-child {
+  border-bottom: 0;
+}
+
+.speed-recent-time {
+  min-width: 0;
+  color: #475569;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.speed-recent-metric {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.speed-recent-metric strong {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.speed-recent-metric small {
+  color: #475569;
+  font-size: 11px;
+}
+
+.speed-recent-arrow {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.speed-recent-empty {
+  display: flex;
+  grid-row: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.speed-panel + .speed-panel,
+.speed-page > .speed-panel {
+  margin-top: 16px;
+}
+
+.speed-result-wifi {
+  color: #1677ff;
+  font-size: 18px;
+}
+
+.speed-page .ant-card-head-title {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.speed-page .ant-table {
+  color: #0f172a;
+}
+
+@media (max-width: 1100px) {
+  .speed-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .speed-hero-copy {
+    padding-left: 0;
+  }
+
+  .speed-side-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .speed-metric-card-with-chart {
+    grid-template-columns: 42px minmax(0, 1fr) 104px;
+  }
+
+  .speed-metric-card .speed-sparkline {
+    width: 104px;
+  }
+
+  .speed-summary-item {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .speed-results-card .ant-card-body {
+    height: auto;
+  }
+
+  .speed-recent-list {
+    height: auto;
+    min-height: 254px;
+    grid-template-rows: none;
+  }
+
+  .speed-recent-row {
+    grid-template-columns: 24px minmax(0, 1fr) 14px;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  .speed-recent-time {
+    grid-column: 2 / 3;
+  }
+
+  .speed-recent-metric {
+    grid-column: 2 / 3;
+    display: grid;
+    grid-template-columns: 18px minmax(54px, max-content) 34px;
+    gap: 6px;
+  }
+
+  .speed-recent-arrow {
+    grid-column: 3 / 4;
+    grid-row: 1 / 6;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 576px) {
+  .speed-hero {
+    gap: 12px;
+    padding-top: 8px;
+  }
+
+  .speed-hero-copy h1.ant-typography {
+    font-size: 32px;
+  }
+
+  .speed-side-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .speed-metric-card-with-chart {
+    grid-template-columns: 42px minmax(0, 1fr) 96px;
+  }
+
+  .speed-metric-card .speed-sparkline {
+    width: 96px;
+    height: 36px;
+  }
+
+  .speed-gauge-content {
+    bottom: 6%;
+  }
+
+  .speed-gauge-content strong {
+    font-size: 42px;
+  }
+
+  .speed-gauge-content strong.speed-gauge-value-compact {
+    font-size: 36px;
+  }
+
+  .speed-gauge-content strong.speed-gauge-value-dense {
+    font-size: 31px;
+  }
+
+  .speed-gauge-unit {
+    font-size: 16px;
+  }
+
+  .speed-gauge-scale-note {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  .speed-gauge-content .speed-sparkline {
+    width: min(126px, 58%);
+    height: 24px;
+    margin-top: 3px;
+  }
+
+  .speed-gauge-tick-label {
+    font-size: 15px;
+  }
+
+  .speed-phase {
+    margin-top: 2px;
+  }
+
+  .speed-summary-item {
+    padding: 0;
+  }
+}

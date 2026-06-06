@@ -44,11 +44,11 @@ export default defineConfig({
       path: '/tool',
       component: './Tool',
     },
-    // {
-    //   name: 'speedTest',
-    //   path: '/speedTest',
-    //   component: './SpeedTest',
-    // },
+    {
+      name: 'speedTest',
+      path: '/speedTest',
+      component: './SpeedTest',
+    },
     // {
     //   name: 'submenu',
     //   path: '/sub',

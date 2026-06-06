@@ -57,6 +57,7 @@ func New() (*Server, error) {
 	itemHandler := handler.NewItemHandler(itemSvc, favoriteSvc)
 	roleHandler := handler.NewRoleHandler(roleSvc)
 	resourceHandler := handler.NewResourceHandler(resourceSvc)
+	speedTestHandler := handler.NewSpeedTestHandler()
 
 	r := gin.Default()
 	r.POST("/api/auth/register", authHandler.Register)
@@ -66,6 +67,9 @@ func New() (*Server, error) {
 		r.POST("/api/cmd/:type", commandHandler.Run)
 		r.GET("/api/pc", monitorHandler.GetPC)
 		r.GET("/api/pc/stream", monitorHandler.StreamPC)
+		r.GET("/api/speedtest/ping", speedTestHandler.Ping)
+		r.GET("/api/speedtest/download", speedTestHandler.Download)
+		r.POST("/api/speedtest/upload", speedTestHandler.Upload)
 	} else {
 		r.GET("/api/pc/stream", middleware.AuthHeaderOrQueryRequired(authSvc), monitorHandler.StreamPC)
 	}
@@ -80,6 +84,11 @@ func New() (*Server, error) {
 	}
 	api.POST("/resource", resourceHandler.Upload)
 	api.DELETE("/resource", resourceHandler.Delete)
+	if !cfg.CmdSkipAuth {
+		api.GET("/speedtest/ping", speedTestHandler.Ping)
+		api.GET("/speedtest/download", speedTestHandler.Download)
+		api.POST("/speedtest/upload", speedTestHandler.Upload)
+	}
 	api.GET("/items", itemHandler.List)
 	api.GET("/items/:id", itemHandler.Get)
 	api.POST("/items", itemHandler.Create)

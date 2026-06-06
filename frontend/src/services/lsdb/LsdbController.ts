@@ -158,3 +158,24 @@ export function getPcStatsStreamUrl() {
     token,
   )}`;
 }
+
+export function speedTestUrl(
+  type: 'ping' | 'download' | 'upload',
+  bytes?: number,
+) {
+  const params = new URLSearchParams();
+  if (bytes) {
+    params.set('bytes', String(bytes));
+  }
+  if (type === 'download') {
+    params.set('_', String(Date.now()));
+  }
+
+  const query = params.toString();
+  return `${CONFIG.apiUrl}/api/speedtest/${type}${query ? `?${query}` : ''}`;
+}
+
+export function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}

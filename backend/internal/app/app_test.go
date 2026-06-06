@@ -97,6 +97,62 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 		t.Fatalf("pc without token status = %d", w.Code)
 	}
 
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/speedtest/ping", nil))
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("speedtest ping without token status = %d", w.Code)
+	}
+
+	w = get("/api/speedtest/ping")
+	if w.Code != http.StatusOK {
+		t.Fatalf("speedtest ping status = %d body=%s", w.Code, w.Body.String())
+	}
+	var speedPingResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &speedPingResp); err != nil {
+		t.Fatal(err)
+	}
+	speedPingData := speedPingResp["data"].(map[string]any)
+	if speedPingData["time"].(float64) <= 0 {
+		t.Fatalf("speedtest ping time = %#v", speedPingData["time"])
+	}
+
+	w = get("/api/speedtest/download?bytes=1024")
+	if w.Code != http.StatusOK {
+		t.Fatalf("speedtest download status = %d body=%s", w.Code, w.Body.String())
+	}
+	if w.Body.Len() != 1024 {
+		t.Fatalf("speedtest download bytes = %d", w.Body.Len())
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/speedtest/upload?bytes=1024", strings.NewReader(strings.Repeat("a", 512)))
+	req.Header.Set("Authorization", "Bearer "+token)
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("speedtest upload status = %d body=%s", w.Code, w.Body.String())
+	}
+	var speedUploadResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &speedUploadResp); err != nil {
+		t.Fatal(err)
+	}
+	speedUploadData := speedUploadResp["data"].(map[string]any)
+	if speedUploadData["bytes"].(float64) != 512 {
+		t.Fatalf("speedtest upload bytes = %#v", speedUploadData["bytes"])
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/api/speedtest/upload?bytes=536870912", strings.NewReader(strings.Repeat("a", 512)))
+	req.Header.Set("Authorization", "Bearer "+token)
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("speedtest max upload status = %d body=%s", w.Code, w.Body.String())
+	}
+
+	w = get("/api/speedtest/download?bytes=536870913")
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("speedtest invalid download status = %d body=%s", w.Code, w.Body.String())
+	}
+
 	w = get("/api/pc")
 	if w.Code != http.StatusOK {
 		t.Fatalf("pc status = %d body=%s", w.Code, w.Body.String())
@@ -142,7 +198,7 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	}
 
 	oldToken := signTestToken(t, srv.cfg.JWTSecret, 1, "alice", time.Now().Add(-3*24*time.Hour), 7)
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/current", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/auth/current", nil)
 	req.Header.Set("Authorization", "Bearer "+oldToken)
 	w = httptest.NewRecorder()
 	srv.Router.ServeHTTP(w, req)
@@ -361,6 +417,41 @@ func TestDuplicateRegisterSanitizedMessage(t *testing.T) {
 	}
 	if strings.Contains(msg, "UNIQUE") || strings.Contains(strings.ToLower(w.Body.String()), "constraint") {
 		t.Fatalf("leaked SQL in body=%s", w.Body.String())
+	}
+}
+
+func TestSpeedTestSkipAuth(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("LSDB_DB_PATH", filepath.Join(tmp, "test.db"))
+	t.Setenv("LSDB_FILE_ROOT", filepath.Join(tmp, "files"))
+	t.Setenv("LSDB_JWT_SECRET", "test-secret")
+	t.Setenv("LSDB_CMD_SKIP_AUTH", "true")
+	srv, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { sqlDB, _ := srv.DB.DB(); sqlDB.Close() }()
+
+	w := httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/speedtest/ping", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("speedtest ping skip auth status = %d body=%s", w.Code, w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/speedtest/download?bytes=1024", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("speedtest download skip auth status = %d body=%s", w.Code, w.Body.String())
+	}
+	if w.Body.Len() != 1024 {
+		t.Fatalf("speedtest download skip auth bytes = %d", w.Body.Len())
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/speedtest/upload?bytes=1024", strings.NewReader(strings.Repeat("a", 512)))
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("speedtest upload skip auth status = %d body=%s", w.Code, w.Body.String())
 	}
 }
 
