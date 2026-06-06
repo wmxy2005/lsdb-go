@@ -403,9 +403,10 @@ const ItemPage: React.FC = () => {
   const BaseTypeList = () => {
     return (
       <Row justify="space-around" align="middle" gutter={[0, 5]}>
-        <Col xs={24} sm={24} md={8} lg={12} xl={12}>
+        <Col xs={24} sm={24} md={12} lg={12} xl={12}>
           <Flex justify="flex-start" align="center" gap="large" wrap>
             <Radio.Group
+              className="base-type-radio-group"
               disabled={loading}
               options={typeItemList}
               defaultValue={pageInfo?.type ? pageInfo?.type : ''}
@@ -480,7 +481,7 @@ const ItemPage: React.FC = () => {
             </Col>
           </>
         ) : (
-          <Col xs={24} sm={24} md={16} lg={12} xl={12}>
+          <Col xs={24} sm={24} md={12} lg={12} xl={12}>
             <Flex justify={'flex-end'} align="center" wrap gap="large">
               <Switch
                 loading={loading}
