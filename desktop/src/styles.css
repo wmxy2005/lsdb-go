@@ -130,7 +130,6 @@ button {
   width: 100%;
   height: calc(100vh - 46px);
   min-height: 0;
-  max-width: 1140px;
   flex-direction: column;
   overflow: hidden;
   margin: 0 auto;
@@ -581,10 +580,13 @@ h1 {
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--log-bg-alt), transparent 36%), transparent 36rem),
     var(--log-bg);
+  scrollbar-color: color-mix(in srgb, var(--log-text), transparent 72%) var(--log-bg);
+  scrollbar-width: thin;
   white-space: pre-wrap;
 }
 
 .logs::-webkit-scrollbar {
+  height: 10px;
   width: 10px;
 }
 
@@ -597,6 +599,10 @@ h1 {
   border-radius: 999px;
   background: color-mix(in srgb, var(--log-text), transparent 72%);
   background-clip: padding-box;
+}
+
+.logs::-webkit-scrollbar-corner {
+  background: var(--log-bg);
 }
 
 .env-editor {

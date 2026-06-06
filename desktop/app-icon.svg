@@ -1,5 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#161b22"/>
-  <rect x="104" y="112" width="304" height="288" rx="36" fill="#238636"/>
-  <path d="M174 202h164M174 256h164M174 310h108" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="LSDB optimized vector icon tightly centered with minimal margins">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="55" x2="955" y2="990" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EFE7FF"/>
+      <stop offset="0.48" stop-color="#C9B9FF"/>
+      <stop offset="1" stop-color="#8F9BFF"/>
+    </linearGradient>
+    <radialGradient id="bgGlow" cx="42%" cy="24%" r="74%">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.46"/>
+      <stop offset="0.58" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="backCard" x1="255" y1="218" x2="650" y2="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#59D9F4"/>
+      <stop offset="0.52" stop-color="#246BFF"/>
+      <stop offset="1" stop-color="#573FF1"/>
+    </linearGradient>
+    <linearGradient id="midCard" x1="320" y1="330" x2="770" y2="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#62DDF5"/>
+      <stop offset="0.43" stop-color="#02BEEA"/>
+      <stop offset="1" stop-color="#6E47F1"/>
+    </linearGradient>
+    <linearGradient id="frontCard" x1="417" y1="388" x2="850" y2="804" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F4F6FF"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="490" y1="520" x2="705" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#226BFF"/>
+      <stop offset="1" stop-color="#6858F4"/>
+    </linearGradient>
+    <linearGradient id="chipTop" x1="735" y1="450" x2="790" y2="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14D8EA"/>
+      <stop offset="1" stop-color="#08B9E3"/>
+    </linearGradient>
+    <linearGradient id="chipMid" x1="735" y1="560" x2="790" y2="635" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2B7CFF"/>
+      <stop offset="1" stop-color="#4D63F4"/>
+    </linearGradient>
+    <linearGradient id="chipBot" x1="735" y1="665" x2="790" y2="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4B65FF"/>
+      <stop offset="1" stop-color="#7B43EE"/>
+    </linearGradient>
+  </defs>
+
+  <g id="icon-content-scaled" transform="translate(-74 -19) translate(512 512) scale(1.35) translate(-512 -512)">
+  <!-- crisp vector shadow layers; no embedded raster image -->
+  <path d="M240 291 Q240 260 270 251 L622 152 Q657 142 657 177 L657 526 Q657 555 628 564 L270 671 Q240 680 240 646 Z" fill="#2532C9" opacity="0.13" transform="translate(16 16)"/>
+  <path d="M240 291 Q240 260 270 251 L622 152 Q657 142 657 177 L657 526 Q657 555 628 564 L270 671 Q240 680 240 646 Z" fill="url(#backCard)" stroke="#75DFF9" stroke-width="4"/>
+  <path d="M243 288 Q243 263 270 255 L622 156 Q653 147 653 178" fill="none" stroke="#FFFFFF" stroke-opacity="0.42" stroke-width="2"/>
+
+  <path d="M323 382 Q323 351 353 342 L730 232 Q765 222 765 258 L765 623 Q765 652 736 661 L356 776 Q323 786 323 751 Z" fill="#2532C9" opacity="0.12" transform="translate(14 16)"/>
+  <path d="M323 382 Q323 351 353 342 L730 232 Q765 222 765 258 L765 623 Q765 652 736 661 L356 776 Q323 786 323 751 Z" fill="url(#midCard)" stroke="#2DE4EC" stroke-width="4"/>
+  <path d="M326 379 Q326 354 353 346 L730 236 Q761 227 761 259" fill="none" stroke="#FFFFFF" stroke-opacity="0.42" stroke-width="2"/>
+
+  <path d="M418 461 Q418 431 448 423 L847 316 Q884 306 884 344 L884 720 Q884 752 852 762 L451 887 Q418 897 418 861 Z" fill="#3A2EBA" opacity="0.15" transform="translate(12 15)"/>
+  <path d="M418 461 Q418 431 448 423 L847 316 Q884 306 884 344 L884 720 Q884 752 852 762 L451 887 Q418 897 418 861 Z" fill="url(#frontCard)" stroke="#FFFFFF" stroke-width="5"/>
+  <path d="M421 459 Q421 434 448 427 L847 320 Q880 311 880 344" fill="none" stroke="#FFFFFF" stroke-opacity="0.82" stroke-width="2"/>
+  <path d="M421 858 Q421 890 451 881 L852 756 Q879 748 880 721" fill="none" stroke="#D7DEFF" stroke-opacity="0.9" stroke-width="2"/>
+  <!-- front card content: inner lines and right chips aligned with the white panel tilt -->
+  <g id="front-card-content" stroke-linejoin="round">
+    <!-- All inner elements share the same -0.298 slope as the front white panel's top edge. -->
+    <g transform="matrix(1 -0.298 0 1 0 0)">
+      <!-- row 1 -->
+      <rect x="516" y="686" width="174" height="34" rx="11" fill="#2337CF" opacity="0.14" transform="translate(3 7)"/>
+      <rect x="516" y="686" width="174" height="34" rx="11" fill="url(#lineGrad)"/>
+      <rect x="727" y="677" width="52" height="52" rx="10" fill="#2337CF" opacity="0.12" transform="translate(3 7)"/>
+      <rect x="727" y="677" width="52" height="52" rx="10" fill="url(#chipTop)"/>
+
+      <!-- row 2 -->
+      <rect x="516" y="790" width="174" height="34" rx="11" fill="#2337CF" opacity="0.14" transform="translate(3 7)"/>
+      <rect x="516" y="790" width="174" height="34" rx="11" fill="url(#lineGrad)"/>
+      <rect x="727" y="781" width="52" height="52" rx="10" fill="#2337CF" opacity="0.12" transform="translate(3 7)"/>
+      <rect x="727" y="781" width="52" height="52" rx="10" fill="url(#chipMid)"/>
+
+      <!-- row 3 -->
+      <rect x="516" y="894" width="174" height="34" rx="11" fill="#2337CF" opacity="0.14" transform="translate(3 7)"/>
+      <rect x="516" y="894" width="174" height="34" rx="11" fill="url(#lineGrad)"/>
+      <rect x="727" y="885" width="52" height="52" rx="10" fill="#2337CF" opacity="0.12" transform="translate(3 7)"/>
+      <rect x="727" y="885" width="52" height="52" rx="10" fill="url(#chipBot)"/>
+    </g>
+  </g>
+  </g>
 </svg>

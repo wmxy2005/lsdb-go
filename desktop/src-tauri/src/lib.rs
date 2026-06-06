@@ -12,7 +12,7 @@ use std::{
 use tauri::{
     image::Image,
     menu::{IconMenuItem, Menu, MenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, State, WindowEvent,
 };
 
@@ -47,6 +47,7 @@ struct FrontendReady(Arc<Mutex<bool>>);
 struct TrayMenuState {
     start_item: IconMenuItem<tauri::Wry>,
     stop_item: IconMenuItem<tauri::Wry>,
+    tray_icon: TrayIcon<tauri::Wry>,
 }
 
 #[derive(Clone, Serialize)]
@@ -247,10 +248,21 @@ fn emit_status(app: &AppHandle, manager: &ServerManager) {
     }
 }
 
+fn tray_tooltip(current: &ServerStatus) -> &'static str {
+    if current.running {
+        "LSDB Server - 运行中"
+    } else {
+        "LSDB Server - 已停止"
+    }
+}
+
 fn sync_tray_menu(app: &AppHandle, current: &ServerStatus) {
     if let Some(menu_state) = app.try_state::<TrayMenuState>() {
         let _ = menu_state.start_item.set_enabled(!current.running);
         let _ = menu_state.stop_item.set_enabled(current.running);
+        let _ = menu_state
+            .tray_icon
+            .set_tooltip(Some(tray_tooltip(current)));
     }
 }
 
@@ -518,14 +530,10 @@ pub fn run() {
             )?;
             let quit = MenuItem::with_id(app, "quit", "退出程序", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &start_item, &stop_item, &quit])?;
-            app.manage(TrayMenuState {
-                start_item: start_item.clone(),
-                stop_item: stop_item.clone(),
-            });
-            emit_status(app.handle(), &manager);
             let tray_manager = manager.clone();
-            TrayIconBuilder::new()
+            let tray_icon = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("LSDB Server - 已停止")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
@@ -559,6 +567,12 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+            app.manage(TrayMenuState {
+                start_item: start_item.clone(),
+                stop_item: stop_item.clone(),
+                tray_icon,
+            });
+            emit_status(app.handle(), &manager);
 
             Ok(())
         })

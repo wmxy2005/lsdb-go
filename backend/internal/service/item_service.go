@@ -150,10 +150,13 @@ func (s *ItemService) avatarSrc(item model.Item) string {
 		category    string
 		subcategory string
 	}{{base: item.Base, category: item.Category, subcategory: item.Subcategory}, {base: item.Base, category: item.Category}, {base: item.Base}}
+	logos := []string{"logo.png", "logo.jpg", "logo.svg", "logo.ico"}
 	for _, chk := range checks {
-		path, err := s.resources.Resolve(chk.base, chk.category, chk.subcategory, "", "logo.png")
-		if err == nil && FileExists(path) {
-			return s.resources.URL(item.Base, chk.category, chk.subcategory, "", "logo.png", false)
+		for _, logo := range logos {
+			path, err := s.resources.Resolve(chk.base, chk.category, chk.subcategory, "", logo)
+			if err == nil && FileExists(path) {
+				return s.resources.URL(item.Base, chk.category, chk.subcategory, "", logo, false)
+			}
 		}
 	}
 	return ""
