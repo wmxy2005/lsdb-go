@@ -36,7 +36,6 @@ export async function authCurrent(
       params: {
         ...params,
       },
-      withCredentials: true,
       ...(options || {}),
     },
   );
@@ -53,7 +52,6 @@ export async function queryItemList(
       params: {
         ...params,
       },
-      withCredentials: true,
       ...(options || {}),
     },
   );
@@ -68,7 +66,6 @@ export async function queryItem(
     {
       method: 'GET',
       params: {},
-      withCredentials: true,
       ...(options || {}),
     },
   );
@@ -83,7 +80,6 @@ export async function newItem(data: any) {
     headers: {
       'Content-Type': 'application/json',
     },
-    withCredentials: true,
   });
 }
 
@@ -98,7 +94,6 @@ export async function updateItem(itemId: number, data: any) {
       headers: {
         'Content-Type': 'application/json',
       },
-      withCredentials: true,
     },
   );
 }
@@ -111,7 +106,6 @@ export async function queryRole(
     CONFIG.apiUrl + CONFIG.roleUrl + roleId,
     {
       method: 'GET',
-      withCredentials: true,
       ...(options || {}),
     },
   );
@@ -122,7 +116,6 @@ export async function faviItem(itemId: number, expired: number) {
     CONFIG.apiUrl + CONFIG.faviUrl.replace(':id', itemId.toString()),
     {
       method: expired ? 'DELETE' : 'POST',
-      withCredentials: true,
     },
   );
 }
@@ -135,7 +128,6 @@ export async function openFolder(path: string) {
       params: {
         path,
       },
-      withCredentials: true,
     },
   );
 }
@@ -145,7 +137,6 @@ export async function shutdown(restart: boolean) {
     CONFIG.apiUrl + CONFIG.cmdUrl + (restart ? 'restart' : 'shutdown'),
     {
       method: 'POST',
-      withCredentials: true,
     },
   );
 }
@@ -153,6 +144,5 @@ export async function shutdown(restart: boolean) {
 export async function getPcStats() {
   return apiRequest<LSDB.Result_PCInfo__>(CONFIG.apiUrl + '/api/pc', {
     method: 'GET',
-    withCredentials: true,
   });
 }

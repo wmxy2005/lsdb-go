@@ -115,6 +115,12 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	if pcData["cpu"].(float64) != 0 {
 		t.Fatalf("first pc cpu = %#v, want 0", pcData["cpu"])
 	}
+	if pcData["uploadSpeed"].(float64) != 0 {
+		t.Fatalf("first pc uploadSpeed = %#v, want 0", pcData["uploadSpeed"])
+	}
+	if pcData["downloadSpeed"].(float64) != 0 {
+		t.Fatalf("first pc downloadSpeed = %#v, want 0", pcData["downloadSpeed"])
+	}
 	if pcData["time"] == "" {
 		t.Fatalf("pc time should not be empty")
 	}

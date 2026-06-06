@@ -530,7 +530,6 @@ const EditItem = (props: EditItemProps) => {
                 headers: {
                   'Content-Type': 'application/json'
                 },
-                withCredentials: true,
               });
               if(success) {
                 file.status = 'removed';
@@ -590,7 +589,6 @@ const EditItem = (props: EditItemProps) => {
             headers: {
               'Content-Type': 'multipart/form-data'
             },
-            withCredentials: true,
             onUploadProgress: ({ total, loaded }) => {
               onProgress({ percent: Number(Math.round((loaded / total) * 100).toFixed(2)) }, file);
             },
@@ -721,7 +719,6 @@ const EditItem = (props: EditItemProps) => {
                           'Content-Type': 'application/json',
                           Authorization: `Bearer ${token}`,
                         },
-                        withCredentials: true,
                       },
                     );
                     if (success) {
@@ -798,7 +795,6 @@ const EditItem = (props: EditItemProps) => {
                     'Content-Type': 'multipart/form-data',
                     Authorization: `Bearer ${token}`,
                   },
-                  withCredentials: true,
                   onUploadProgress: ({ total, loaded }) => {
                     onProgress(
                       {

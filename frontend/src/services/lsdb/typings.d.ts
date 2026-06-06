@@ -117,6 +117,8 @@ declare namespace LSDB {
   interface PCInfo {
     time?: string;
     cpu?: number;
+    uploadSpeed?: number;
+    downloadSpeed?: number;
   }
 
   interface Result_PCInfo__ {

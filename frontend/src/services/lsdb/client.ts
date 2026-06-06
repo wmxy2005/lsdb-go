@@ -80,7 +80,7 @@ export async function apiRequest<T>(
     params,
     data,
     auth = true,
-    withCredentials,
+    withCredentials = CONFIG.withCredentials,
     headers: optionHeaders,
     ...requestOptions
   } = options;

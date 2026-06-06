@@ -5,6 +5,7 @@ const config = {
   roleUrl: '/api/role/',
   faviUrl: '/api/items/:id/favorite',
   cmdUrl: '/api/cmd/',
+  withCredentials: true,
   tokenExpired: 7 * 24 * 60 * 60 * 1000,
   defaultLocale: 'zh-CN',
   locales: [

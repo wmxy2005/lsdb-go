@@ -1,16 +1,41 @@
 import { getPcStats, shutdown } from '@/services/lsdb/LsdbController';
 import { PageContainer } from '@ant-design/pro-components';
-import { useAccess, useIntl } from '@umijs/max';
+import { useIntl } from '@umijs/max';
 import { Alert, Button, Card, Flex, message, Switch, Typography } from 'antd';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Monitor from './components/Monitor';
 
+type MonitorSample = {
+  time: string;
+  value: number | Record<string, number>;
+};
+
+const NETWORK_METRICS = [
+  {
+    key: 'uploadSpeed',
+    label: '上传速度',
+    color: 'rgb(54, 162, 235)',
+    fillColor: 'rgba(54, 162, 235, 0.2)',
+  },
+  {
+    key: 'downloadSpeed',
+    label: '下载速度',
+    color: 'rgb(255, 99, 132)',
+    fillColor: 'rgba(255, 99, 132, 0.2)',
+  },
+];
+
+const formatMonitorValue = (value: number, unit: string) =>
+  `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`;
+
 const ToolPage: React.FC = () => {
-  const access = useAccess();
   const intl = useIntl();
   const [loading, setLoading] = useState<string>('');
   const [messageApi, contextHolder] = message.useMessage();
   const [showMonitor, setShowMonitor] = useState<boolean>(false);
+  const [cpuSample, setCpuSample] = useState<MonitorSample>();
+  const [networkSample, setNetworkSample] = useState<MonitorSample>();
+
   const shutdownClick = async (status: string) => {
     setLoading(status);
     const res = await shutdown(status === 'restart');
@@ -24,17 +49,37 @@ const ToolPage: React.FC = () => {
     }, 1000);
   };
 
-  const updatePcData = async () => {
+  const updatePcData = useCallback(async () => {
     try {
       const res = await getPcStats();
-      if (res?.success) {
-        return [true, res.data?.time, res.data?.cpu];
+      if (res?.success && res.data?.time) {
+        setCpuSample({
+          time: res.data.time,
+          value: res.data.cpu ?? 0,
+        });
+        setNetworkSample({
+          time: res.data.time,
+          value: {
+            uploadSpeed: res.data.uploadSpeed ?? 0,
+            downloadSpeed: res.data.downloadSpeed ?? 0,
+          },
+        });
       }
     } catch (err) {
       console.error(err);
     }
-    return [false, false, false];
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!showMonitor) {
+      return;
+    }
+
+    updatePcData();
+    const intervalId = setInterval(updatePcData, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [showMonitor, updatePcData]);
 
   return (
     <PageContainer
@@ -80,7 +125,7 @@ const ToolPage: React.FC = () => {
             {intl.formatMessage({ id: 'restart' })}
           </Button>
           <Flex gap="large" align="left">
-            <Typography.Text strong>{'CPU占用'}</Typography.Text>
+            <Typography.Text strong>{'监控'}</Typography.Text>
             <Switch
               checkedChildren={'显示'}
               unCheckedChildren={'隐藏'}
@@ -89,11 +134,43 @@ const ToolPage: React.FC = () => {
               style={{ width: '5em' }}
             />
           </Flex>
+          {showMonitor ? (
+            <div style={styles.monitorGrid}>
+              <Monitor
+                title="实时 CPU 占用率 (%)"
+                datasetLabel="CPU 占用率"
+                yAxisTitle="占用率 (%)"
+                min={0}
+                max={100}
+                sample={cpuSample}
+                valueFormatter={(value) => formatMonitorValue(value, '%')}
+              />
+              <Monitor
+                title="实时网络速度"
+                yAxisTitle="速度 (MB/s)"
+                min={0}
+                autoScaleY
+                metrics={NETWORK_METRICS}
+                sample={networkSample}
+                valueFormatter={(value) => formatMonitorValue(value, 'MB/s')}
+              />
+            </div>
+          ) : (
+            <></>
+          )}
         </Flex>
       </Card>
-      {showMonitor ? <Monitor onChange={updatePcData} /> : <></>}
     </PageContainer>
   );
+};
+
+const styles = {
+  monitorGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))',
+    gap: '16px',
+    width: '100%',
+  },
 };
 
 export default ToolPage;

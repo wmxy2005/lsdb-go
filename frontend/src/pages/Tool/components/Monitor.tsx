@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Chart as ChartJS,
   CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
   LinearScale,
-  PointElement,
   LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-// 注册 Chart.js 必要的组件
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -21,107 +20,247 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
-const MAX_DATA_POINTS = 60;
+const DEFAULT_MAX_DATA_POINTS = 60;
+const DEFAULT_COLOR = 'rgb(54, 162, 235)';
+const DEFAULT_FILL_COLOR = 'rgba(54, 162, 235, 0.2)';
 
-interface MonitorProps {
-  onChange?: any | undefined,
+type MetricValue = number | Record<string, number>;
+
+interface MonitorSample {
+  time: string;
+  value: MetricValue;
 }
 
-export default function Monitor(props : MonitorProps) {
-  // 使用 useRef 保存当前的 CPU 值，这样修改它时不会触发组件重新渲染
-  const currentCpuUsage = useRef(0);
-  const { onChange } = props;
+interface MonitorMetric {
+  key: string;
+  label: string;
+  color?: string;
+  fillColor?: string;
+}
 
-  // 初始化状态（预填充 MAX_DATA_POINTS 条空记录）
-  const [chartData, setChartData] = useState(() => {
-    const initialLabels = new Array(MAX_DATA_POINTS).fill('');
-    const initialData = new Array(MAX_DATA_POINTS).fill(null);
-    
-    return {
-      labels: initialLabels,
-      datasets: [
-        {
-          label: 'CPU 占用率',
-          data: initialData,
-          borderColor: 'rgb(54, 162, 235)',
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          borderWidth: 2,
-          fill: true,
-          pointRadius: 0,
-          tension: 0.4,
-        },
-      ],
-    };
-  });
+interface MonitorProps {
+  title: string;
+  datasetLabel?: string;
+  yAxisTitle?: string;
+  min?: number;
+  max?: number;
+  autoScaleY?: boolean;
+  color?: string;
+  fillColor?: string;
+  maxDataPoints?: number;
+  metrics?: MonitorMetric[];
+  sample?: MonitorSample;
+  valueFormatter?: (value: number, metricKey?: string) => string;
+}
 
-  // 图表配置项
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false, // 允许图表填满父容器的高度
-    animation: false, // 关闭动画防止抖动
-    scales: {
-      y: {
-        min: 0,
-        max: 100,
-        title: { display: true, text: '占用率 (%)' },
-      },
-      x: {
-        title: { display: true, text: '系统时间' },
-        ticks: { maxTicksLimit: 6 },
-      },
-    },
-    plugins: {
-      legend: { display: false },
-    },
+function buildDataset(metric: Required<MonitorMetric>, maxDataPoints: number) {
+  return {
+    label: metric.label,
+    data: new Array<number | null>(maxDataPoints).fill(null),
+    borderColor: metric.color,
+    backgroundColor: metric.fillColor,
+    borderWidth: 2,
+    fill: true,
+    pointRadius: 0,
+    tension: 0.4,
   };
+}
+
+function defaultValueFormatter(value: number) {
+  return Number.isFinite(value)
+    ? value.toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      })
+    : '--';
+}
+
+export default function Monitor(props: MonitorProps) {
+  const {
+    title,
+    datasetLabel = 'Metric',
+    yAxisTitle,
+    min = 0,
+    max = 100,
+    autoScaleY = false,
+    color = DEFAULT_COLOR,
+    fillColor = DEFAULT_FILL_COLOR,
+    maxDataPoints = DEFAULT_MAX_DATA_POINTS,
+    metrics,
+    sample,
+    valueFormatter = defaultValueFormatter,
+  } = props;
+
+  const metricDefinitions = useMemo<Required<MonitorMetric>[]>(() => {
+    if (metrics?.length) {
+      return metrics.map((metric, index) => ({
+        key: metric.key,
+        label: metric.label,
+        color:
+          metric.color || (index === 0 ? DEFAULT_COLOR : 'rgb(255, 99, 132)'),
+        fillColor:
+          metric.fillColor ||
+          (index === 0 ? DEFAULT_FILL_COLOR : 'rgba(255, 99, 132, 0.2)'),
+      }));
+    }
+
+    return [
+      {
+        key: 'value',
+        label: datasetLabel,
+        color,
+        fillColor,
+      },
+    ];
+  }, [color, datasetLabel, fillColor, metrics]);
+
+  const metricSignature = useMemo(
+    () =>
+      JSON.stringify(
+        metricDefinitions.map(({ key, label, color, fillColor }) => ({
+          key,
+          label,
+          color,
+          fillColor,
+        })),
+      ),
+    [metricDefinitions],
+  );
+
+  const [chartData, setChartData] = useState(() => ({
+    labels: new Array<string>(maxDataPoints).fill(''),
+    datasets: metricDefinitions.map((metric) =>
+      buildDataset(metric, maxDataPoints),
+    ),
+  }));
+
+  const yAxisMax = useMemo(() => {
+    if (!autoScaleY) {
+      return max;
+    }
+
+    const values = chartData.datasets.flatMap((dataset) =>
+      dataset.data.filter(
+        (value): value is number =>
+          typeof value === 'number' && Number.isFinite(value),
+      ),
+    );
+    const maxValue = values.length ? Math.max(...values) : 0;
+
+    return Math.max(maxValue * 1.1, 1);
+  }, [autoScaleY, chartData.datasets, max]);
+
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      scales: {
+        y: {
+          min,
+          max: yAxisMax,
+          title: { display: Boolean(yAxisTitle), text: yAxisTitle },
+        },
+        x: {
+          title: { display: true, text: '系统时间' },
+          ticks: { maxTicksLimit: 6 },
+        },
+      },
+      plugins: {
+        legend: { display: metricDefinitions.length > 1 },
+      },
+    }),
+    [metricDefinitions.length, min, yAxisMax, yAxisTitle],
+  );
+
+  const currentValues = useMemo(
+    () =>
+      metricDefinitions.map((metric, index) => {
+        const value =
+          !sample
+            ? undefined
+            : typeof sample.value === 'number'
+            ? index === 0
+              ? sample.value
+              : undefined
+            : sample.value[metric.key];
+
+        return {
+          key: metric.key,
+          label: metric.label,
+          color: metric.color,
+          value,
+        };
+      }),
+    [metricDefinitions, sample],
+  );
 
   useEffect(() => {
-    // 设置定时器
-    const intervalId = setInterval(async () => {
-      if(onChange) {
-        let [success, timeLabel, newValue]  = await onChange();
-        if(success){
-          currentCpuUsage.current = newValue;
+    setChartData({
+      labels: new Array<string>(maxDataPoints).fill(''),
+      datasets: metricDefinitions.map((metric) =>
+        buildDataset(metric, maxDataPoints),
+      ),
+    });
+  }, [maxDataPoints, metricDefinitions, metricSignature]);
 
-          // 更新 React 状态
-          setChartData((prevData) => {
-            // 浅拷贝数组，遵循 React 的不可变性（Immutability）原则
-            const newLabels = [...prevData.labels];
-            const newData = [...prevData.datasets[0].data];
+  useEffect(() => {
+    if (!sample) {
+      return;
+    }
 
-            newLabels.push(timeLabel);
-            newData.push(newValue);
-
-            if (newLabels.length > MAX_DATA_POINTS) {
-              newLabels.shift();
-              newData.shift();
-            }
-
-            return {
-              ...prevData,
-              labels: newLabels,
-              datasets: [
-                {
-                  ...prevData.datasets[0],
-                  data: newData,
-                },
-              ],
-            };
-          });
-        }
+    setChartData((prevData) => {
+      const newLabels = [...prevData.labels, sample.time];
+      if (newLabels.length > maxDataPoints) {
+        newLabels.shift();
       }
-    }, 1000);
 
-    // 组件卸载时清理定时器，防止内存泄漏
-    return () => clearInterval(intervalId);
-  }, []);
+      const datasets = prevData.datasets.map((dataset, index) => {
+        const metric = metricDefinitions[index];
+        const metricValue =
+          typeof sample.value === 'number'
+            ? index === 0
+              ? sample.value
+              : null
+            : sample.value[metric.key] ?? null;
+        const data = [...dataset.data, metricValue];
+
+        if (data.length > maxDataPoints) {
+          data.shift();
+        }
+
+        return {
+          ...dataset,
+          data,
+        };
+      });
+
+      return {
+        ...prevData,
+        labels: newLabels,
+        datasets,
+      };
+    });
+  }, [maxDataPoints, metricDefinitions, sample]);
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>实时 CPU 占用率 (%)</h2>
+      <h2 style={styles.title}>{title}</h2>
+      <div style={styles.valueRow}>
+        {currentValues.map((item) => (
+          <div key={item.key} style={styles.valueItem}>
+            <span style={{ ...styles.valueMarker, backgroundColor: item.color }} />
+            <span style={styles.valueLabel}>{item.label}</span>
+            <span style={styles.valueText}>
+              {item.value === undefined
+                ? '--'
+                : valueFormatter(item.value, item.key)}
+            </span>
+          </div>
+        ))}
+      </div>
       <div style={styles.chartWrapper}>
         <Line data={chartData} options={options} />
       </div>
@@ -129,7 +268,6 @@ export default function Monitor(props : MonitorProps) {
   );
 }
 
-// 简单的内联样式，你可以换成 CSS Modules 或 Tailwind
 const styles = {
   container: {
     display: 'flex',
@@ -137,17 +275,44 @@ const styles = {
     alignItems: 'center',
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     marginTop: '20px',
+    width: '100%',
+    minWidth: 0,
   },
   title: {
     color: '#333',
+    marginBottom: '8px',
+  },
+  valueRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: '12px',
+    marginBottom: '8px',
+  },
+  valueItem: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '6px',
+    minWidth: '120px',
+  },
+  valueMarker: {
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    flex: '0 0 auto',
+  },
+  valueLabel: {
+    color: '#666',
+    fontSize: '13px',
+  },
+  valueText: {
+    color: '#222',
+    fontSize: '20px',
+    fontWeight: 600,
   },
   chartWrapper: {
-    width: '90%',
-    maxWidth: '900px',
-    height: '400px', // 在 React 中通常需要给包裹层一个明确的高度
-    backgroundColor: 'white',
+    width: '100%',
+    height: '400px',
     padding: '20px',
-    borderRadius: '10px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-  }
+  },
 };

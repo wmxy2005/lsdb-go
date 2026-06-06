@@ -16,6 +16,11 @@ func NewMonitorHandler(monitor *service.MonitorService) *MonitorHandler {
 }
 
 func (h *MonitorHandler) GetPC(c *gin.Context) {
-	timeLabel, cpuUsage := h.monitor.Snapshot()
-	response.OK(c, gin.H{"time": timeLabel, "cpu": cpuUsage})
+	snapshot := h.monitor.Snapshot()
+	response.OK(c, gin.H{
+		"time":          snapshot.Time,
+		"cpu":           snapshot.CPU,
+		"uploadSpeed":   snapshot.UploadSpeed,
+		"downloadSpeed": snapshot.DownloadSpeed,
+	})
 }
