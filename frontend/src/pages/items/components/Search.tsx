@@ -1,8 +1,9 @@
 import { CONFIG } from '@/constants';
 import lsdbServices from '@/services/lsdb';
+import { SearchOutlined } from '@ant-design/icons';
 import { createSearchParams, useModel, useNavigate } from '@umijs/max';
 import type { GetProps } from 'antd';
-import { Input, theme } from 'antd';
+import { Button, Input, theme } from 'antd';
 
 const { queryItemList } = lsdbServices.LsdbController;
 
@@ -55,7 +56,7 @@ const SearchInput = () => {
       <Input.Search
         placeholder="搜索"
         allowClear
-        enterButton
+        enterButton={<Button type="primary" icon={<SearchOutlined />} />}
         style={{
           borderRadius: 4,
           marginInlineEnd: 0,
