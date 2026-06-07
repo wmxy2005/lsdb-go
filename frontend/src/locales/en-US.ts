@@ -99,7 +99,6 @@ export default {
     'speedTest.unit.ms': 'ms',
     'speedTest.unit.mb': 'MB',
     'speedTest.valueWithUnit': '{value} {unit}',
-    'speedTest.gauge.scale': 'Scale 0-{max} {unit}',
     'speedTest.hint.lowerIsBetter': 'Lower is better',
     'speedTest.hint.sample': '{size} {unit} sample',
     'speedTest.server.label': 'Server',

@@ -177,7 +177,7 @@ fn env_path() -> Result<PathBuf, String> {
     Ok(server_dir()?.join(".env"))
 }
 
-fn auto_run_server_enabled() -> Result<bool, String> {
+fn env_bool_enabled(target_key: &str) -> Result<bool, String> {
     let path = env_path()?;
     if !path.exists() {
         return Ok(false);
@@ -196,13 +196,21 @@ fn auto_run_server_enabled() -> Result<bool, String> {
             continue;
         };
 
-        if key.trim() == "AUTO_RUN_SERVER" {
+        if key.trim() == target_key {
             let value = value.trim().trim_matches(['"', '\'']);
             return Ok(value.eq_ignore_ascii_case("true"));
         }
     }
 
     Ok(false)
+}
+
+fn auto_run_server_enabled() -> Result<bool, String> {
+    env_bool_enabled("AUTO_RUN_SERVER")
+}
+
+fn auto_run_minimize_enabled() -> Result<bool, String> {
+    env_bool_enabled("AUTO_RUN_MINIMIZE")
 }
 
 fn status(manager: &ServerManager) -> Result<ServerStatus, String> {
@@ -573,6 +581,16 @@ pub fn run() {
                 tray_icon,
             });
             emit_status(app.handle(), &manager);
+            let should_minimize = match auto_run_minimize_enabled() {
+                Ok(enabled) => enabled,
+                Err(error) => {
+                    emit_log(app.handle(), "system", error);
+                    false
+                }
+            };
+            if !should_minimize {
+                show_main_window(app.handle());
+            }
 
             Ok(())
         })

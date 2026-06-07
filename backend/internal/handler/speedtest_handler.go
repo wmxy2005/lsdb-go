@@ -14,7 +14,10 @@ import (
 const (
 	defaultSpeedTestBytes = 128 * 1024 * 1024
 	maxSpeedTestBytes     = 512 * 1024 * 1024
+	speedTestBufferBytes  = 1024 * 1024
 )
+
+var speedTestZeroChunk = make([]byte, speedTestBufferBytes)
 
 type SpeedTestHandler struct{}
 
@@ -39,8 +42,17 @@ func (h *SpeedTestHandler) Download(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	c.Status(http.StatusOK)
 
-	if _, err := io.CopyN(c.Writer, zeroReader{}, size); err != nil {
-		return
+	remaining := size
+	for remaining > 0 {
+		chunk := speedTestZeroChunk
+		if remaining < int64(len(chunk)) {
+			chunk = chunk[:remaining]
+		}
+		n, err := c.Writer.Write(chunk)
+		if err != nil || n <= 0 {
+			return
+		}
+		remaining -= int64(n)
 	}
 }
 
@@ -51,7 +63,7 @@ func (h *SpeedTestHandler) Upload(c *gin.Context) {
 	}
 
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, size)
-	received, err := io.Copy(io.Discard, c.Request.Body)
+	received, err := io.CopyBuffer(io.Discard, c.Request.Body, make([]byte, speedTestBufferBytes))
 	if err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "invalid upload body")
 		return
@@ -71,11 +83,4 @@ func parseSpeedTestBytes(c *gin.Context) (int64, bool) {
 	}
 
 	return size, true
-}
-
-type zeroReader struct{}
-
-func (zeroReader) Read(p []byte) (int, error) {
-	clear(p)
-	return len(p), nil
 }

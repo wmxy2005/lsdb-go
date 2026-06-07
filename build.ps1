@@ -122,9 +122,10 @@ function Build-Backend {
     foreach ($line in $lines) {
         if ($line -notmatch '^\s*LSDB_FRONTEND_DIST\s*=') {
             $filteredLines += $line
-        }
+        } else {
+			$filteredLines += "LSDB_FRONTEND_DIST=./dist"
+		}
     }
-    $filteredLines += "LSDB_FRONTEND_DIST=./dist"
     Set-Content -Path $OutputEnvPath -Value $filteredLines -Encoding utf8
 }
 

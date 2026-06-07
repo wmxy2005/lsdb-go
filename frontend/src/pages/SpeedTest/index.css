@@ -58,6 +58,15 @@
   background: var(--speed-primary-hover);
 }
 
+.speed-hero-copy .ant-btn-primary.ant-btn-dangerous {
+  background: #ff4d4f;
+  box-shadow: 0 14px 28px rgba(255, 77, 79, 0.24);
+}
+
+.speed-hero-copy .ant-btn-primary.ant-btn-dangerous:not(:disabled):hover {
+  background: #ff7875;
+}
+
 .speed-hero-controls {
   display: flex;
   flex-wrap: wrap;
@@ -132,6 +141,7 @@
   position: relative;
   width: min(500px, 100%);
   aspect-ratio: 480 / 310;
+  container-type: inline-size;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,7 +184,7 @@
 
 .speed-gauge-tick-label {
   fill: #0f172a;
-  font-size: 19px;
+  font-size: clamp(15px, 3.8cqi, 19px);
   font-weight: 600;
 }
 
@@ -198,7 +208,7 @@
 
 .speed-gauge-label {
   color: #0f172a;
-  font-size: 13px;
+  font-size: clamp(11px, 2.6cqi, 13px);
   font-weight: 700;
   line-height: 1.2;
   text-transform: uppercase;
@@ -207,32 +217,16 @@
 .speed-gauge-content strong {
   max-width: 100%;
   color: #0f172a;
-  font-size: 62px;
+  font-size: clamp(42px, 12.4cqi, 62px);
   line-height: 1;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
-.speed-gauge-content strong.speed-gauge-value-compact {
-  font-size: 52px;
-}
-
-.speed-gauge-content strong.speed-gauge-value-dense {
-  font-size: 44px;
-}
-
 .speed-gauge-unit {
   color: #334155;
-  font-size: 20px;
+  font-size: clamp(16px, 4cqi, 20px);
   line-height: 1.2;
-}
-
-.speed-gauge-scale-note {
-  margin-top: 5px;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.2;
-  white-space: nowrap;
 }
 
 .speed-sparkline {
@@ -245,6 +239,10 @@
   width: min(150px, 62%);
   height: 30px;
   margin-top: 5px;
+}
+
+.speed-sparkline-placeholder {
+  visibility: hidden;
 }
 
 .speed-sparkline-fill {
@@ -429,6 +427,14 @@
 .speed-server {
   color: #4864b1;
   border-right: 0;
+}
+
+.speed-server small,
+.speed-server strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .speed-chart {
@@ -616,35 +622,10 @@
     bottom: 6%;
   }
 
-  .speed-gauge-content strong {
-    font-size: 42px;
-  }
-
-  .speed-gauge-content strong.speed-gauge-value-compact {
-    font-size: 36px;
-  }
-
-  .speed-gauge-content strong.speed-gauge-value-dense {
-    font-size: 31px;
-  }
-
-  .speed-gauge-unit {
-    font-size: 16px;
-  }
-
-  .speed-gauge-scale-note {
-    margin-top: 3px;
-    font-size: 11px;
-  }
-
   .speed-gauge-content .speed-sparkline {
     width: min(126px, 58%);
     height: 24px;
     margin-top: 3px;
-  }
-
-  .speed-gauge-tick-label {
-    font-size: 15px;
   }
 
   .speed-phase {

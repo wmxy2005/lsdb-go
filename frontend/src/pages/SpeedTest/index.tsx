@@ -85,6 +85,7 @@ const SPARKLINE_POINT_COUNT = 16;
 const SPARKLINE_REFRESH_SAMPLE_COUNT = 10;
 const MB = 1024 * 1024;
 const UPLOAD_CHUNK_BYTES = 4 * MB;
+const SPEED_TEST_CONCURRENCY = 6;
 
 const TEST_SIZE_OPTIONS = [
   { label: '16 MB', value: 16 * MB },
@@ -186,38 +187,55 @@ async function measureDownload(
   signal: AbortSignal,
   onProgress: (percent: number, currentMbps?: number) => void,
 ) {
-  const response = await checkedFetch(speedTestUrl('download', bytes), {
-    headers: authHeaders(),
-    credentials: 'include',
-    cache: 'no-store',
-    signal,
-  });
-
   const start = performance.now();
-  let loaded = 0;
+  const targetBytes = bytes * SPEED_TEST_CONCURRENCY;
+  const loadedByRequest = new Array(SPEED_TEST_CONCURRENCY).fill(0);
+  let totalLoaded = 0;
 
-  if (!response.body) {
-    const blob = await response.blob();
-    loaded = blob.size;
-    onProgress(100, bytesToMbps(loaded, performance.now() - start));
-    return bytesToMbps(loaded, performance.now() - start);
-  }
-
-  const reader = response.body.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    loaded += value?.byteLength ?? 0;
-    const durationMs = performance.now() - start;
+  const reportProgress = (requestIndex: number, loaded: number) => {
+    const nextLoaded = Math.max(loadedByRequest[requestIndex], loaded);
+    totalLoaded += nextLoaded - loadedByRequest[requestIndex];
+    loadedByRequest[requestIndex] = nextLoaded;
+    const durationMs = Math.max(1, performance.now() - start);
     onProgress(
-      Math.min(100, Math.round((loaded / bytes) * 100)),
-      bytesToMbps(loaded, durationMs),
+      Math.min(100, Math.round((totalLoaded / targetBytes) * 100)),
+      bytesToMbps(totalLoaded, durationMs),
     );
-  }
+  };
 
-  return bytesToMbps(loaded, performance.now() - start);
+  onProgress(0, 0);
+  await Promise.all(
+    Array.from({ length: SPEED_TEST_CONCURRENCY }, async (_, requestIndex) => {
+      const response = await checkedFetch(speedTestUrl('download', bytes), {
+        headers: authHeaders(),
+        credentials: 'include',
+        cache: 'no-store',
+        signal,
+      });
+
+      if (!response.body) {
+        const blob = await response.blob();
+        reportProgress(requestIndex, blob.size);
+        return;
+      }
+
+      const reader = response.body.getReader();
+      let requestLoaded = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        requestLoaded += value?.byteLength ?? 0;
+        reportProgress(requestIndex, requestLoaded);
+      }
+    }),
+  );
+
+  const durationMs = performance.now() - start;
+  const downloadMbps = bytesToMbps(totalLoaded, durationMs);
+  onProgress(100, downloadMbps);
+  return downloadMbps;
 }
 
 async function measureUpload(
@@ -226,15 +244,48 @@ async function measureUpload(
   onProgress: (percent: number, currentMbps?: number) => void,
 ) {
   const payload = createUploadBlob(bytes);
-  const uploadUrl = speedTestUrl('upload', bytes);
+  const start = performance.now();
+  const targetBytes = bytes * SPEED_TEST_CONCURRENCY;
+  const loadedByRequest = new Array(SPEED_TEST_CONCURRENCY).fill(0);
+  let totalLoaded = 0;
 
-  return new Promise<number>((resolve, reject) => {
+  const reportProgress = (requestIndex: number, loaded: number) => {
+    const nextLoaded = Math.max(loadedByRequest[requestIndex], loaded);
+    totalLoaded += nextLoaded - loadedByRequest[requestIndex];
+    loadedByRequest[requestIndex] = nextLoaded;
+    onProgress(
+      Math.min(100, Math.round((totalLoaded / targetBytes) * 100)),
+      bytesToMbps(totalLoaded, Math.max(1, performance.now() - start)),
+    );
+  };
+
+  const uploadOne = (requestIndex: number) =>
+    new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const start = performance.now();
     let settled = false;
+
+    const progressTimer = window.setInterval(() => {
+      if (settled) {
+        return;
+      }
+
+      const estimatedLoaded = Math.min(
+        bytes * 0.95,
+        loadedByRequest[requestIndex] + bytes / 120,
+      );
+      if (estimatedLoaded > loadedByRequest[requestIndex]) {
+        reportProgress(requestIndex, estimatedLoaded);
+      }
+    }, 250);
+
+    const cleanupUpload = () => {
+      window.clearInterval(progressTimer);
+      signal.removeEventListener('abort', abortUpload);
+    };
 
     const abortUpload = () => {
       settled = true;
+      cleanupUpload();
       xhr.abort();
       reject(new DOMException('Upload aborted', 'AbortError'));
     };
@@ -246,7 +297,7 @@ async function measureUpload(
 
     signal.addEventListener('abort', abortUpload, { once: true });
 
-    xhr.open('POST', uploadUrl);
+    xhr.open('POST', speedTestUrl('upload', bytes));
     xhr.withCredentials = true;
     Object.entries(authHeaders()).forEach(([key, value]) => {
       xhr.setRequestHeader(key, value);
@@ -254,10 +305,7 @@ async function measureUpload(
 
     xhr.upload.onprogress = (event) => {
       const loaded = event.loaded || 0;
-      const percent = event.lengthComputable
-        ? Math.min(100, Math.round((loaded / event.total) * 100))
-        : Math.min(100, Math.round((loaded / bytes) * 100));
-      onProgress(percent, bytesToMbps(loaded, performance.now() - start));
+      reportProgress(requestIndex, loaded);
     };
 
     xhr.onload = () => {
@@ -265,11 +313,10 @@ async function measureUpload(
         return;
       }
       settled = true;
-      signal.removeEventListener('abort', abortUpload);
+      cleanupUpload();
       if (xhr.status >= 200 && xhr.status < 300) {
-        const uploadMbps = bytesToMbps(bytes, performance.now() - start);
-        onProgress(100, uploadMbps);
-        resolve(uploadMbps);
+        reportProgress(requestIndex, bytes);
+        resolve();
         return;
       }
       reject(new Error(`HTTP ${xhr.status}`));
@@ -280,7 +327,7 @@ async function measureUpload(
         return;
       }
       settled = true;
-      signal.removeEventListener('abort', abortUpload);
+      cleanupUpload();
       reject(new Error('Upload failed'));
     };
 
@@ -289,13 +336,24 @@ async function measureUpload(
         return;
       }
       settled = true;
-      signal.removeEventListener('abort', abortUpload);
+      cleanupUpload();
       reject(new DOMException('Upload aborted', 'AbortError'));
     };
 
-    onProgress(0, 0);
+    reportProgress(requestIndex, 0);
     xhr.send(payload);
   });
+
+  onProgress(0, 0);
+  await Promise.all(
+    Array.from({ length: SPEED_TEST_CONCURRENCY }, (_, requestIndex) =>
+      uploadOne(requestIndex),
+    ),
+  );
+
+  const uploadMbps = bytesToMbps(totalLoaded, performance.now() - start);
+  onProgress(100, uploadMbps);
+  return uploadMbps;
 }
 
 function initialRounds(): SpeedRoundResult[] {
@@ -375,7 +433,7 @@ function getGaugeMax(
   const target = Math.max(value ?? 0, historicalMax);
   const steps =
     metric === 'download' || metric === 'upload'
-      ? [100, 500, 1000, 2500, 5000, 10000]
+      ? [100, 500, 1000, 2500, 5000, 10000, 25000]
       : [100, 200, 500, 1000, 2000];
 
   return steps.find((step) => target <= step * 0.9) ?? steps[steps.length - 1];
@@ -387,21 +445,6 @@ function formatGaugeTick(value: number) {
   }
 
   return String(value);
-}
-
-function gaugeValueClassName(value?: number) {
-  const formattedValue = formatNumber(value);
-  if (formattedValue === '--') {
-    return '';
-  }
-  if (formattedValue.length >= 9) {
-    return 'speed-gauge-value-dense';
-  }
-  if (formattedValue.length >= 7) {
-    return 'speed-gauge-value-compact';
-  }
-
-  return '';
 }
 
 function metricValueFromResult(result: SpeedResult, metric: MetricKey) {
@@ -586,10 +629,20 @@ function MiniSparkline(props: {
   tone: string;
   width?: number;
   height?: number;
+  reserveSpace?: boolean;
 }) {
-  const { values, tone, width = 132, height = 44 } = props;
+  const { values, tone, width = 132, height = 44, reserveSpace = false } = props;
   if (!hasSparkline(values)) {
-    return null;
+    if (!reserveSpace) {
+      return null;
+    }
+
+    return (
+      <span
+        className={`speed-sparkline speed-sparkline-placeholder speed-${tone}`}
+        aria-hidden="true"
+      />
+    );
   }
 
   const linePath = smoothSparklinePath(values, width, height);
@@ -615,9 +668,8 @@ function SpeedGauge(props: {
   max: number;
   tone: string;
   sparklineValues: SparklineValue[];
-  scaleLabel: string;
 }) {
-  const { title, value, unit, max, tone, sparklineValues, scaleLabel } = props;
+  const { title, value, unit, max, tone, sparklineValues } = props;
   const formattedValue = formatNumber(value);
   const centerX = 240;
   const centerY = 218;
@@ -714,12 +766,15 @@ function SpeedGauge(props: {
       </svg>
       <div className="speed-gauge-content">
         <span className="speed-gauge-label">{title}</span>
-        <strong className={gaugeValueClassName(value)}>{formattedValue}</strong>
+        <strong>{formattedValue}</strong>
         <span className="speed-gauge-unit">{unit}</span>
-        <span className="speed-gauge-scale-note">
-          {scaleLabel}
-        </span>
-        <MiniSparkline values={sparklineValues} tone={tone} width={150} height={30} />
+        <MiniSparkline
+          values={sparklineValues}
+          tone={tone}
+          width={150}
+          height={30}
+          reserveSpace
+        />
       </div>
     </div>
   );
@@ -733,7 +788,7 @@ const SpeedTestPage: React.FC = () => {
     intl.formatMessage({ id }, values);
   const [phase, setPhase] = useState<TestPhase>('idle');
   const [activeRound, setActiveRound] = useState(0);
-  const [testBytes, setTestBytes] = useState(TEST_SIZE_OPTIONS[2].value);
+  const [testBytes, setTestBytes] = useState(TEST_SIZE_OPTIONS[0].value);
   const [progress, setProgress] = useState(0);
   const [displayMetric, setDisplayMetric] = useState<MetricKey>('download');
   const [liveValues, setLiveValues] = useState({
@@ -1210,22 +1265,16 @@ const SpeedTestPage: React.FC = () => {
               <Button
                 type="primary"
                 size="large"
-                icon={<DashboardOutlined />}
-                loading={running}
-                onClick={running ? undefined : startTest}
+                danger={running}
+                icon={running ? <StopOutlined /> : <DashboardOutlined />}
+                onClick={running ? stopTest : startTest}
               >
-                {t('speedTest.action.start')}
+                {t(
+                  running
+                    ? 'speedTest.action.stop'
+                    : 'speedTest.action.start',
+                )}
               </Button>
-              {running ? (
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<StopOutlined />}
-                  onClick={stopTest}
-                >
-                  {t('speedTest.action.stop')}
-                </Button>
-              ) : null}
             </Space>
             <div className="speed-hero-controls">
               <ThunderboltOutlined />
@@ -1258,10 +1307,6 @@ const SpeedTestPage: React.FC = () => {
                 metricCards.find((item) => item.key === activeMetric)
                   ?.sparklineValues ?? []
               }
-              scaleLabel={t('speedTest.gauge.scale', {
-                max: formatGaugeTick(gaugeMax),
-                unit: gaugeUnit,
-              })}
             />
             <div className="speed-phase">
               <Typography.Text strong>{phaseText}</Typography.Text>

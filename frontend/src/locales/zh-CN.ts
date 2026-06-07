@@ -98,7 +98,6 @@ export default {
     "speedTest.unit.ms": "ms",
     "speedTest.unit.mb": "MB",
     "speedTest.valueWithUnit": "{value} {unit}",
-    "speedTest.gauge.scale": "刻度 0-{max} {unit}",
     "speedTest.hint.lowerIsBetter": "越低越好",
     "speedTest.hint.sample": "{size} {unit} 样本",
     "speedTest.server.label": "服务器",
