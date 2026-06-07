@@ -56,6 +56,13 @@
 
 .speed-hero-copy .ant-btn-primary:not(:disabled):hover {
   background: var(--speed-primary-hover);
+  box-shadow: 0 16px 30px var(--speed-primary-shadow);
+  transform: translateY(-1px);
+}
+
+.speed-hero-copy .ant-btn-primary:not(:disabled):active {
+  box-shadow: 0 8px 18px var(--speed-primary-shadow);
+  transform: translateY(0);
 }
 
 .speed-hero-copy .ant-btn-primary.ant-btn-dangerous {
@@ -65,6 +72,7 @@
 
 .speed-hero-copy .ant-btn-primary.ant-btn-dangerous:not(:disabled):hover {
   background: #ff7875;
+  box-shadow: 0 16px 30px rgba(255, 77, 79, 0.24);
 }
 
 .speed-hero-controls {

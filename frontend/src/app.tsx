@@ -14,12 +14,59 @@ import {
   useIntl,
   useNavigate,
 } from '@umijs/max';
-import { Button, Dropdown, Flex, Result, Space } from 'antd';
+import { Button, ConfigProvider, Dropdown, Flex, Space } from 'antd';
+import type { ThemeConfig } from 'antd';
+import type { ReactNode } from 'react';
+import UnauthorizedResult from './components/UnauthorizedResult';
 import { useState } from 'react';
 import SearchInput from './pages/items/components/Search';
 import { setToken } from './services/lsdb/client';
 
 const { authCurrent, authLogout } = lsdbServices.LsdbController;
+const primaryColor = '#d65d3a';
+const primaryHoverColor = '#e8704d';
+const primaryActiveColor = '#b9492d';
+const primaryHoverBg = 'rgba(214, 93, 58, 0.08)';
+
+const themeConfig: ThemeConfig = {
+  token: {
+    colorPrimary: primaryColor,
+    colorPrimaryHover: primaryHoverColor,
+    colorPrimaryActive: primaryActiveColor,
+  },
+  components: {
+    Button: {
+      defaultHoverBg: primaryColor,
+      defaultHoverBorderColor: primaryColor,
+      defaultHoverColor: '#ffffff',
+      textHoverBg: primaryHoverBg,
+    },
+  },
+};
+
+export function rootContainer(container: ReactNode) {
+  return <ConfigProvider theme={themeConfig}>{container}</ConfigProvider>;
+}
+
+const normalizeLocaleName = (locale?: string) => locale?.replace('_', '-');
+
+const getLocaleLabel = (
+  locale: string | undefined,
+  localeOptions: typeof CONFIG.locales,
+) => {
+  const normalizedLocale = normalizeLocaleName(locale);
+  const normalizedDefaultLocale = normalizeLocaleName(CONFIG.defaultLocale);
+  return (
+    localeOptions.find(
+      (option) => normalizeLocaleName(option.name) === normalizedLocale,
+    )?.label ||
+    localeOptions.find(
+      (option) => normalizeLocaleName(option.name) === normalizedDefaultLocale,
+    )?.label ||
+    normalizedLocale ||
+    normalizedDefaultLocale
+  );
+};
 
 // 全局初始化数据配置，用于 Layout 用户信息和权限初始化
 // 更多信息见文档：https://umijs.org/docs/api/runtime-config#getinitialstate
@@ -41,9 +88,7 @@ export const layout: RunTimeLayoutConfig = (initialState) => {
   const intl = useIntl();
   const currentLocale = getLocale() || CONFIG.defaultLocale;
   const localeOptions = CONFIG.locales;
-  const currentLocaleLabel =
-    localeOptions.find((locale) => locale.name === currentLocale)?.label ||
-    CONFIG.defaultLocale;
+  const currentLocaleLabel = getLocaleLabel(currentLocale, localeOptions);
   const [settings, setSetting] = useState<Partial<ProSettings> | undefined>({
     layout: 'top',
     splitMenus: false,
@@ -204,38 +249,13 @@ export const layout: RunTimeLayoutConfig = (initialState) => {
                 src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjEiIGlkPSJMYXllcl8xIiB4PSIwcHgiIHk9IjBweCIgd2lkdGg9IjQwcHgiIGhlaWdodD0iNDBweCIgdmlld0JveD0iMTIgMTIgNDAgNDAiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMTIgMTIgNDAgNDAiIHhtbDpzcGFjZT0icHJlc2VydmUiPjxwYXRoIGZpbGw9IiMzMzMzMzMiIGQ9Ik0zMiAxMy40Yy0xMC41IDAtMTkgOC41LTE5IDE5YzAgOC40IDUuNSAxNS41IDEzIDE4YzEgMC4yIDEuMy0wLjQgMS4zLTAuOWMwLTAuNSAwLTEuNyAwLTMuMiBjLTUuMyAxLjEtNi40LTIuNi02LjQtMi42QzIwIDQxLjYgMTguOCA0MSAxOC44IDQxYy0xLjctMS4yIDAuMS0xLjEgMC4xLTEuMWMxLjkgMC4xIDIuOSAyIDIuOSAyYzEuNyAyLjkgNC41IDIuMSA1LjUgMS42IGMwLjItMS4yIDAuNy0yLjEgMS4yLTIuNmMtNC4yLTAuNS04LjctMi4xLTguNy05LjRjMC0yLjEgMC43LTMuNyAyLTUuMWMtMC4yLTAuNS0wLjgtMi40IDAuMi01YzAgMCAxLjYtMC41IDUuMiAyIGMxLjUtMC40IDMuMS0wLjcgNC44LTAuN2MxLjYgMCAzLjMgMC4yIDQuNyAwLjdjMy42LTIuNCA1LjItMiA1LjItMmMxIDIuNiAwLjQgNC42IDAuMiA1YzEuMiAxLjMgMiAzIDIgNS4xYzAgNy4zLTQuNSA4LjktOC43IDkuNCBjMC43IDAuNiAxLjMgMS43IDEuMyAzLjVjMCAyLjYgMCA0LjYgMCA1LjJjMCAwLjUgMC40IDEuMSAxLjMgMC45YzcuNS0yLjYgMTMtOS43IDEzLTE4LjFDNTEgMjEuOSA0Mi41IDEzLjQgMzIgMTMuNHoiLz48L3N2Zz4="
               />
             </a>
-            <label>Copyright © 2025 By wmxy2005.</label>
+            <label>Copyright © 2026 By wmxy2005.</label>
           </Flex>
           ;
         </div>
       );
     },
-    unAccessible: (
-      <Result
-        status="403"
-        title={intl.formatMessage({
-          id: 'noRight',
-        })}
-        subTitle={intl.formatMessage({
-          id: 'pleaseLogin',
-        })}
-        extra={
-          <Button
-            type="primary"
-            onClick={() => {
-              navigate('./login', {
-                replace: false,
-                state: { fromUrl: location.href },
-              });
-            }}
-          >
-            {intl.formatMessage({
-              id: 'login',
-            })}
-          </Button>
-        }
-      />
-    ),
+    unAccessible: <UnauthorizedResult />,
     rightRender: (initialState: any) => {
       return <a>Right</a>;
     },

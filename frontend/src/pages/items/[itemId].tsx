@@ -1,4 +1,5 @@
 import { CONFIG } from '@/constants';
+import UnauthorizedResult from '@/components/UnauthorizedResult';
 import lsdbServices from '@/services/lsdb';
 import { openFolder } from '@/services/lsdb/LsdbController';
 import { formatTimestamp } from '@/utils/format';
@@ -46,7 +47,6 @@ import {
   Flex,
   FloatButton,
   Image,
-  Result,
   Row,
   Skeleton,
   Space,
@@ -926,26 +926,6 @@ export default function ItemPage() {
       <Empty></Empty>
     )
   ) : (
-    <Result
-      status="403"
-      title={intl.formatMessage({
-        id: 'alreadyLogout',
-      })}
-      subTitle={intl.formatMessage({
-        id: 'pleaseLogin',
-      })}
-      extra={
-        <Button
-          type="primary"
-          onClick={() => {
-            navigate('/login', { replace: false });
-          }}
-        >
-          {intl.formatMessage({
-            id: 'login',
-          })}
-        </Button>
-      }
-    />
+    <UnauthorizedResult />
   );
 }

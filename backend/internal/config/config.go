@@ -14,6 +14,7 @@ type Config struct {
 	DBPath             string
 	FileRoot           string
 	FrontendDist       string
+	GinMode            string
 	JWTSecret          []byte
 	JWTExpireDays      int
 	JWTRefreshDays     int
@@ -30,6 +31,7 @@ func Load() Config {
 		DBPath:             envDefault(env, "LSDB_DB_PATH", defaultPath(filepath.Join("backend", "data", "test.db"), filepath.Join("data", "test.db"))),
 		FileRoot:           envDefault(env, "LSDB_FILE_ROOT", defaultPath(filepath.Join("backend", "data", "files"), filepath.Join("data", "files"))),
 		FrontendDist:       envDefault(env, "LSDB_FRONTEND_DIST", ""),
+		GinMode:            envDefault(env, "LSDB_GIN_MODE", ""),
 		JWTSecret:          []byte(envDefault(env, "LSDB_JWT_SECRET", "dev-secret-change-me")),
 		JWTExpireDays:      envIntDefault(env, "LSDB_JWT_EXPIRE_DAYS", 7),
 		JWTRefreshDays:     envIntDefault(env, "LSDB_JWT_REFRESH_DAYS", 2),

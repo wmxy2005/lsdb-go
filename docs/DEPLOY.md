@@ -20,10 +20,12 @@
 | `LSDB_DB_PATH` | `backend/data/test.db`（不存在则 `data/test.db`） | SQLite 数据库路径 |
 | `LSDB_FILE_ROOT` | `backend/data/files`（同上回退 `data/files`） | 资源文件根目录 |
 | `LSDB_FRONTEND_DIST` | 空 | 前端构建产物目录；设为 `../frontend/dist` 或 `./dist` 时由后端托管前端 |
+| `LSDB_GIN_MODE` | 空 | Gin 运行模式；可选 `debug`、`release`、`test`，为空时使用 Gin 默认模式选择 |
 | `LSDB_JWT_SECRET` | `dev-secret-change-me` | JWT 签名密钥（**生产必须修改**） |
 | `LSDB_JWT_EXPIRE_DAYS` | `7` | Token 有效期（天） |
 | `LSDB_JWT_REFRESH_DAYS` | `2` | 签发超过该天数后访问 `/auth/current` 触发续期 |
 | `AUTO_RUN_SERVER` | 无（false） | 桌面端读取：`true` 则启动桌面端时自动拉起后端 |
+| `AUTO_RUN_MINIMIZE` | 无（false） | 桌面端读取：`true` 则启动后隐藏主界面，仅驻留系统托盘 |
 
 局域网访问推荐保持 `LSDB_ADDR=:8080`，然后在其它设备访问 `http://<本机局域网IP>:8080`，例如 `http://192.168.10.87:8080`。不要在其它设备上使用 `http://localhost:8080`，因为 `localhost` 指向访问设备自身。若配置为 `127.0.0.1:8080` 或 `localhost:8080`，后端只接受本机访问。
 
@@ -33,9 +35,12 @@ LSDB_ADDR=:8080
 LSDB_DB_PATH=data/test.db
 LSDB_FILE_ROOT=data/files
 LSDB_FRONTEND_DIST=../frontend/dist
+LSDB_GIN_MODE=release
 LSDB_JWT_SECRET=dev-secret-change-me
 LSDB_JWT_EXPIRE_DAYS=7
 LSDB_JWT_REFRESH_DAYS=2
+AUTO_RUN_SERVER=true
+AUTO_RUN_MINIMIZE=true
 ```
 
 ### 1.2 前端配置

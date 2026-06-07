@@ -1,4 +1,5 @@
 import { CONFIG } from '@/constants';
+import UnauthorizedResult from '@/components/UnauthorizedResult';
 import '@/search.css';
 import lsdbServices from '@/services/lsdb';
 import { resolveSearchPramUrl } from '@/utils/resource';
@@ -42,7 +43,6 @@ import {
   FloatButton,
   Pagination,
   Radio,
-  Result,
   Row,
   Select,
   Skeleton,
@@ -816,27 +816,7 @@ const ItemPage: React.FC = () => {
       }}
     >
       <Skeleton loading={loading}>
-        <Result
-          status="403"
-          title={intl.formatMessage({
-            id: 'alreadyLogout',
-          })}
-          subTitle={intl.formatMessage({
-            id: 'pleaseLogin',
-          })}
-          extra={
-            <Button
-              type="primary"
-              onClick={() => {
-                navigate('../login', { replace: false });
-              }}
-            >
-              {intl.formatMessage({
-                id: 'login',
-              })}
-            </Button>
-          }
-        />
+        <UnauthorizedResult />
       </Skeleton>
     </PageContainer>
   );

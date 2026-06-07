@@ -59,6 +59,9 @@ func New() (*Server, error) {
 	resourceHandler := handler.NewResourceHandler(resourceSvc)
 	speedTestHandler := handler.NewSpeedTestHandler()
 
+	if mode := strings.TrimSpace(cfg.GinMode); mode != "" {
+		gin.SetMode(mode)
+	}
 	r := gin.Default()
 	r.POST("/api/auth/register", authHandler.Register)
 	r.POST("/api/auth/login", authHandler.Login)

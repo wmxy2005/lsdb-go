@@ -15,11 +15,35 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 
 	"lsdb-go/backend/internal/service"
 )
+
+func TestNewAppliesConfiguredGinMode(t *testing.T) {
+	oldMode := gin.Mode()
+	t.Cleanup(func() {
+		gin.SetMode(oldMode)
+	})
+
+	tmp := t.TempDir()
+	t.Setenv("LSDB_DB_PATH", filepath.Join(tmp, "test.db"))
+	t.Setenv("LSDB_FILE_ROOT", filepath.Join(tmp, "files"))
+	t.Setenv("LSDB_JWT_SECRET", "test-secret")
+	t.Setenv("LSDB_GIN_MODE", gin.ReleaseMode)
+
+	srv, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { sqlDB, _ := srv.DB.DB(); sqlDB.Close() }()
+
+	if gin.Mode() != gin.ReleaseMode {
+		t.Fatalf("gin mode = %q", gin.Mode())
+	}
+}
 
 func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	tmp := t.TempDir()

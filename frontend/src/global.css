@@ -5,6 +5,41 @@
 	border-bottom-width: 2px !important;
 	border-bottom-color: rgb(214 93 58) !important;
 }
+.ant-btn {
+	transition:
+		color 0.2s ease,
+		background-color 0.2s ease,
+		border-color 0.2s ease,
+		box-shadow 0.2s ease,
+		transform 0.2s ease;
+}
+.ant-btn:not(:disabled):not(.ant-btn-disabled):not(.console-modal__window-action):hover {
+	box-shadow: 0 8px 18px rgb(214 93 58 / 14%);
+	transform: translateY(-1px);
+}
+.ant-btn-default:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):not(.console-modal__window-action):hover {
+	border-color: rgb(214 93 58);
+	background: rgb(214 93 58);
+	color: #fff;
+}
+.ant-btn-default:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):not(.console-modal__window-action):hover .anticon {
+	color: #fff;
+}
+.ant-btn:not(:disabled):not(.ant-btn-disabled):not(.console-modal__window-action):active {
+	box-shadow: 0 2px 8px rgb(214 93 58 / 10%);
+	transform: translateY(0);
+}
+.ant-btn-text:not(:disabled):not(.ant-btn-disabled):hover,
+.ant-btn-link:not(:disabled):not(.ant-btn-disabled):hover {
+	box-shadow: none;
+}
+.ant-btn-text:not(:disabled):not(.ant-btn-disabled):active,
+.ant-btn-link:not(:disabled):not(.ant-btn-disabled):active,
+.console-modal__window-action:not(:disabled):not(.ant-btn-disabled):hover,
+.console-modal__window-action:not(:disabled):not(.ant-btn-disabled):active {
+	box-shadow: none;
+	transform: none;
+}
 .ant-drawer-body .ant-layout-sider {
 	background: #f5f5f5 !important;
 }

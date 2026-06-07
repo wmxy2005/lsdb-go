@@ -8,7 +8,7 @@ import (
 
 func TestLoadReadsDotEnvFromCurrentDirectory(t *testing.T) {
 	tmp := chdirTemp(t)
-	if err := os.WriteFile(filepath.Join(tmp, ".env"), []byte("LSDB_ADDR=:9090\nLSDB_FRONTEND_DIST='../frontend/dist'\nLSDB_JWT_SECRET='from-dotenv'\nLSDB_JWT_EXPIRE_DAYS=3\nLSDB_JWT_REFRESH_DAYS=4\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmp, ".env"), []byte("LSDB_ADDR=:9090\nLSDB_FRONTEND_DIST='../frontend/dist'\nLSDB_GIN_MODE=release\nLSDB_JWT_SECRET='from-dotenv'\nLSDB_JWT_EXPIRE_DAYS=3\nLSDB_JWT_REFRESH_DAYS=4\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("LSDB_ADDR", ":8081")
@@ -20,6 +20,9 @@ func TestLoadReadsDotEnvFromCurrentDirectory(t *testing.T) {
 	}
 	if cfg.FrontendDist != "../frontend/dist" {
 		t.Fatalf("FrontendDist = %q", cfg.FrontendDist)
+	}
+	if cfg.GinMode != "release" {
+		t.Fatalf("GinMode = %q", cfg.GinMode)
 	}
 	if string(cfg.JWTSecret) != "from-dotenv" {
 		t.Fatalf("JWTSecret = %q", string(cfg.JWTSecret))

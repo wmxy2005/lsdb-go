@@ -1,4 +1,5 @@
 import { CONFIG } from '@/constants';
+import UnauthorizedResult from '@/components/UnauthorizedResult';
 import '@/role.css';
 import lsdbServices from '@/services/lsdb';
 import { openFolder } from '@/services/lsdb/LsdbController';
@@ -18,7 +19,6 @@ import {
   Empty,
   Flex,
   FloatButton,
-  Result,
   Row,
   Skeleton,
   Space,
@@ -209,26 +209,6 @@ export default function RolePage() {
       <Empty></Empty>
     )
   ) : (
-    <Result
-      status="403"
-      title={intl.formatMessage({
-        id: 'alreadyLogout',
-      })}
-      subTitle={intl.formatMessage({
-        id: 'pleaseLogin',
-      })}
-      extra={
-        <Button
-          type="primary"
-          onClick={() => {
-            navigate('../login', { replace: false });
-          }}
-        >
-          {intl.formatMessage({
-            id: 'login',
-          })}
-        </Button>
-      }
-    />
+    <UnauthorizedResult />
   );
 }

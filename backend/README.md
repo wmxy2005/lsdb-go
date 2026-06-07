@@ -20,8 +20,11 @@ Configuration is loaded from the `.env` file in the current working directory fi
 - `LSDB_DB_PATH`: SQLite database path, default `backend/data/test.db`.
 - `LSDB_FILE_ROOT`: resource root, default `backend/data/files`.
 - `LSDB_FRONTEND_DIST`: frontend build output directory. Empty by default; use `../frontend/dist` to serve the Vite build from the backend.
+- `LSDB_GIN_MODE`: Gin runtime mode. Valid values are `debug`, `release`, and `test`. Empty by default, leaving Gin's normal mode selection unchanged.
 - `LSDB_JWT_SECRET`: JWT signing secret, default development value.
 - `LSDB_CMD_SKIP_AUTH`: skip authentication for command, monitor, and speed test endpoints, default `false`. When set to `true`, `/api/cmd/:type`, `/api/pc`, and `/api/speedtest/*` are exposed without authentication; keep it disabled outside local or trusted environments.
+- `AUTO_RUN_SERVER`: desktop app option. When set to `true`, the desktop app starts `server.exe` automatically.
+- `AUTO_RUN_MINIMIZE`: desktop app option. When set to `true`, the desktop app starts minimized to the system tray.
 
 When running from `backend`, copy `.env.example` to `.env` and adjust values as needed. Packaged builds can keep `.env` next to `server.exe` (for example `build/.env`), including UTF-8 files with a BOM.
 
