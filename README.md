@@ -70,7 +70,9 @@
 
 **前端能力**
 - 多语言（zh-CN / en-US）、响应式布局、ProComponents 表单搜索
-- 图片画廊（photoswipe）、视频播放（xgplayer）、档案编辑抽屉、标签编辑、CPU 监控图表（`GET /api/pc`）
+- 图片画廊（photoswipe）、视频播放（xgplayer）、档案编辑抽屉、标签编辑
+- 系统工具页：关机/重启 + CPU/网络实时监控（`GET /api/pc/stream` SSE）
+- 网络测速页：Ping / 下载 / 上传（`/api/speedtest/*`）
 
 **桌面端能力**
 - 托盘常驻，启停 / 重启后端 `server.exe`（隐藏控制台窗口启动）
@@ -227,11 +229,12 @@ graph LR
 - **handler / middleware / response**：参数解析与错误码映射、Bearer 鉴权、统一响应结构。
 
 ### 6.2 前端
-- `services/lsdb/client.ts`：封装 `apiRequest`，自动附加 `Authorization: Bearer`（Token 存于 cookie `lsdb_token`），对 401 特殊处理。
+- `services/lsdb/client.ts`：封装 `apiRequest`，自动附加 `Authorization: Bearer`（Token 存于 cookie `lsdb_token`）；4xx/5xx 且 body 含 `success` 时解析并返回 JSON，页面以 `success` 判断业务成败，401 仍由全局逻辑处理。
 - `services/lsdb/LsdbController.ts`：业务 API 封装。
 - `app.tsx`：`getInitialState` 拉取当前用户，配置 ProLayout、语言切换与登出。
 - `pages/items/index.tsx`：核心档案搜索页（URL query 驱动、localStorage 缓存、滚动恢复）。
-- `pages/Tool/index.tsx`：关机/重启与 CPU 监控（`/api/pc`）。
+- `pages/Tool/index.tsx`：关机/重启；CPU/网络监控经 SSE（`getPcStatsStreamUrl` → `/api/pc/stream`）。
+- `pages/SpeedTest/index.tsx`：网络测速（`/api/speedtest/ping|download|upload`）。
 
 ### 6.3 桌面端
 - `src-tauri/src/lib.rs`：进程状态管理、启动/停止/重启、日志线程、托盘菜单、窗口关闭隐藏、`AUTO_RUN_SERVER` 自动启动、`read_env/write_env`。

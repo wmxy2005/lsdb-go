@@ -1,6 +1,6 @@
 # LSDB 前端（Web）
 
-LSDB 档案 / 资料管理系统的 Web 前端，基于 **UmiJS Max + React + Ant Design** 构建，提供登录、档案搜索、详情浏览、图片画廊、视频播放、收藏、角色查看与系统工具等功能。
+LSDB 档案 / 资料管理系统的 Web 前端，基于 **UmiJS Max + React + Ant Design** 构建，提供登录、档案搜索、详情浏览、图片画廊、视频播放、收藏、角色查看、系统工具、实时监控与网络测速等功能。
 
 > 项目总览见根目录 [README](../README.md)，接口细节见 [docs/API.md](../docs/API.md)，后端见 [backend/README.md](../backend/README.md)。
 
@@ -66,13 +66,15 @@ frontend/
    │  └─ index.ts            # 常量导出（含 DIR_SEP）
    ├─ services/lsdb/
    │  ├─ client.ts           # apiRequest 封装：注入 Bearer Token、401 处理
-   │  ├─ LsdbController.ts    # 业务 API：登录/登出/当前用户/档案/角色/收藏/命令
+   │  ├─ LsdbController.ts    # 业务 API：登录/档案/角色/收藏/命令/监控 SSE/测速 URL
    │  └─ typings.d.ts        # LSDB 命名空间响应类型
    ├─ models/                # 全局状态（search、global）
    ├─ pages/
    │  ├─ login.tsx           # 登录页
-   │  ├─ items/              # 档案搜索/详情/角色 + 子组件（Item/EditItem/Search 等）
-   │  └─ Tool/               # 系统工具（关机/重启/CPU 监控）
+   │  ├─ items/              # 档案列表/详情/角色 + 子组件（Item/EditItem/Search/EditTag 等）
+   │  ├─ Tool/               # 系统工具（关机/重启 + CPU/网络 SSE 监控）
+   │  ├─ SpeedTest/          # 网络测速（Ping/下载/上传）
+   │  └─ Home|Access|Table/  # Umi 脚手架遗留，路由未启用
    ├─ components/            # 通用组件（Guide 等）
    ├─ utils/                 # 工具（resource/format/jwt/prisma）
    ├─ locales/              # 国际化 zh-CN / en-US
@@ -84,14 +86,17 @@ frontend/
 ## 路由（`.umirc.ts`）
 
 
-| 路径               | 页面            | 权限  |
-| ---------------- | ------------- | --- |
-| `/`              | 重定向到 `/items` | -   |
-| `/items`         | 档案搜索列表        | 需登录 |
-| `/items/:itemId` | 档案详情          | 需登录 |
-| `/items/role`    | 角色详情          | 需登录 |
-| `/tool`          | 系统工具          | -   |
-| `/login`         | 登录            | 公开  |
+| 路径               | 页面                         | 菜单 | 权限  |
+| ---------------- | -------------------------- | --- | --- |
+| `/`              | 重定向到 `/items`              | -   | -   |
+| `/items`         | 档案搜索列表                     | 显示  | 需登录 |
+| `/items/:itemId` | 档案详情                       | 隐藏  | 需登录 |
+| `/items/role`    | 角色详情                       | 隐藏  | 需登录 |
+| `/tool`          | 关机/重启 + CPU/网络监控（SSE）      | 显示  | 公开  |
+| `/speedTest`     | 网络测速（Ping/下载/上传）           | 显示  | 公开  |
+| `/login`         | 登录                         | 隐藏  | 公开  |
+
+> `/tool` 与 `/speedTest` 路由本身不要求登录，但对应 API 默认需 JWT（`LSDB_CMD_SKIP_AUTH=true` 时可跳过，见 [backend/README.md](../backend/README.md)）。
 
 
 ## 搜索与 matchMode
@@ -106,9 +111,9 @@ frontend/
 ## 认证与请求
 
 - 登录成功后，JWT 存于 cookie `lsdb_token`（有效期默认 7 天，见 `config.tokenExpired`）。
-- `services/lsdb/client.ts` 的 `apiRequest` 会自动附加请求头 `Authorization: Bearer <token>`，并对 401 响应做特殊处理。
+- `services/lsdb/client.ts` 的 `apiRequest` 会自动附加请求头 `Authorization: Bearer <token>`；4xx/5xx 且响应体含 `success` 时会解析 JSON 并正常返回，页面仍以 `success` 判断业务成败（详见 [docs/API.md](../docs/API.md)）。
 - 权限由 `access.ts` 控制：`login = initialState.userId > 0`；未登录访问受保护路由会展示登录引导。
-- ⚠️ 后端的失败响应会把 HTTP 状态码统一改写为 202，请始终依据响应体的 `success` 字段判断结果（详见 [docs/API.md](../docs/API.md)）。
+- 失败时 HTTP 状态码与语义一致（如 401/400/404/409/500），与响应体 `errorCode` 通常相同；勿以 2xx 判断失败。
 
 ## 国际化
 
@@ -148,7 +153,8 @@ pnpm build        # 产物输出到 frontend/dist
 
 ## 已知问题 / 注意事项
 
-- `pages/Tool` 的 CPU/网络监控使用 `GET /api/pc/stream` SSE 实时流（需登录）；首次返回 `cpu: 0`，关闭开关超过空闲超时后后端采样自动停止。`GET /api/pc` 仍保留为兼容接口。
+- `pages/Tool` 通过 `getPcStatsStreamUrl()` 连接 `GET /api/pc/stream` SSE（token 走 query）；展示 CPU 与上传/下载速度双图表。关闭监控开关或连接断开后，超过 `LSDB_MONITOR_IDLE_TIMEOUT` 后端采样自动停止。`GET /api/pc` 仍保留为兼容轮询接口。
+- `pages/SpeedTest` 通过 `speedTestUrl()` + `authHeaders()` 调用 `/api/speedtest/ping|download|upload`（见 [docs/API.md](../docs/API.md)）。
 - `src/utils/{jwt.ts, prisma.ts}` 及依赖 `bcryptjs`、`jsonwebtoken` 可能为脚手架遗留，实际认证由后端完成（需确认是否使用）。
 - `DIR_SEP` 为 `/`，用于拼接传给后端的相对资源路径（`opendir` 等）；后端会规范化为本机路径。
 

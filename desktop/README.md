@@ -44,4 +44,4 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Backend
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Desktop
 ```
 
-无参数时会显示菜单，可选择全部或单独构建 Frontend、Backend、Desktop。脚本会将桌面可执行文件、`server.exe`、`.env` 和前端静态资源统一放入 `build/`。
+无参数时在终端用 **↑↓** 选择构建目标，**Enter** 确认，**Esc** 取消。脚本会将桌面可执行文件、`server.exe`、`.env` 和前端静态资源统一放入 `build/`。

@@ -20,60 +20,82 @@ $DesktopTargetReleasePath = Join-Path $DesktopDir "src-tauri\target\release"
 $DesktopBundlePath = Join-Path $DesktopTargetReleasePath "bundle"
 $DesktopBundleOutputPath = Join-Path $OutputPath "desktop-bundle"
 
-function Show-BuildMenu {
-    Write-Host ""
-    Write-Host "请选择构建目标:"
-    Write-Host "  1) 全部 (Frontend + Backend + Desktop)"
-    Write-Host "  2) Frontend"
-    Write-Host "  3) Backend"
-    Write-Host "  4) Desktop"
-    Write-Host "  0) 取消"
-}
+$BuildMenuOptions = @(
+    @{ Label = "全部 (Frontend + Backend + Desktop)"; Frontend = $true;  Backend = $true;  Desktop = $true;  Cancel = $false }
+    @{ Label = "Frontend";                          Frontend = $true;  Backend = $false; Desktop = $false; Cancel = $false }
+    @{ Label = "Backend";                           Frontend = $false; Backend = $true;  Desktop = $false; Cancel = $false }
+    @{ Label = "Desktop";                           Frontend = $false; Backend = $false; Desktop = $true;  Cancel = $false }
+    @{ Label = "取消";                              Frontend = $false; Backend = $false; Desktop = $false; Cancel = $true  }
+)
 
-function Read-BuildChoice {
-    $maxAttempts = 3
-    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-        Show-BuildMenu
-        $choice = Read-Host "请输入选项 [0-4]"
+function Render-BuildMenu {
+    param(
+        [int]$SelectedIndex,
+        [int]$StartLine
+    )
 
-        switch ($choice) {
-            "0" { return $null }
-            "" { return $null }
-            "1" {
-                return @{
-                    Frontend = $true
-                    Backend  = $true
-                    Desktop  = $true
-                }
-            }
-            "2" {
-                return @{
-                    Frontend = $true
-                    Backend  = $false
-                    Desktop  = $false
-                }
-            }
-            "3" {
-                return @{
-                    Frontend = $false
-                    Backend  = $true
-                    Desktop  = $false
-                }
-            }
-            "4" {
-                return @{
-                    Frontend = $false
-                    Backend  = $false
-                    Desktop  = $true
-                }
-            }
-            default {
-                Write-Host "无效选项，请重新输入。" -ForegroundColor Yellow
-            }
+    $clearWidth = [Math]::Max([Console]::WindowWidth, 80)
+
+    [Console]::SetCursorPosition(0, $StartLine)
+    Write-Host ("请选择构建目标 (↑↓ 移动, Enter 确认, Esc 取消):".PadRight($clearWidth))
+
+    for ($i = 0; $i -lt $BuildMenuOptions.Count; $i++) {
+        [Console]::SetCursorPosition(0, $StartLine + 1 + $i)
+        $prefix = if ($i -eq $SelectedIndex) { "  > " } else { "    " }
+        $text = "$prefix$($BuildMenuOptions[$i].Label)".PadRight($clearWidth)
+        if ($i -eq $SelectedIndex) {
+            Write-Host $text -ForegroundColor Black -BackgroundColor Cyan
+        }
+        else {
+            Write-Host $text
         }
     }
+}
 
-    throw "无效输入次数过多，已退出。"
+function Select-BuildTarget {
+    if ([Console]::IsInputRedirected -or $Host.Name -ne 'ConsoleHost') {
+        Write-Host "非交互终端无法显示菜单，请使用参数指定构建目标，例如:" -ForegroundColor Yellow
+        Write-Host "  .\build.ps1 -All"
+        Write-Host "  .\build.ps1 -Frontend"
+        Write-Host "  .\build.ps1 -Backend"
+        Write-Host "  .\build.ps1 -Desktop"
+        exit 1
+    }
+
+    $selectedIndex = 0
+    Clear-Host
+    $startLine = 0
+
+    while ($true) {
+        Render-BuildMenu -SelectedIndex $selectedIndex -StartLine $startLine
+
+        $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+
+        switch ($key.VirtualKeyCode) {
+            38 {
+                if ($selectedIndex -gt 0) {
+                    $selectedIndex--
+                }
+            }
+            40 {
+                if ($selectedIndex -lt ($BuildMenuOptions.Count - 1)) {
+                    $selectedIndex++
+                }
+            }
+            13 {
+                $choice = $BuildMenuOptions[$selectedIndex]
+                if ($choice.Cancel) {
+                    return $null
+                }
+                return @{
+                    Frontend = $choice.Frontend
+                    Backend  = $choice.Backend
+                    Desktop  = $choice.Desktop
+                }
+            }
+            27 { return $null }
+        }
+    }
 }
 
 function Build-Frontend {
@@ -176,7 +198,7 @@ function Build-Desktop {
 $hasExplicitTarget = $All -or $Frontend -or $Backend -or $Desktop
 
 if (-not $hasExplicitTarget) {
-    $selection = Read-BuildChoice
+    $selection = Select-BuildTarget
     if (-not $selection) {
         Write-Host "已取消构建。"
         exit 0

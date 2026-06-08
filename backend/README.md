@@ -67,10 +67,10 @@ SQL reference: `scripts/migrate_test_db.sql`. Backup before migrating production
 
 ## API
 
-See [../docs/API.md](../docs/API.md) for data models and full endpoint documentation.
+See [../docs/API.md](../docs/API.md) for data models and full endpoint documentation. Error responses use semantic HTTP status codes (400/401/404/409/500) with a unified JSON body (`success`, `message`, `errorCode`).
 
 ## Frontend (API testing)
 
-See `[../frontend/README.md](../frontend/README.md)` for the UmiJS + React dev client used to exercise register, login, items list/detail, roles, favorites, and resource images.
+See `[../frontend/README.md](../frontend/README.md)` for the UmiJS + React dev client used to exercise register, login, items list/detail, roles, favorites, resource images, system tools (`/tool`), and speed test (`/speedTest`).
 
 Full project docs: `[../README.md](../README.md)` · `[../docs/API.md](../docs/API.md)` · `[../docs/DEPLOY.md](../docs/DEPLOY.md)` · `[../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md)`

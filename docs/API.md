@@ -91,6 +91,18 @@ erDiagram
 - 失败响应：`{ "success": false, "message": "...", "errorCode": <int> }`；HTTP 状态码与语义一致（如 401/400/404/409/500）。
 - 前端 `apiRequest` 在 4xx/5xx 时解析上述 JSON 并返回，页面仍以 `success` 字段判断业务成败。
 
+**HTTP 状态码对照**
+
+| HTTP | 典型场景 | `errorCode` |
+| --- | --- | --- |
+| 400 | 参数无效、路径非法、命令不支持 | 400 |
+| 401 | 缺少/无效 Token、登录失败 | 401 |
+| 404 | 档案/角色/资源不存在 | 404 |
+| 409 | 用户名重复、资源已存在 | 409 |
+| 500 | 未知内部错误（`message` 为 `internal server error`） | 500 |
+
+`errorCode` 通常与 HTTP 状态码相同；前端可同时参考两者，业务判断以 `success` 为准。
+
 ### 路由总览
 
 | 方法 | 路径 | 鉴权 | 说明 |
@@ -111,6 +123,11 @@ erDiagram
 | POST | `/api/resource` | ✅ | 上传资源 |
 | DELETE | `/api/resource` | ✅ | 删除资源 |
 | POST | `/api/cmd/:type` | ✅ | 系统命令（Windows） |
+| GET | `/api/pc` | ✅ | CPU/网络监控缓存（兼容轮询） |
+| GET | `/api/pc/stream` | ✅ | CPU/网络监控 SSE 流 |
+| GET | `/api/speedtest/ping` | ✅ | 测速 Ping |
+| GET | `/api/speedtest/download` | ✅ | 测速下载 |
+| POST | `/api/speedtest/upload` | ✅ | 测速上传 |
 
 ### 2.1 认证
 
@@ -188,7 +205,7 @@ erDiagram
 
 #### GET /api/items/:id（需鉴权）
 - 说明：档案详情，相比列表额外返回 `imgList`、`imgList1`(宽图≥200)、`imgList2`(窄图)、`fileList`、`videoThumbnail`。
-- 失败：不存在 → `success:false`（原意 404）。
+- 失败：不存在 → HTTP **404**，`success: false`。
 
 #### POST /api/items（需鉴权）
 - 说明：创建档案，创建后返回详情。
@@ -203,7 +220,7 @@ erDiagram
 - 成功响应：`{ "success": true, "data": { ...item detail... } }`
 
 #### PUT /api/items/:id（需鉴权）
-- 说明：部分更新，未提供字段不更新；无任何可更新字段时返回失败（原意 400）。
+- 说明：部分更新，未提供字段不更新；无任何可更新字段时返回 HTTP **400**，`success: false`。
 - 请求体：同 `ItemWrite` 子集。
 
 **前后端契约（已对齐）**
@@ -247,7 +264,7 @@ erDiagram
 - 说明：按 `base/category/subcategory/name/filename` 从 `LSDB_FILE_ROOT` 读取文件并流式返回（`http.ServeFile`，支持图片/视频 Range）。空路径段跳过；防路径穿越。
 - 查询参数：`base, category, subcategory, name, filename, force`
 - `force=true`：文件不存在时回退到 `image-not-found.jpg`（若存在）。
-- 响应：文件二进制流（200）；不存在 → 失败响应。
+- 响应：文件二进制流（HTTP **200**）；不存在且未命中 `force` 回退 → HTTP **404**，`success: false`。
 
 #### POST /api/resource（需鉴权，上传）
 - 说明：`multipart/form-data` 上传文件到指定资源路径，字段名 `file`。`force=true` 允许覆盖。
@@ -262,7 +279,7 @@ erDiagram
 #### POST /api/cmd/:type（需鉴权）
 - `:type` 可为 `shutdown` / `restart` / `opendir`。
 - `opendir` 需查询参数 `path`（相对 `LSDB_FILE_ROOT`，禁止 `..`/绝对路径，须为已存在目录）。
-- 非 Windows 平台返回错误（原意 400）。
+- 非 Windows 平台 → HTTP **400**，`success: false`。
 
 #### GET /api/pc（需鉴权）
 - 说明：返回整机 CPU 占用率与网络速度缓存，保留为监控调试与兼容接口。
@@ -278,3 +295,23 @@ erDiagram
 - 鉴权：浏览器 `EventSource` 无法设置 `Authorization` 头，需通过查询参数传 token：`/api/pc/stream?token=<jwt>`。`LSDB_CMD_SKIP_AUTH=true` 时可不传。
 - 事件：默认 `message` 事件，每 1s 推送一次 JSON：`{ time, cpu, uploadSpeed, downloadSpeed }`。
 - 连接关闭后停止刷新活跃时间；超过 `LSDB_MONITOR_IDLE_TIMEOUT` 后后端采样自动停止。
+
+### 2.7 网络测速 SpeedTest（需鉴权）
+
+供前端 `/speedTest` 页使用。`LSDB_CMD_SKIP_AUTH=true` 时上述三个端点可免鉴权（与 `/api/cmd`、`/api/pc` 相同，仅限可信环境）。
+
+#### GET /api/speedtest/ping（需鉴权）
+- 说明：返回服务器时间戳，用于计算 Ping/抖动。
+- 成功：`{ "success": true, "data": { "time": <unix_ms> }, "errorCode": 0 }`
+
+#### GET /api/speedtest/download（需鉴权）
+- 说明：返回指定大小的零字节流，用于测量下载速度。
+- 查询参数：`bytes`（可选，默认 128MB，最大 512MB）
+- 成功：HTTP **200**，`Content-Type: application/octet-stream`，响应体为二进制流（非 JSON 信封）。
+- 失败：`bytes` 非法 → HTTP **400**，`success: false`。
+
+#### POST /api/speedtest/upload（需鉴权）
+- 说明：接收请求体并丢弃，用于测量上传速度。
+- 查询参数：`bytes`（可选，默认 128MB，最大 512MB；请求体不得超过该值）
+- 成功：`{ "success": true, "data": { "bytes": <received> }, "errorCode": 0 }`
+- 失败：请求体超限或无效 → HTTP **400**，`success: false`。

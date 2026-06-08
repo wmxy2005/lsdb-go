@@ -1,0 +1,46 @@
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+
+export function SearchBar({
+  variant = 'desktop',
+  onSubmitted,
+  className,
+}: {
+  variant?: 'desktop' | 'mobile';
+  onSubmitted?: () => void;
+  className?: string;
+}) {
+  const [keyword, setKeyword] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!keyword.trim()) return;
+    navigate(`/items?keyword=${encodeURIComponent(keyword.trim())}`);
+    onSubmitted?.();
+  };
+
+  const isMobile = variant === 'mobile';
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className={cn(
+        'relative',
+        isMobile ? 'w-full' : 'hidden md:block',
+        className,
+      )}
+    >
+      <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+      <Input
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+        placeholder="搜索档案..."
+        className={cn('pl-8', isMobile ? 'w-full' : 'w-48 lg:w-64')}
+      />
+    </form>
+  );
+}
