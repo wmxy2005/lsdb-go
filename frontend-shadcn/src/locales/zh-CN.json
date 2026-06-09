@@ -1,0 +1,409 @@
+{
+  "nav": {
+    "items": "档案",
+    "roles": "角色",
+    "tools": "工具",
+    "speedTest": "测速",
+    "logout": "登出",
+    "logoutSystem": "登出系统",
+    "login": "登录",
+    "openMenu": "打开菜单",
+    "mobileMenu": "菜单"
+  },
+  "page": {
+    "documentTitle": "{{info}} - 第 {{page}}/{{pages}} 页"
+  },
+  "breadcrumb": {
+    "console": "控制台",
+    "overview": "概览",
+    "itemsList": "档案列表",
+    "roleManagement": "角色管理",
+    "itemDetail": "档案详情",
+    "toolbox": "工具箱",
+    "speedTest": "网络测速"
+  },
+  "sidebar": {
+    "mainNav": "主导航",
+    "toolsAndSystem": "工具与系统",
+    "authenticatedUser": "已认证用户"
+  },
+  "layout": {
+    "language": {
+      "toggle": "切换语言",
+      "zh": "中文",
+      "en": "English"
+    }
+  },
+  "search": {
+    "placeholder": "搜索档案...",
+    "placeholderDesktop": "搜索资源与档案...",
+    "placeholderMobile": "搜索..."
+  },
+  "commandMenu": {
+    "brand": "LSDB Command Palette",
+    "category": {
+      "navigation": "导航",
+      "systemActions": "系统操作"
+    },
+    "itemsList": "档案列表",
+    "roleManagement": "角色管理",
+    "toolbox": "工具箱",
+    "speedTest": "网络测速",
+    "toggleTheme": "切换至 {{mode}} 模式",
+    "theme": {
+      "dark": "深色",
+      "light": "浅色"
+    },
+    "placeholder": "搜索档案、页面与快捷操作...",
+    "section": {
+      "archiveResults": "档案结果"
+    },
+    "searching": "正在搜索档案...",
+    "noArchivesFound": "未找到档案",
+    "viewAllResults": "查看全部搜索结果（{{count}} 条）",
+    "emptyWithSearch": "未找到匹配的档案或命令",
+    "emptyNoSearch": "未找到匹配的命令或页面",
+    "hint": {
+      "navigate": "↑↓ 移动",
+      "select": "↵ 选择",
+      "viewAll": "↵ 查看全部结果",
+      "close": "esc 关闭"
+    }
+  },
+  "common": {
+    "back": "返回",
+    "preview": "预览",
+    "add": "添加",
+    "cancel": "取消",
+    "close": "关闭",
+    "retry": "重试",
+    "goLogin": "去登录",
+    "publishedOn": "发布于 {{date}}",
+    "dragToReorder": "拖拽调整顺序",
+    "themeToggle": "切换主题",
+    "loadFailed": "加载失败",
+    "empty": {
+      "defaultTitle": "暂无数据"
+    },
+    "error": {
+      "defaultTitle": "无法访问",
+      "defaultDescription": "请登录后重试"
+    }
+  },
+  "auth": {
+    "tagline": "轻量级系统资源与技术档案管理平台",
+    "loginTitle": "系统登录",
+    "loginDescription": "请输入您的管理员凭证以访问控制台",
+    "username": "用户名",
+    "usernamePlaceholder": "请输入用户名",
+    "password": "密码",
+    "passwordPlaceholder": "请输入密码",
+    "loggingIn": "安全登录中...",
+    "submit": "登录控制台"
+  },
+  "items": {
+    "filter": {
+      "resourceCategory": "资源分类",
+      "allCategories": "全部分类",
+      "sortBy": "排序方式",
+      "myFavorites": "我的收藏",
+      "favoritesOnly": "仅看收藏",
+      "displayType": "展现类型",
+      "advancedOptions": "高级筛选选项",
+      "keyword": "关键词",
+      "keywordPlaceholder": "英文分号分隔...",
+      "tag": "标签",
+      "tagPlaceholder": "精确标签搜索...",
+      "category": "分类",
+      "categoryPlaceholder": "分类目录检索...",
+      "matchMode": "逻辑匹配模式",
+      "matchAnd": "与 (AND)",
+      "matchOr": "或 (OR)",
+      "dateFrom": "发布开始日期",
+      "dateTo": "发布结束日期",
+      "apply": "应用高级筛选"
+    },
+    "sort": {
+      "createdAt": "创建时间",
+      "date": "日期"
+    },
+    "resultCount": "找到档案：{{count}} 条",
+    "queryTime": "查询耗时 {{ms}} ms",
+    "relatedRoles": "相关角色：",
+    "empty": {
+      "title": "没有找到档案",
+      "description": "尝试调整筛选条件或输入其他关键词"
+    },
+    "pagination": {
+      "prev": "上一页",
+      "next": "下一页",
+      "pageInfo": "第 {{page}} 页 / 共 {{totalPages}} 页"
+    }
+  },
+  "itemDetail": {
+    "section": {
+      "description": "档案详情描述",
+      "trailer": "预告视频 / 演示",
+      "gallery": "高清图集 (点击放大)",
+      "detailImages": "相关细节图"
+    }
+  },
+  "role": {
+    "management": "角色管理",
+    "section": {
+      "gallery": "角色图集",
+      "notes": "备注与说明"
+    }
+  },
+  "tool": {
+    "pageTitle": "系统工具",
+    "pageDescription": "远程控制、电源管理与实时系统性能监控。",
+    "power": {
+      "section": "电源管理",
+      "title": "服务器电源控制",
+      "description": "远程执行服务器关机或重启操作，请谨慎使用。",
+      "shuttingDown": "正在关机...",
+      "safeShutdown": "安全关机",
+      "restarting": "正在重启...",
+      "restart": "系统重启"
+    },
+    "monitor": {
+      "section": "实时监控",
+      "title": "系统性能监视器",
+      "description": "开启 SSE 实时数据流，监控 CPU 占用率与网络吞吐量。",
+      "active": "正在实时监控中...",
+      "enable": "开启实时系统性能监控",
+      "label": "监控",
+      "show": "显示",
+      "hide": "隐藏",
+      "connectionClosed": "监控连接已断开",
+      "cpu": {
+        "title": "实时 CPU 占用率 (%)",
+        "dataset": "CPU 占用率",
+        "yAxis": "占用率 (%)"
+      },
+      "network": {
+        "title": "实时网络速度",
+        "uploadSpeed": "上传速度",
+        "downloadSpeed": "下载速度",
+        "yAxis": "速度 (MB/s)"
+      },
+      "xAxis": "系统时间",
+      "emptyValue": "--"
+    },
+    "chart": {
+      "cpu": "CPU 占用率",
+      "network": "网络吞吐量",
+      "uploadSpeed": "上传速度",
+      "downloadSpeed": "下载速度"
+    }
+  },
+  "speedTest": {
+    "pageTitle": "网络测速",
+    "pageDescription": "测试与服务器之间的延迟 (Ping)、下载带宽及上传带宽速度。",
+    "config": {
+      "section": "测速配置",
+      "title": "带宽测试设置",
+      "description": "选择测试文件大小。文件越大，测试结果越精确，但耗时较长。",
+      "dataSize": "测试数据量"
+    },
+    "size": {
+      "quick": "16 MB (快速测试)",
+      "standard": "64 MB (标准测试)",
+      "deep": "128 MB (深度测试)"
+    },
+    "stop": "停止测试",
+    "start": "开始测速",
+    "progress": {
+      "section": "实时进度与结果",
+      "title": "测试状态",
+      "running": "正在进行网络多并发吞吐量测试，请稍候...",
+      "completed": "测试已完成，结果如下。",
+      "idle": "等待开始测试...",
+      "testing": "测试中..."
+    },
+    "result": {
+      "ping": "网络延迟 (Ping)",
+      "download": "下载速度 (Download)",
+      "upload": "上传速度 (Upload)"
+    },
+    "idleHint": "点击「开始测速」按钮启动带宽测试",
+    "hero": {
+      "titleLine1": "测试你的",
+      "titleLine2": "网络速度",
+      "description": "检测当前 LSDB 服务器的下载、上传、Ping 和抖动表现。"
+    },
+    "action": {
+      "start": "开始测速",
+      "stop": "停止"
+    },
+    "testSize": "测试大小",
+    "phase": {
+      "ready": "准备就绪",
+      "latency": "测试 Ping",
+      "download": "测试下载",
+      "upload": "测试上传",
+      "done": "已完成",
+      "error": "失败",
+      "round": "{{label}}（{{round}}/{{total}}）"
+    },
+    "metric": {
+      "download": "下载",
+      "upload": "上传",
+      "ping": "Ping",
+      "jitter": "抖动"
+    },
+    "unit": {
+      "mbps": "Mbps",
+      "ms": "ms",
+      "mb": "MB"
+    },
+    "valueWithUnit": "{{value}} {{unit}}",
+    "hint": {
+      "lowerIsBetter": "越低越好",
+      "sample": "{{size}} {{unit}} 样本"
+    },
+    "server": {
+      "label": "服务器",
+      "current": "当前 LSDB 服务器"
+    },
+    "recent": {
+      "title": "最近结果",
+      "empty": "暂无已完成测速"
+    },
+    "chart": {
+      "title": "速度趋势（{{unit}}）",
+      "tooltip": "{{label}}：{{value}} {{unit}}"
+    },
+    "table": {
+      "round": "轮次"
+    },
+    "error": {
+      "failed": "测速失败"
+    }
+  },
+  "edit": {
+    "sheet": {
+      "titleNew": "新建档案",
+      "titleEdit": "编辑档案",
+      "description": "修改档案元数据、标签关联、媒体配置与图集资源。"
+    },
+    "section": {
+      "storagePath": "存储路径配置",
+      "basicInfo": "基本信息",
+      "tags": "标签关联配置",
+      "media": "核心媒体配置",
+      "gallery": "图集关联",
+      "resources": "资源文件管理"
+    },
+    "field": {
+      "base": "Base (根目录)",
+      "basePlaceholder": "例如: base_folder",
+      "category": "Category (主分类)",
+      "categoryPlaceholder": "例如: category_folder",
+      "subcategory": "Subcategory (子分类)",
+      "subcategoryPlaceholder": "例如: subcategory_folder",
+      "name": "Name (档案名称)",
+      "namePlaceholder": "例如: archive_name",
+      "title": "档案标题",
+      "titlePlaceholder": "请输入档案标题",
+      "publishDate": "发布日期",
+      "content": "详细描述内容",
+      "contentPlaceholder": "请输入档案的详细描述内容..."
+    },
+    "tag": {
+      "primary": "标签 (主标签)",
+      "secondary": "标签2 (次级标签)",
+      "tertiary": "标签3 (辅助标签)",
+      "dragHint": "拖拽标签可调整顺序",
+      "empty": "暂无关联标签，请在下方添加",
+      "addPlaceholder": "添加新{{label}}"
+    },
+    "media": {
+      "notSelected": "未选择{{label}}",
+      "thumbnail": "主缩略图 (Thumbnail)",
+      "thumbnailShort": "主缩略图",
+      "roll": "悬浮预览 (Roll)",
+      "rollShort": "悬浮预览",
+      "trailer": "预告视频 (Trailer)",
+      "trailerShort": "预告视频",
+      "selectFile": "选择关联文件",
+      "clearSelection": "清除选择",
+      "hoverPreviewHint": "悬停卡片显示预览按钮",
+      "notSelectedThumbnail": "未选择主缩略图"
+    },
+    "noResourcesHint": "暂无可用资源文件，请先在下方上传资源文件",
+    "gallery": {
+      "dragHandleHint": "拖拽卡片右上角手柄可调整顺序",
+      "clickToPreview": "点击预览",
+      "removeFromGallery": "从图集移除",
+      "empty": "暂无关联图集图片，请在下方选择文件添加",
+      "addImage": "添加图片",
+      "selectFilePlaceholder": "选择未关联文件添加至图集",
+      "addToGallery": "添加至图集"
+    },
+    "resource": {
+      "type": {
+        "thumbnail": "缩略图",
+        "image": "图片",
+        "file": "视频/文件"
+      },
+      "delete": "删除此资源文件",
+      "empty": "暂无关联的资源文件",
+      "dropHint": "可将文件拖拽到此处上传",
+      "uploadLabel": "上传新资源文件",
+      "selectAndUpload": "选择并上传文件",
+      "orDragHint": "或拖拽文件到上方区域"
+    },
+    "saving": "正在保存...",
+    "save": "保存档案"
+  },
+  "sync": {
+    "title": "同步文件夹",
+    "inProgress": "同步中...",
+    "success": "同步完成",
+    "failed": "同步失败"
+  },
+  "toast": {
+    "operationFailed": "操作失败",
+    "openFolderSuccess": "已成功打开本地文件夹",
+    "openFolderFailed": "打开失败",
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "uploadSuccess": "上传成功",
+    "uploadFailed": "上传失败",
+    "deleted": "已删除",
+    "deleteFailed": "删除失败",
+    "favoriteAdded": "已加入收藏",
+    "favoriteRemoved": "已取消收藏",
+    "loginFailed": "登录失败",
+    "commandSent": "命令已成功发送至服务器",
+    "monitorDisconnected": "监控流连接已断开",
+    "speedTestComplete": "测速完成！",
+    "speedTestFailed": "网络测速失败，请检查网络连接",
+    "speedTestAborted": "测速已终止"
+  },
+  "config": {
+    "all": "全部",
+    "type0": "类型0",
+    "type1": "类型1",
+    "resBase": {
+      "all": "全部",
+      "wallpaperGroup": "Wallpaper",
+      "wallpaper": "Wallpaper",
+      "wallpaper2": "Wallpaper2-Long Long"
+    }
+  },
+  "media": {
+    "previewVideo": "预览视频：{{filename}}",
+    "closePreview": "关闭预览",
+    "videoLoadFailed": "视频加载失败"
+  },
+  "action": {
+    "openFolder": "打开文件夹",
+    "sync": "同步",
+    "edit": "编辑",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏"
+  }
+}

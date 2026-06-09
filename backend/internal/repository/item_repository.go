@@ -162,7 +162,7 @@ func applyFilters(baseDB *gorm.DB, tx *gorm.DB, q model.ItemQuery) *gorm.DB {
 	}
 	for _, v := range q.Keyword {
 		pat := "%" + v + "%"
-		textConds = append(textConds, cond{"(a.name LIKE ? OR a.title LIKE ? OR a.content LIKE ? OR a.extra LIKE ?)", []any{pat, pat, pat, pat}})
+		textConds = append(textConds, cond{"(a.name LIKE ? OR a.title LIKE ? OR a.content LIKE ? OR a.extra LIKE ? OR a.tag LIKE ? OR a.tag2 LIKE ? OR a.tag3 LIKE ?)", []any{pat, pat, pat, pat, pat, pat, pat}})
 	}
 
 	if len(textConds) == 0 {

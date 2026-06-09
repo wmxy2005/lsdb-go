@@ -12,12 +12,14 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { LogOut, Menu, User } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`;
 
 export function AppLayout() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [navOpen, setNavOpen] = useState(false);
@@ -36,7 +38,7 @@ export function AppLayout() {
             size="icon"
             className="shrink-0 md:hidden"
             onClick={() => setNavOpen(true)}
-            aria-label="打开菜单"
+            aria-label={t('nav.openMenu')}
           >
             <Menu className="size-5" />
           </Button>
@@ -45,9 +47,9 @@ export function AppLayout() {
             <span className="hidden font-semibold tracking-tight sm:inline">LSDB</span>
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
-            <NavLink to="/items" className={navLinkClass}>档案</NavLink>
-            <NavLink to="/tool" className={navLinkClass}>工具</NavLink>
-            <NavLink to="/speedTest" className={navLinkClass}>测速</NavLink>
+            <NavLink to="/items" className={navLinkClass}>{t('nav.items')}</NavLink>
+            <NavLink to="/tool" className={navLinkClass}>{t('nav.tools')}</NavLink>
+            <NavLink to="/speedTest" className={navLinkClass}>{t('nav.speedTest')}</NavLink>
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {isAuthenticated && <SearchBar variant="desktop" />}
@@ -68,12 +70,12 @@ export function AppLayout() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="size-4" />
-                    登出
+                    {t('nav.logout')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button asChild size="sm"><Link to="/login">登录</Link></Button>
+              <Button asChild size="sm"><Link to="/login">{t('nav.login')}</Link></Button>
             )}
           </div>
         </div>

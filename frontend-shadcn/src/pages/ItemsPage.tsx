@@ -1,10 +1,11 @@
 import { queryItemList } from '@/api/items';
-import type { PageInfo } from '@/api/types';
+import type { PageInfo, RoleListItem } from '@/api/types';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
-import { PageHeader } from '@/components/common/PageHeader';
 import { ItemCard } from '@/components/ItemCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,10 +13,97 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { CONFIG } from '@/constants/config';
+import { usePageTitle } from '@/hooks/use-page-title-context';
+import { resBaseLabel, resTypeLabel } from '@/lib/i18n-labels';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { SlidersHorizontal, Eye, Tag, Calendar as CalendarIcon, Filter, Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SlidersHorizontal, Eye, Tag, Calendar as CalendarIcon, Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const filterFieldFocus =
+  'focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0';
+
+const filterInputClass = `h-9 bg-background/50 border-border/60 rounded-lg text-xs shadow-none ${filterFieldFocus}`;
+
+const filterInputIconClass = `pl-8 ${filterInputClass}`;
+
+const filterSelectClass = `h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium shadow-none ${filterFieldFocus}`;
+
+const filterChipClass = 'h-6 text-[10px] font-medium px-2.5 rounded-md';
+
+function hasFilterChips(pageInfo: PageInfo) {
+  return (
+    (pageInfo.keyword?.length ?? 0) > 0 ||
+    (pageInfo.category?.length ?? 0) > 0 ||
+    (pageInfo.tag?.length ?? 0) > 0 ||
+    !!pageInfo.subcategory?.trim()
+  );
+}
+
+function RelatedRoleButtons({ roleList }: { roleList: RoleListItem[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {roleList.map((role) => {
+        const label = role.name ?? role.title ?? '';
+        const imageSrc = role.imageSrc ?? role.avatarSrc;
+        const avatarUrl = imageSrc ? `${CONFIG.apiUrl}${imageSrc}` : undefined;
+        return (
+          <Button
+            key={`${role.id}-${role.tagIndex ?? 0}`}
+            variant="outline"
+            className="rounded-full h-9 pl-1 pr-3 gap-2 font-semibold text-primary border-primary/30 hover:bg-primary/5"
+            asChild
+          >
+            <Link to={`/items/role?id=${role.id}`}>
+              <Avatar className="size-7">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={label} />}
+                <AvatarFallback className="text-[10px] font-semibold">{label.charAt(0).toUpperCase() || '?'}</AvatarFallback>
+              </Avatar>
+              {label}
+            </Link>
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FilterChips({ pageInfo }: { pageInfo: PageInfo }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {pageInfo.keyword?.map((kw) => (
+        <Badge key={`keyword-${kw}`} variant="outline" className={filterChipClass}>
+          {kw}
+        </Badge>
+      ))}
+      {pageInfo.category?.map((cat) => (
+        <Badge
+          key={`category-${cat}`}
+          variant="outline"
+          className={`${filterChipClass} border-red-500/30 text-red-600 dark:text-red-400`}
+        >
+          {cat}
+        </Badge>
+      ))}
+      {pageInfo.tag?.map((tag) => (
+        <Badge
+          key={`tag-${tag}`}
+          variant="outline"
+          className={`${filterChipClass} border-emerald-500/30 text-emerald-600 dark:text-emerald-400`}
+        >
+          {tag}
+        </Badge>
+      ))}
+      {pageInfo.subcategory?.trim() && (
+        <Badge variant="outline" className={filterChipClass}>
+          {pageInfo.subcategory}
+        </Badge>
+      )}
+    </div>
+  );
+}
 
 const searchParsers = {
   keyword: parseAsString,
@@ -33,6 +121,7 @@ const searchParsers = {
 };
 
 export default function ItemsPage() {
+  const { t } = useTranslation();
   const [params, setParams] = useQueryStates(searchParsers);
 
   const { data, isPending, isError, refetch, isFetching } = useQuery({
@@ -60,6 +149,20 @@ export default function ItemsPage() {
   const pageInfo: PageInfo | undefined = data?.success ? data.data : undefined;
   const showInitialLoading = isPending && !data;
 
+  const documentTitle = useMemo(() => {
+    if (!pageInfo) return undefined;
+    const rawTitle = pageInfo.title?.trim() ?? '';
+    const info = rawTitle === 'all' || !rawTitle ? t('config.all') : rawTitle;
+    return t('page.documentTitle', {
+      info,
+      page: pageInfo.current ?? params.page,
+      pages: Math.max(pageInfo.pages ?? 1, 1),
+    });
+  }, [pageInfo, params.page, t]);
+
+  const breadcrumbLabel = pageInfo?.title?.trim() ? pageInfo.title : null;
+  usePageTitle(documentTitle, breadcrumbLabel);
+
   if (isError || (data && !data.success)) {
     return <ErrorState onRetry={() => refetch()} />;
   }
@@ -70,38 +173,20 @@ export default function ItemsPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Page Header */}
-      <PageHeader
-        title="资源档案库"
-        description="浏览、检索和管理所有的系统资源和技术档案。"
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
-          >
-            <RefreshCw className={`mr-2 size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-            刷新数据
-          </Button>
-        }
-      />
-
       {/* Control Bar */}
       <div className="flex flex-col gap-4 rounded-xl border border-border/40 bg-card/50 p-5 shadow-sm backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* Base Categories */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">资源分类</span>
+              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{t('items.filter.resourceCategory')}</span>
               <Select value={params.base ?? '__all__'} onValueChange={(v) => applyFilter({ base: v === '__all__' ? null : v })}>
-                <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-indigo-500">
-                  <SelectValue placeholder="全部分类" />
+                <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-primary">
+                  <SelectValue placeholder={t('items.filter.allCategories')} />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg border-border/40">
                   {CONFIG.resBaseList.map((b) => (
-                    <SelectItem key={b.name || 'all'} value={b.name || '__all__'} className="text-xs rounded-md">{b.label}</SelectItem>
+                    <SelectItem key={b.name || 'all'} value={b.name || '__all__'} className="text-xs rounded-md">{resBaseLabel(t, b.name)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -109,21 +194,21 @@ export default function ItemsPage() {
 
             {/* Sort Selection */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">排序方式</span>
+              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{t('items.filter.sortBy')}</span>
               <Select value={params.sort ?? '__default__'} onValueChange={(v) => applyFilter({ sort: v === '__default__' ? null : v })}>
-                <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-indigo-500">
-                  <SelectValue placeholder="排序方式" />
+                <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-primary">
+                  <SelectValue placeholder={t('items.filter.sortBy')} />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg border-border/40">
-                  <SelectItem value="__default__" className="text-xs rounded-md">创建时间</SelectItem>
-                  <SelectItem value="date" className="text-xs rounded-md">日期</SelectItem>
+                  <SelectItem value="__default__" className="text-xs rounded-md">{t('items.sort.createdAt')}</SelectItem>
+                  <SelectItem value="date" className="text-xs rounded-md">{t('items.sort.date')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Favorites Filter */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">我的收藏</span>
+              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{t('items.filter.myFavorites')}</span>
               <div className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-background/50 px-3 h-9 text-xs shadow-none">
                 <Switch
                   id="favorites-toggle"
@@ -132,7 +217,7 @@ export default function ItemsPage() {
                   className="scale-90"
                 />
                 <Label htmlFor="favorites-toggle" className="cursor-pointer font-medium text-zinc-600 dark:text-zinc-300">
-                  仅看收藏
+                  {t('items.filter.favoritesOnly')}
                 </Label>
               </div>
             </div>
@@ -140,13 +225,13 @@ export default function ItemsPage() {
 
           {/* Resource Types Buttons */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider self-start sm:self-end">展现类型</span>
+            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider self-start sm:self-end">{t('items.filter.displayType')}</span>
             <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-zinc-100/50 dark:bg-zinc-900/30 p-1 h-9">
-              {CONFIG.resTypeList.map((t) => {
-                const isSelected = params.type === t.name || (!params.type && !t.name);
+              {CONFIG.resTypeList.map((typeItem) => {
+                const isSelected = params.type === typeItem.name || (!params.type && !typeItem.name);
                 return (
                   <Button
-                    key={t.name || 'all'}
+                    key={typeItem.name || 'all'}
                     size="sm"
                     variant={isSelected ? 'secondary' : 'ghost'}
                     className={`h-7 rounded-md px-3 text-xs font-medium transition-all duration-200 ${
@@ -154,9 +239,9 @@ export default function ItemsPage() {
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-background/20'
                     }`}
-                    onClick={() => applyFilter({ type: t.name || null })}
+                    onClick={() => applyFilter({ type: typeItem.name || null })}
                   >
-                    {t.label}
+                    {resTypeLabel(t, typeItem.name)}
                   </Button>
                 );
               })}
@@ -170,51 +255,51 @@ export default function ItemsPage() {
             <AccordionTrigger className="py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:no-underline [&[data-state=open]]:text-foreground transition-colors">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="size-3.5 text-zinc-400" />
-                <span>高级筛选选项</span>
+                <span>{t('items.filter.advancedOptions')}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-4 pb-2 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="filter-keyword" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">关键词</Label>
+                  <Label htmlFor="filter-keyword" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.keyword')}</Label>
                   <div className="relative">
                     <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input defaultValue={params.keyword ?? ''} id="filter-keyword" placeholder="英文分号分隔..." className="pl-8 h-9 bg-background/50 border-border/60 rounded-lg text-xs shadow-none focus-visible:ring-indigo-500" />
+                    <Input defaultValue={params.keyword ?? ''} id="filter-keyword" placeholder={t('items.filter.keywordPlaceholder')} className={filterInputIconClass} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="filter-tag" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">标签</Label>
+                  <Label htmlFor="filter-tag" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.tag')}</Label>
                   <div className="relative">
                     <Tag className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input defaultValue={params.tag ?? ''} id="filter-tag" placeholder="精确标签搜索..." className="pl-8 h-9 bg-background/50 border-border/60 rounded-lg text-xs shadow-none focus-visible:ring-indigo-500" />
+                    <Input defaultValue={params.tag ?? ''} id="filter-tag" placeholder={t('items.filter.tagPlaceholder')} className={filterInputIconClass} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="filter-category" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">分类</Label>
+                  <Label htmlFor="filter-category" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.category')}</Label>
                   <div className="relative">
                     <SlidersHorizontal className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input defaultValue={params.category ?? ''} id="filter-category" placeholder="分类目录检索..." className="pl-8 h-9 bg-background/50 border-border/60 rounded-lg text-xs shadow-none focus-visible:ring-indigo-500" />
+                    <Input defaultValue={params.category ?? ''} id="filter-category" placeholder={t('items.filter.categoryPlaceholder')} className={filterInputIconClass} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">逻辑匹配模式</Label>
+                  <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.matchMode')}</Label>
                   <Select value={params.matchMode ?? '__and__'} onValueChange={(v) => setParams({ matchMode: v === '__and__' ? null : v })}>
-                    <SelectTrigger className="h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-indigo-500 shadow-none">
+                    <SelectTrigger className={filterSelectClass}>
                       <SelectValue placeholder="AND" />
                     </SelectTrigger>
                     <SelectContent className="rounded-lg border-border/40">
-                      <SelectItem value="__and__" className="text-xs rounded-md">与 (AND)</SelectItem>
-                      <SelectItem value="or" className="text-xs rounded-md">或 (OR)</SelectItem>
+                      <SelectItem value="__and__" className="text-xs rounded-md">{t('items.filter.matchAnd')}</SelectItem>
+                      <SelectItem value="or" className="text-xs rounded-md">{t('items.filter.matchOr')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="filter-date-from" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">发布开始日期</Label>
-                  <Input type="date" defaultValue={params.dateFrom ?? ''} id="filter-date-from" className="h-9 bg-background/50 border-border/60 rounded-lg text-xs shadow-none focus-visible:ring-indigo-500" />
+                  <Label htmlFor="filter-date-from" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.dateFrom')}</Label>
+                  <Input type="date" defaultValue={params.dateFrom ?? ''} id="filter-date-from" className={filterInputClass} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="filter-date-to" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">发布结束日期</Label>
-                  <Input type="date" defaultValue={params.dateTo ?? ''} id="filter-date-to" className="h-9 bg-background/50 border-border/60 rounded-lg text-xs shadow-none focus-visible:ring-indigo-500" />
+                  <Label htmlFor="filter-date-to" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.dateTo')}</Label>
+                  <Input type="date" defaultValue={params.dateTo ?? ''} id="filter-date-to" className={filterInputClass} />
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-3 border-t border-border/40">
@@ -237,7 +322,7 @@ export default function ItemsPage() {
                   }}
                 >
                   <Filter className="mr-1.5 size-3.5" />
-                  应用高级筛选
+                  {t('items.filter.apply')}
                 </Button>
               </div>
             </AccordionContent>
@@ -247,27 +332,24 @@ export default function ItemsPage() {
 
       {/* Metadata & Related Roles */}
       {pageInfo && (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 px-5 py-3 text-xs border border-border/40 backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
-            <span>找到档案：<strong className="font-semibold text-zinc-900 dark:text-zinc-100">{pageInfo.total ?? 0}</strong> 条</span>
+        <div className="flex flex-col gap-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 px-5 py-3 text-xs border border-border/40 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center gap-2 text-zinc-500 dark:text-zinc-400">
+            {hasFilterChips(pageInfo) && (
+              <>
+                <FilterChips pageInfo={pageInfo} />
+                <span className="text-zinc-300 dark:text-zinc-700">|</span>
+              </>
+            )}
+            <span>{t('items.resultCount', { count: pageInfo.total ?? 0 })}</span>
             {pageInfo.costTime != null && (
               <>
                 <span className="text-zinc-300 dark:text-zinc-700">|</span>
-                <span>查询耗时 <strong className="font-semibold text-zinc-900 dark:text-zinc-100">{pageInfo.costTime}</strong> ms</span>
+                <span>{t('items.queryTime', { ms: pageInfo.costTime })}</span>
               </>
             )}
           </div>
           {pageInfo.roleList && pageInfo.roleList.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-zinc-400 dark:text-zinc-500 font-medium">相关角色：</span>
-              <div className="flex flex-wrap gap-1.5">
-                {pageInfo.roleList?.map((role) => (
-                  <Button key={role.id} variant="secondary" size="sm" className="h-6 text-[10px] font-medium px-2.5 rounded-md border border-border/30 bg-background/50 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 transition-colors" asChild>
-                    <Link to={`/items/role?id=${role.id}`}>{role.title}</Link>
-                  </Button>
-                ))}
-              </div>
-            </div>
+            <RelatedRoleButtons roleList={pageInfo.roleList} />
           )}
         </div>
       )}
@@ -287,7 +369,7 @@ export default function ItemsPage() {
         </div>
       ) : !pageInfo?.list?.length ? (
         <div className="rounded-xl border border-border/40 bg-card/30 py-12 backdrop-blur-sm">
-          <EmptyState title="没有找到档案" description="尝试调整筛选条件或输入其他关键词" />
+          <EmptyState title={t('items.empty.title')} description={t('items.empty.description')} />
         </div>
       ) : (
         <div
@@ -310,10 +392,10 @@ export default function ItemsPage() {
             onClick={() => setParams({ page: params.page - 1 })}
           >
             <ChevronLeft className="mr-1 size-4" />
-            上一页
+            {t('items.pagination.prev')}
           </Button>
           <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
-            第 {params.page} 页 / 共 {pageInfo.pages} 页
+            {t('items.pagination.pageInfo', { page: params.page, totalPages: pageInfo.pages })}
           </span>
           <Button
             variant="outline"
@@ -322,7 +404,7 @@ export default function ItemsPage() {
             disabled={params.page >= (pageInfo.pages ?? 1)}
             onClick={() => setParams({ page: params.page + 1 })}
           >
-            下一页
+            {t('items.pagination.next')}
             <ChevronRight className="ml-1 size-4" />
           </Button>
         </div>

@@ -1,0 +1,409 @@
+{
+  "nav": {
+    "items": "Archives",
+    "roles": "Roles",
+    "tools": "Tools",
+    "speedTest": "Speed Test",
+    "logout": "Log out",
+    "logoutSystem": "Sign out",
+    "login": "Log in",
+    "openMenu": "Open menu",
+    "mobileMenu": "Menu"
+  },
+  "page": {
+    "documentTitle": "{{info}} - Page {{page}}/{{pages}}"
+  },
+  "breadcrumb": {
+    "console": "Console",
+    "overview": "Overview",
+    "itemsList": "Archives",
+    "roleManagement": "Role Management",
+    "itemDetail": "Archive Detail",
+    "toolbox": "Toolbox",
+    "speedTest": "Network Speed Test"
+  },
+  "sidebar": {
+    "mainNav": "Main Navigation",
+    "toolsAndSystem": "Tools & System",
+    "authenticatedUser": "Authenticated user"
+  },
+  "layout": {
+    "language": {
+      "toggle": "Switch language",
+      "zh": "中文",
+      "en": "English"
+    }
+  },
+  "search": {
+    "placeholder": "Search archives...",
+    "placeholderDesktop": "Search resources and archives...",
+    "placeholderMobile": "Search..."
+  },
+  "commandMenu": {
+    "brand": "LSDB Command Palette",
+    "category": {
+      "navigation": "Navigation",
+      "systemActions": "System Actions"
+    },
+    "itemsList": "Archives",
+    "roleManagement": "Role Management",
+    "toolbox": "Toolbox",
+    "speedTest": "Network Speed Test",
+    "toggleTheme": "Switch to {{mode}} mode",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light"
+    },
+    "placeholder": "Search archives, pages, and actions...",
+    "section": {
+      "archiveResults": "Archive Results"
+    },
+    "searching": "Searching archives...",
+    "noArchivesFound": "No archives found",
+    "viewAllResults": "View all results ({{count}})",
+    "emptyWithSearch": "No matching archives or commands",
+    "emptyNoSearch": "No matching commands or pages",
+    "hint": {
+      "navigate": "↑↓ Navigate",
+      "select": "↵ Select",
+      "viewAll": "↵ View all results",
+      "close": "esc Close"
+    }
+  },
+  "common": {
+    "back": "Back",
+    "preview": "Preview",
+    "add": "Add",
+    "cancel": "Cancel",
+    "close": "Close",
+    "retry": "Retry",
+    "goLogin": "Go to login",
+    "publishedOn": "Published on {{date}}",
+    "dragToReorder": "Drag to reorder",
+    "themeToggle": "Toggle theme",
+    "loadFailed": "Failed to load",
+    "empty": {
+      "defaultTitle": "No data"
+    },
+    "error": {
+      "defaultTitle": "Unable to access",
+      "defaultDescription": "Please log in and try again"
+    }
+  },
+  "auth": {
+    "tagline": "Lightweight resource & archive management platform",
+    "loginTitle": "System Login",
+    "loginDescription": "Enter admin credentials to access the console",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "loggingIn": "Signing in securely...",
+    "submit": "Sign in to console"
+  },
+  "items": {
+    "filter": {
+      "resourceCategory": "Resource Category",
+      "allCategories": "All categories",
+      "sortBy": "Sort by",
+      "myFavorites": "My Favorites",
+      "favoritesOnly": "Favorites only",
+      "displayType": "Display type",
+      "advancedOptions": "Advanced filters",
+      "keyword": "Keyword",
+      "keywordPlaceholder": "Semicolon-separated...",
+      "tag": "Tag",
+      "tagPlaceholder": "Exact tag search...",
+      "category": "Category",
+      "categoryPlaceholder": "Category search...",
+      "matchMode": "Match mode",
+      "matchAnd": "AND",
+      "matchOr": "OR",
+      "dateFrom": "Publish start date",
+      "dateTo": "Publish end date",
+      "apply": "Apply filters"
+    },
+    "sort": {
+      "createdAt": "Created at",
+      "date": "Date"
+    },
+    "resultCount": "Found {{count}} archives",
+    "queryTime": "Query time {{ms}} ms",
+    "relatedRoles": "Related roles:",
+    "empty": {
+      "title": "No archives found",
+      "description": "Try adjusting filters or another keyword"
+    },
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{page}} of {{totalPages}}"
+    }
+  },
+  "itemDetail": {
+    "section": {
+      "description": "Description",
+      "trailer": "Trailer / Demo",
+      "gallery": "Gallery (click to enlarge)",
+      "detailImages": "Detail images"
+    }
+  },
+  "role": {
+    "management": "Role Management",
+    "section": {
+      "gallery": "Role gallery",
+      "notes": "Notes & description"
+    }
+  },
+  "tool": {
+    "pageTitle": "System Tools",
+    "pageDescription": "Remote control, power management, and live monitoring.",
+    "power": {
+      "section": "Power Management",
+      "title": "Server Power Control",
+      "description": "Remotely shut down or restart the server. Use with caution.",
+      "shuttingDown": "Shutting down...",
+      "safeShutdown": "Safe shutdown",
+      "restarting": "Restarting...",
+      "restart": "Restart system"
+    },
+    "monitor": {
+      "section": "Live Monitoring",
+      "title": "System Performance Monitor",
+      "description": "Enable SSE stream to monitor CPU and network throughput.",
+      "active": "Monitoring live...",
+      "enable": "Enable live performance monitoring",
+      "label": "Monitor",
+      "show": "Show",
+      "hide": "Hide",
+      "connectionClosed": "Monitor connection closed",
+      "cpu": {
+        "title": "Real-time CPU Usage (%)",
+        "dataset": "CPU Usage",
+        "yAxis": "Usage (%)"
+      },
+      "network": {
+        "title": "Real-time Network Speed",
+        "uploadSpeed": "Upload speed",
+        "downloadSpeed": "Download speed",
+        "yAxis": "Speed (MB/s)"
+      },
+      "xAxis": "System time",
+      "emptyValue": "--"
+    },
+    "chart": {
+      "cpu": "CPU Usage",
+      "network": "Network Throughput",
+      "uploadSpeed": "Upload speed",
+      "downloadSpeed": "Download speed"
+    }
+  },
+  "speedTest": {
+    "pageTitle": "Network Speed Test",
+    "pageDescription": "Test ping, download, and upload bandwidth to the server.",
+    "config": {
+      "section": "Test Configuration",
+      "title": "Bandwidth Test Settings",
+      "description": "Larger files yield more accurate results but take longer.",
+      "dataSize": "Test data size"
+    },
+    "size": {
+      "quick": "16 MB (Quick)",
+      "standard": "64 MB (Standard)",
+      "deep": "128 MB (Deep)"
+    },
+    "stop": "Stop test",
+    "start": "Start test",
+    "progress": {
+      "section": "Live Progress & Results",
+      "title": "Test Status",
+      "running": "Running concurrent throughput test, please wait...",
+      "completed": "Test complete. Results below.",
+      "idle": "Waiting to start...",
+      "testing": "Testing..."
+    },
+    "result": {
+      "ping": "Latency (Ping)",
+      "download": "Download speed",
+      "upload": "Upload speed"
+    },
+    "idleHint": "Click \"Start test\" to begin",
+    "hero": {
+      "titleLine1": "Test your",
+      "titleLine2": "network speed",
+      "description": "Check download, upload, ping and jitter against the current LSDB server."
+    },
+    "action": {
+      "start": "Start Test",
+      "stop": "Stop"
+    },
+    "testSize": "Test size",
+    "phase": {
+      "ready": "Ready",
+      "latency": "Testing ping",
+      "download": "Testing download",
+      "upload": "Testing upload",
+      "done": "Completed",
+      "error": "Failed",
+      "round": "{{label}} ({{round}}/{{total}})"
+    },
+    "metric": {
+      "download": "Download",
+      "upload": "Upload",
+      "ping": "Ping",
+      "jitter": "Jitter"
+    },
+    "unit": {
+      "mbps": "Mbps",
+      "ms": "ms",
+      "mb": "MB"
+    },
+    "valueWithUnit": "{{value}} {{unit}}",
+    "hint": {
+      "lowerIsBetter": "Lower is better",
+      "sample": "{{size}} {{unit}} sample"
+    },
+    "server": {
+      "label": "Server",
+      "current": "Current LSDB server"
+    },
+    "recent": {
+      "title": "Recent Results",
+      "empty": "No completed test yet"
+    },
+    "chart": {
+      "title": "Speed Over Time ({{unit}})",
+      "tooltip": "{{label}}: {{value}} {{unit}}"
+    },
+    "table": {
+      "round": "Round"
+    },
+    "error": {
+      "failed": "Speed test failed"
+    }
+  },
+  "edit": {
+    "sheet": {
+      "titleNew": "New archive",
+      "titleEdit": "Edit archive",
+      "description": "Edit metadata, tags, media, and gallery."
+    },
+    "section": {
+      "storagePath": "Storage path",
+      "basicInfo": "Basic info",
+      "tags": "Tag configuration",
+      "media": "Core media",
+      "gallery": "Gallery",
+      "resources": "Resource files"
+    },
+    "field": {
+      "base": "Base (root)",
+      "basePlaceholder": "e.g. base_folder",
+      "category": "Category",
+      "categoryPlaceholder": "e.g. category_folder",
+      "subcategory": "Subcategory",
+      "subcategoryPlaceholder": "e.g. subcategory_folder",
+      "name": "Name (archive name)",
+      "namePlaceholder": "e.g. archive_name",
+      "title": "Archive title",
+      "titlePlaceholder": "Enter archive title",
+      "publishDate": "Publish date",
+      "content": "Description",
+      "contentPlaceholder": "Enter detailed description..."
+    },
+    "tag": {
+      "primary": "Tags (primary)",
+      "secondary": "Tags 2 (secondary)",
+      "tertiary": "Tags 3 (auxiliary)",
+      "dragHint": "Drag tags to reorder",
+      "empty": "No tags. Add below.",
+      "addPlaceholder": "Add new {{label}}"
+    },
+    "media": {
+      "notSelected": "Not selected: {{label}}",
+      "thumbnail": "Thumbnail",
+      "thumbnailShort": "Thumbnail",
+      "roll": "Hover preview (Roll)",
+      "rollShort": "Hover preview",
+      "trailer": "Trailer",
+      "trailerShort": "Trailer",
+      "selectFile": "Select linked file",
+      "clearSelection": "Clear selection",
+      "hoverPreviewHint": "Hover card to show preview button",
+      "notSelectedThumbnail": "No thumbnail selected"
+    },
+    "noResourcesHint": "No resource files available. Upload files below first.",
+    "gallery": {
+      "dragHandleHint": "Drag the top-right handle to reorder",
+      "clickToPreview": "Click to preview",
+      "removeFromGallery": "Remove from gallery",
+      "empty": "No gallery images. Select files below.",
+      "addImage": "Add image",
+      "selectFilePlaceholder": "Select unlinked file to add",
+      "addToGallery": "Add to gallery"
+    },
+    "resource": {
+      "type": {
+        "thumbnail": "Thumbnail",
+        "image": "Image",
+        "file": "Video / file"
+      },
+      "delete": "Delete this resource",
+      "empty": "No linked resource files",
+      "dropHint": "Drag files here to upload",
+      "uploadLabel": "Upload new resources",
+      "selectAndUpload": "Select and upload",
+      "orDragHint": "Or drag files to the area above"
+    },
+    "saving": "Saving...",
+    "save": "Save archive"
+  },
+  "sync": {
+    "title": "Sync folder",
+    "inProgress": "Syncing...",
+    "success": "Sync complete",
+    "failed": "Sync failed"
+  },
+  "toast": {
+    "operationFailed": "Operation failed",
+    "openFolderSuccess": "Folder opened successfully",
+    "openFolderFailed": "Failed to open",
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Save failed",
+    "uploadSuccess": "Upload successful",
+    "uploadFailed": "Upload failed",
+    "deleted": "Deleted",
+    "deleteFailed": "Delete failed",
+    "favoriteAdded": "Added to favorites",
+    "favoriteRemoved": "Removed from favorites",
+    "loginFailed": "Login failed",
+    "commandSent": "Command sent to server",
+    "monitorDisconnected": "Monitor stream disconnected",
+    "speedTestComplete": "Speed test complete!",
+    "speedTestFailed": "Speed test failed. Check your connection.",
+    "speedTestAborted": "Speed test aborted"
+  },
+  "config": {
+    "all": "All",
+    "type0": "Type 0",
+    "type1": "Type 1",
+    "resBase": {
+      "all": "All",
+      "wallpaperGroup": "Wallpaper",
+      "wallpaper": "Wallpaper",
+      "wallpaper2": "Wallpaper2-Long Long"
+    }
+  },
+  "media": {
+    "previewVideo": "Preview video: {{filename}}",
+    "closePreview": "Close preview",
+    "videoLoadFailed": "Video failed to load"
+  },
+  "action": {
+    "openFolder": "Open folder",
+    "sync": "Sync",
+    "edit": "Edit",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite"
+  }
+}

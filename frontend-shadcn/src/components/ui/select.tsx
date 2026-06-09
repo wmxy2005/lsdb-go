@@ -3,8 +3,8 @@ import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-function Select({ modal = false, ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root modal={modal} {...props} />;
+function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  return <SelectPrimitive.Root {...props} />;
 }
 
 const SelectTrigger = React.forwardRef<

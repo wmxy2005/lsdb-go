@@ -22,15 +22,18 @@ export function resolveUrl(
   subcategory: string,
   name: string,
   filename: string,
+  options?: { force?: boolean },
 ) {
   const params = new URLSearchParams({
-    force: 'true',
     base: base ?? '',
     category: category ?? '',
     subcategory: subcategory ?? '',
     name: name ?? '',
     filename: filename ?? '',
   });
+  if (options?.force ?? true) {
+    params.set('force', 'true');
+  }
   return `${CONFIG.apiUrl}/api/resource?${params.toString()}`;
 }
 

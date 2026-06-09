@@ -150,3 +150,17 @@ func TestFiltersKeyword(t *testing.T) {
 		t.Fatalf("expected [3], got %v", ids(items))
 	}
 }
+
+func TestFiltersKeywordMatchesTag(t *testing.T) {
+	db := openItemTestDB(t)
+	q := model.ItemQuery{
+		Keyword:  []string{"JPEG"},
+		Page:     1,
+		PageSize: 10,
+	}
+	items := query(t, db, q)
+	// JPEG only appears in tag2 (;JPEG;), not in name/title/content/extra
+	if len(items) != 2 {
+		t.Fatalf("expected [1,2], got %v", ids(items))
+	}
+}

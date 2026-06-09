@@ -46,10 +46,11 @@ const sheetVariants = cva('bg-background fixed z-50 flex flex-col gap-4 border s
 
 const SheetContent = React.forwardRef<
   React.ComponentRef<typeof SheetPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & VariantProps<typeof sheetVariants>
->(({ className, children, side = 'right', ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> &
+    VariantProps<typeof sheetVariants> & { overlayClassName?: string }
+>(({ className, overlayClassName, children, side = 'right', ...props }, ref) => (
   <SheetPortal>
-    <SheetOverlay />
+    <SheetOverlay className={overlayClassName} />
     <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
       {children}
       <SheetPrimitive.Close className="ring-offset-background focus:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:outline-hidden">

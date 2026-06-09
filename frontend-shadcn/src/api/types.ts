@@ -87,6 +87,9 @@ export interface RoleInfo {
 export interface RoleListItem {
   id?: number;
   title?: string;
+  name?: string;
+  imageSrc?: string;
+  tagIndex?: number;
   avatarSrc?: string;
 }
 

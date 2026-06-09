@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ItemThumbnailProps {
   src: string;
   srcW?: number;
   srcH?: number;
   rollSrc?: string;
+  maxHeight?: number;
 }
 
-export function ItemThumbnail({ src, srcW, srcH, rollSrc }: ItemThumbnailProps) {
+export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumbnailProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -74,29 +77,58 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc }: ItemThumbnailProps) 
     handleHover(!hovered);
   };
 
+  const hasDimensions = (srcW ?? 0) > 0 && (srcH ?? 0) > 0;
+  const maxHeightStyle = maxHeight != null ? { maxHeight } : undefined;
+
   if (isLoading) {
     return (
-      <Skeleton className="w-full h-full" />
+      <div className="relative w-full overflow-hidden" style={maxHeightStyle}>
+        {hasDimensions ? (
+          <>
+            <img
+              width={srcW}
+              height={srcH}
+              alt=""
+              aria-hidden
+              style={maxHeightStyle}
+              className="block w-full h-auto opacity-0"
+            />
+            <Skeleton className="absolute inset-0 rounded-none" />
+          </>
+        ) : (
+          <Skeleton className="aspect-video w-full" style={maxHeightStyle} />
+        )}
+      </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 flex h-full w-full items-center justify-center text-xs font-medium">
-        加载失败
+      <div
+        style={maxHeightStyle}
+        className="bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 flex h-full w-full items-center justify-center text-xs font-medium"
+      >
+        {t('common.loadFailed')}
       </div>
     );
   }
 
   return (
     <div
+      style={maxHeightStyle}
       className="relative w-full h-full overflow-hidden"
       onClick={handleTouchToggle}
       onMouseEnter={!isTouch && rollSrc ? () => handleHover(true) : undefined}
       onMouseLeave={!isTouch && rollSrc ? () => handleHover(false) : undefined}
     >
-      <div className={`w-full h-full flex justify-center items-center ${hovered ? 'thumbnail__image-hovered' : ''}`}>
-        <img src={src} alt="" className="block w-full h-full object-cover" loading="lazy" />
+      <div className={`relative w-full ${hovered ? 'thumbnail__image-hovered' : ''}`}>
+        <img
+          src={src}
+          alt=""
+          style={maxHeightStyle}
+          className="block w-full object-cover"
+          loading="lazy"
+        />
       </div>
       {rollSrc && (
         <div className={hovered ? 'thumbnail__video thumbnail__video-hovered' : 'thumbnail__video'}>

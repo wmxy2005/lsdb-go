@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +14,7 @@ export function SearchBar({
   onSubmitted?: () => void;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const [keyword, setKeyword] = useState('');
   const navigate = useNavigate();
 
@@ -38,7 +40,7 @@ export function SearchBar({
       <Input
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
-        placeholder="搜索档案..."
+        placeholder={t('search.placeholder')}
         className={cn('pl-8', isMobile ? 'w-full' : 'w-48 lg:w-64')}
       />
     </form>

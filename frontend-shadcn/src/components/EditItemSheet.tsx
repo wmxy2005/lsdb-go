@@ -2,6 +2,12 @@ import { deleteResource, uploadResource } from '@/api/resource';
 import { newItem, queryItem, updateItem } from '@/api/items';
 import type { ItemInfo } from '@/api/types';
 import { EditImageList } from '@/components/edit/EditImageList';
+import {
+  isMediaPreviewActive,
+  isMediaPreviewTarget,
+  MediaPreviewProvider,
+  type VideoPreviewState,
+} from '@/components/edit/MediaPreview';
 import { EditMediaSection } from '@/components/edit/EditMediaSection';
 import { EditResourceList } from '@/components/edit/EditResourceList';
 import type { FileOption } from '@/components/edit/EditResourceList';
@@ -14,7 +20,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Loader2, Save, X, FolderOpen, Tag, Calendar, FileText } from 'lucide-react';
 
@@ -32,6 +39,33 @@ function EditSheetSkeleton() {
       ))}
     </div>
   );
+}
+
+const IMAGE_FILE_PATTERN = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
+
+function isGalleryImageFile(f: FileOption): boolean {
+  if (f.type === 'image') return true;
+  if (f.type === 'file' || !f.type) return IMAGE_FILE_PATTERN.test(f.name);
+  return false;
+}
+
+function buildImagesPayload(
+  imgList: string[],
+  trailer: string,
+  videoThumbnail?: string,
+): string[] {
+  if (!trailer) return imgList;
+  const thumb = videoThumbnail?.trim();
+  if (!thumb || imgList.includes(thumb)) return imgList;
+  return [thumb, ...imgList];
+}
+
+function isPhotoSwipeTarget(target: EventTarget | null) {
+  return target instanceof Element && Boolean(target.closest('.pswp'));
+}
+
+function isPhotoSwipeActive() {
+  return document.querySelector('.pswp') !== null;
 }
 
 function PathBreadcrumb({ parts }: { parts: string[] }) {
@@ -56,6 +90,7 @@ export function EditItemSheet({
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
 }) {
+  const { t } = useTranslation();
   const isNew = itemId <= 0;
   const { data, isLoading } = useQuery({
     queryKey: ['item-edit', itemId],
@@ -77,9 +112,14 @@ export function EditItemSheet({
   const [tags, setTags] = useState<string[]>([]);
   const [tags2, setTags2] = useState<string[]>([]);
   const [tags3, setTags3] = useState<string[]>([]);
-  const [images, setImages] = useState<string[]>([]);
+  const [imgList, setImgList] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [videoPreview, setVideoPreview] = useState<VideoPreviewState>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!open) setVideoPreview(null);
+  }, [open]);
 
   useEffect(() => {
     if (!item) return;
@@ -106,7 +146,7 @@ export function EditItemSheet({
     const imgNames = (item.imgList ?? [])
       .map((img) => img.value ?? img.name ?? '')
       .filter(Boolean);
-    setImages(imgNames);
+    setImgList(imgNames);
   }, [item]);
 
   const fileOptions: FileOption[] = (item?.fileList ?? [])
@@ -117,6 +157,19 @@ export function EditItemSheet({
     .filter((f) => f.name);
 
   const fileList = fileOptions.map((f) => f.name);
+  const imageFileList = fileOptions.filter(isGalleryImageFile).map((f) => f.name);
+  const imageSizes = useMemo(() => {
+    const sizes: Record<string, { width?: number; height?: number }> = {};
+    item?.imgList?.forEach((img) => {
+      const filename = img.value ?? img.name ?? '';
+      if (!filename) return;
+      sizes[filename] = {
+        width: img.width ?? img.w,
+        height: img.height ?? img.h,
+      };
+    });
+    return sizes;
+  }, [item?.imgList]);
 
   const resBase = item?.base ?? base;
   const resCategory = item?.category ?? category;
@@ -137,7 +190,7 @@ export function EditItemSheet({
     tags,
     tags2,
     tags3,
-    images,
+    images: buildImagesPayload(imgList, trailer, item?.videoThumbnail),
   });
 
   const handleSave = async () => {
@@ -145,11 +198,11 @@ export function EditItemSheet({
     const payload = buildPayload();
     const res = isNew ? await newItem(payload) : await updateItem(itemId, payload);
     if (res.success) {
-      toast.success('保存成功');
+      toast.success(t('toast.saveSuccess'));
       onOpenChange(false);
       onSaved?.();
     } else {
-      toast.error(res.message ?? '保存失败');
+      toast.error(res.message ?? t('toast.saveFailed'));
     }
     setSaving(false);
   };
@@ -167,40 +220,61 @@ export function EditItemSheet({
     onSaved?.();
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadFile = async (file: File) => {
     const res = await uploadResource(resourcePath(file.name), file);
     if (res.success) {
-      toast.success('上传成功');
+      toast.success(t('toast.uploadSuccess'));
       refreshEditData();
     } else {
-      toast.error(res.message ?? '上传失败');
+      toast.error(res.message ?? t('toast.uploadFailed'));
     }
-    e.target.value = '';
   };
 
   const handleDeleteFile = async (filename: string) => {
     const res = await deleteResource(resourcePath(filename));
     if (res.success) {
-      toast.success('已删除');
+      toast.success(t('toast.deleted'));
       refreshEditData();
     } else {
-      toast.error(res.message ?? '删除失败');
+      toast.error(res.message ?? t('toast.deleteFailed'));
     }
   };
 
   const showLoading = !isNew && isLoading;
 
+  const handleOpenChange = (next: boolean) => {
+    if (!next && (isPhotoSwipeActive() || isMediaPreviewActive() || videoPreview !== null)) return;
+    if (!next) setVideoPreview(null);
+    onOpenChange(next);
+  };
+
+  const isOutsidePreviewTarget = (target: EventTarget | null) =>
+    isPhotoSwipeTarget(target) || isMediaPreviewTarget(target);
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-2xl border-l border-border/40 bg-background/95 backdrop-blur-md">
+    <Sheet open={open} onOpenChange={handleOpenChange} modal={false}>
+      <SheetContent
+        className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-2xl border-l border-border/40 bg-background/95 backdrop-blur-md"
+        onPointerDownOutside={(e) => {
+          if (isOutsidePreviewTarget(e.target)) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (isOutsidePreviewTarget(e.target)) e.preventDefault();
+        }}
+        onFocusOutside={(e) => {
+          if (isOutsidePreviewTarget(e.target)) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isPhotoSwipeActive() || isMediaPreviewActive()) e.preventDefault();
+        }}
+      >
+        <MediaPreviewProvider videoPreview={videoPreview} onVideoPreviewChange={setVideoPreview}>
         <SheetHeader className="shrink-0 space-y-1 border-b border-border/40 px-6 py-5 text-left relative bg-zinc-50/50 dark:bg-zinc-900/10">
           <SheetTitle className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {isNew ? '新建档案' : '编辑档案'}
+            {isNew ? t('edit.sheet.titleNew') : t('edit.sheet.titleEdit')}
           </SheetTitle>
           <SheetDescription className="text-xs text-muted-foreground">
-            修改档案元数据、标签关联、媒体配置与图集资源。
+            {t('edit.sheet.description')}
           </SheetDescription>
           {!isNew && item && (
             <PathBreadcrumb parts={[item.base ?? '', item.category ?? '', item.subcategory ?? '', item.name ?? '']} />
@@ -213,39 +287,39 @@ export function EditItemSheet({
           ) : (
             <div className="space-y-6">
               {isNew && (
-                <EditSection title="存储路径配置">
+                <EditSection title={t('edit.section.storagePath')}>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Base (根目录)</Label>
-                      <Input value={base} onChange={(e) => setBase(e.target.value)} placeholder="例如: base_folder" className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('edit.field.base')}</Label>
+                      <Input value={base} onChange={(e) => setBase(e.target.value)} placeholder={t('edit.field.basePlaceholder')} className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Category (主分类)</Label>
-                      <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="例如: category_folder" className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('edit.field.category')}</Label>
+                      <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder={t('edit.field.categoryPlaceholder')} className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Subcategory (子分类)</Label>
-                      <Input value={subcategory} onChange={(e) => setSubcategory(e.target.value)} placeholder="例如: subcategory_folder" className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('edit.field.subcategory')}</Label>
+                      <Input value={subcategory} onChange={(e) => setSubcategory(e.target.value)} placeholder={t('edit.field.subcategoryPlaceholder')} className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Name (档案名称)</Label>
-                      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如: archive_name" className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('edit.field.name')}</Label>
+                      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('edit.field.namePlaceholder')} className="h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
                     </div>
                   </div>
                 </EditSection>
               )}
 
-              <EditSection title="基本信息">
+              <EditSection title={t('edit.section.basicInfo')}>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">档案标题</Label>
+                    <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('edit.field.title')}</Label>
                     <div className="relative">
                       <FileText className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
-                      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="请输入档案标题" className="pl-9 h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
+                      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('edit.field.titlePlaceholder')} className="pl-9 h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">发布日期</Label>
+                    <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('edit.field.publishDate')}</Label>
                     <div className="relative">
                       <Calendar className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
                       <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="pl-9 h-9 bg-background/50 border-border/60 rounded-lg text-xs" />
@@ -253,20 +327,20 @@ export function EditItemSheet({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">详细描述内容</Label>
-                  <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="请输入档案的详细描述内容..." rows={5} className="bg-background/50 border-border/60 rounded-lg text-xs resize-none leading-relaxed" />
+                  <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('edit.field.content')}</Label>
+                  <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder={t('edit.field.contentPlaceholder')} rows={5} className="bg-background/50 border-border/60 rounded-lg text-xs resize-none leading-relaxed" />
                 </div>
               </EditSection>
 
-              <EditSection title="标签关联配置">
+              <EditSection title={t('edit.section.tags')}>
                 <div className="space-y-4">
-                  <EditTagInput label="标签 (主标签)" tags={tags} onChange={setTags} />
-                  <EditTagInput label="标签2 (次级标签)" tags={tags2} onChange={setTags2} />
-                  <EditTagInput label="标签3 (辅助标签)" tags={tags3} onChange={setTags3} />
+                  <EditTagInput label={t('edit.tag.primary')} tags={tags} onChange={setTags} />
+                  <EditTagInput label={t('edit.tag.secondary')} tags={tags2} onChange={setTags2} />
+                  <EditTagInput label={t('edit.tag.tertiary')} tags={tags3} onChange={setTags3} />
                 </div>
               </EditSection>
 
-              <EditSection title="核心媒体配置">
+              <EditSection title={t('edit.section.media')}>
                 <EditMediaSection
                   fileList={fileList}
                   thumbnail={thumbnail}
@@ -282,11 +356,12 @@ export function EditItemSheet({
                 />
               </EditSection>
 
-              <EditSection title="高清图集关联">
+              <EditSection title={t('edit.section.gallery')}>
                 <EditImageList
-                  images={images}
-                  onChange={setImages}
-                  availableFiles={fileList}
+                  imgList={imgList}
+                  onChange={setImgList}
+                  imageSizes={imageSizes}
+                  availableFiles={imageFileList}
                   base={resBase}
                   category={resCategory}
                   subcategory={resSubcategory}
@@ -295,11 +370,11 @@ export function EditItemSheet({
               </EditSection>
 
               {!isNew && (
-                <EditSection title="资源文件管理">
+                <EditSection title={t('edit.section.resources')}>
                   <EditResourceList
                     files={fileOptions}
                     onDelete={handleDeleteFile}
-                    onUpload={handleUpload}
+                    onUpload={uploadFile}
                   />
                 </EditSection>
               )}
@@ -310,11 +385,11 @@ export function EditItemSheet({
         <div className="flex shrink-0 justify-end gap-2.5 border-t border-border/40 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/10">
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             disabled={saving}
             className="h-9 rounded-lg text-xs font-semibold border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
           >
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleSave}
@@ -324,16 +399,17 @@ export function EditItemSheet({
             {saving ? (
               <>
                 <Loader2 className="size-3.5 animate-spin" />
-                正在保存...
+                {t('edit.saving')}
               </>
             ) : (
               <>
                 <Save className="size-3.5" />
-                保存档案
+                {t('edit.save')}
               </>
             )}
           </Button>
         </div>
+        </MediaPreviewProvider>
       </SheetContent>
     </Sheet>
   );

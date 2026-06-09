@@ -9,13 +9,12 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -185,20 +184,26 @@ const Sidebar = React.forwardRef<
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
-            data-sidebar="sidebar"
             data-mobile="true"
             side={side}
-            className={cn(
-              "w-[var(--sidebar-width)] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden",
-              className
-            )}
+            className="w-[var(--sidebar-width)] gap-0 border-0 bg-transparent p-0 text-sidebar-foreground shadow-none [&>button]:hidden"
             style={
               {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+                "--sidebar-width": SIDEBAR_WIDTH,
               } as React.CSSProperties
             }
           >
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <SheetHeader className="sr-only">
+              <SheetTitle>Sidebar</SheetTitle>
+            </SheetHeader>
+            <div className={cn("flex h-full w-full flex-col", className)}>
+              <div
+                data-sidebar="sidebar"
+                className="flex h-full w-full flex-col bg-sidebar"
+              >
+                {children}
+              </div>
+            </div>
           </SheetContent>
         </Sheet>
       )

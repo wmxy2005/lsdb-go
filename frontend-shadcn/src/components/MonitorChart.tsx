@@ -80,12 +80,12 @@ export function MonitorChart({
     : '--';
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border-0 shadow-none bg-transparent gap-4 py-0">
+      <CardHeader className="px-4 pb-2">
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-muted-foreground text-sm">{latestValue}</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4">
         <Line
           data={chartData}
           options={{

@@ -10,16 +10,19 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { usePageTitle } from '@/hooks/use-page-title-context';
+import { PHOTOSWIPE_DETAIL_OPTIONS } from '@/lib/photoswipe';
 import { resolveTagColor, resolveTagUrl, resolveUrl } from '@/lib/resource-url';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen, Heart, Pencil, RefreshCw, Calendar, Tag, ChevronLeft, Film, Image as ImageIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Gallery, Item as PsItem } from 'react-photoswipe-gallery';
-import 'photoswipe/dist/photoswipe.css';
 import { toast } from 'sonner';
 
 export default function ItemDetailPage() {
+  const { t } = useTranslation();
   const { itemId } = useParams();
   const navigate = useNavigate();
   const id = Number(itemId);
@@ -34,6 +37,8 @@ export default function ItemDetailPage() {
   });
 
   const item: ItemInfo | undefined = data?.success ? data.data : undefined;
+
+  usePageTitle(item?.title, item?.title);
 
   useEffect(() => {
     if (item) setIsFavi(!!item.isFavi);
@@ -70,17 +75,17 @@ export default function ItemDetailPage() {
     const res = await faviItem(id, faviState);
     if (res.success) {
       setIsFavi(!faviState);
-      toast.success(!faviState ? '已加入收藏' : '已取消收藏');
+      toast.success(!faviState ? t('toast.favoriteAdded') : t('toast.favoriteRemoved'));
     } else {
-      toast.error(res.message ?? '操作失败');
+      toast.error(res.message ?? t('toast.operationFailed'));
     }
   };
 
   const handleOpenFolder = async () => {
     const path = [item.base, item.category, item.subcategory, item.name].filter(Boolean).join('/');
     const res = await openFolder(path);
-    if (res.success) toast.success('已成功打开本地文件夹');
-    else toast.error(res.message ?? '打开失败');
+    if (res.success) toast.success(t('toast.openFolderSuccess'));
+    else toast.error(res.message ?? t('toast.openFolderFailed'));
   };
 
   const imgList1 = item.imgList1 ?? [];
@@ -105,7 +110,7 @@ export default function ItemDetailPage() {
             size="icon"
             onClick={() => navigate(-1)}
             className="h-8 w-8 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
-            title="返回"
+            title={t('common.back')}
           >
             <ChevronLeft className="size-4" />
           </Button>
@@ -128,27 +133,27 @@ export default function ItemDetailPage() {
             size="icon"
             onClick={handleFavi}
             className="h-9 w-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-all duration-200"
-            aria-label={faviState ? '取消收藏' : '收藏'}
+            aria-label={faviState ? t('action.unfavorite') : t('action.favorite')}
           >
             <Heart className={`size-4 transition-transform duration-200 active:scale-125 ${faviState ? 'fill-destructive text-destructive' : 'text-zinc-500'}`} />
           </Button>
           <PageActionButton
             variant="outline"
             icon={<FolderOpen className="size-4" />}
-            label="打开文件夹"
+            label={t('action.openFolder')}
             onClick={handleOpenFolder}
             className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-xs font-medium"
           />
           <PageActionButton
             variant="outline"
             icon={<RefreshCw className="size-4" />}
-            label="同步"
+            label={t('action.sync')}
             onClick={() => setSyncOpen(true)}
             className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-xs font-medium"
           />
           <PageActionButton
             icon={<Pencil className="size-4" />}
-            label="编辑"
+            label={t('action.edit')}
             onClick={() => setEditOpen(true)}
             className="h-9 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm"
           />
@@ -157,13 +162,15 @@ export default function ItemDetailPage() {
 
       {/* Main Title Section */}
       <div className="space-y-3">
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
-          {item.title || item.name}
-        </h1>
+        {item.title && (
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
+            {item.title}
+          </h1>
+        )}
         {item.date && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <Calendar className="size-3.5 text-zinc-400" />
-            <span>发布于 {String(item.date).slice(0, 10)}</span>
+            <span>{t('common.publishedOn', { date: String(item.date).slice(0, 10) })}</span>
           </div>
         )}
       </div>
@@ -173,7 +180,7 @@ export default function ItemDetailPage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             <Pencil className="size-4" />
-            <span>档案详情描述</span>
+            <span>{t('itemDetail.section.description')}</span>
           </div>
           <Card className="border-border/40 bg-card/40 shadow-sm backdrop-blur-sm rounded-xl">
             <CardContent className="p-6">
@@ -214,7 +221,7 @@ export default function ItemDetailPage() {
           <div className="space-y-3 flex flex-col items-center">
             <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider w-full max-w-3xl">
               <Film className="size-4" />
-              <span>预告视频 / 演示</span>
+              <span>{t('itemDetail.section.trailer')}</span>
             </div>
             <div className="relative overflow-hidden rounded-xl border border-border/40 bg-zinc-950 shadow-lg w-full max-w-3xl aspect-video">
               <video
@@ -232,10 +239,10 @@ export default function ItemDetailPage() {
           <div className="space-y-3 flex flex-col items-center">
             <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider w-full justify-center">
               <ImageIcon className="size-4" />
-              <span>高清图集 (点击放大)</span>
+              <span>{t('itemDetail.section.gallery')}</span>
             </div>
             <div className="w-full">
-              <Gallery>
+              <Gallery options={PHOTOSWIPE_DETAIL_OPTIONS}>
                 <div className="flex flex-wrap justify-center gap-4 w-full">
                   {imgList1.map((img, i) => {
                     const src = imageUrl(img);
@@ -248,18 +255,20 @@ export default function ItemDetailPage() {
                         height={img.height ?? img.h ?? 800}
                       >
                         {({ ref, open }) => (
-                          <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.01] cursor-pointer max-w-full">
+                          <div
+                            className="overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm transition-shadow duration-300 hover:shadow-md cursor-pointer max-w-full"
+                            onClick={open}
+                            onKeyDown={(e) => e.key === 'Enter' && open()}
+                            role="button"
+                            tabIndex={0}
+                          >
                             <img
                               ref={ref as React.RefObject<HTMLImageElement>}
-                              onClick={open}
                               src={src}
                               alt=""
-                              className="max-h-[75vh] w-auto max-w-full object-contain transition-transform duration-500 group-hover:scale-[1.01]"
+                              className="max-h-[75vh] w-auto max-w-full object-contain"
                               loading="lazy"
                             />
-                            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                              <span className="text-xs font-medium text-white bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-sm">查看原图</span>
-                            </div>
                           </div>
                         )}
                       </PsItem>
@@ -276,7 +285,7 @@ export default function ItemDetailPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
               <ImageIcon className="size-4" />
-              <span>相关细节图</span>
+              <span>{t('itemDetail.section.detailImages')}</span>
             </div>
             <div className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4 space-y-4">
               {imgList2.map((img, i) => {
