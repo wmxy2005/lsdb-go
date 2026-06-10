@@ -105,7 +105,6 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
       icon: LogOut,
       action: async () => {
         await logout()
-        navigate("/login")
       },
       shortcut: "⌥ L",
     },

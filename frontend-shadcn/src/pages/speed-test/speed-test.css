@@ -1,0 +1,666 @@
+.speed-page {
+  color: var(--foreground);
+  --speed-primary: var(--primary);
+  --speed-primary-hover: color-mix(in oklch, var(--primary) 85%, white);
+  --speed-primary-shadow: color-mix(in oklch, var(--primary) 25%, transparent);
+}
+
+.dark .speed-page {
+  --speed-primary-hover: color-mix(in oklch, var(--primary) 85%, black);
+}
+
+.speed-hero {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(320px, 1.25fr) minmax(260px, 0.9fr);
+  gap: 24px;
+  align-items: center;
+  min-height: 360px;
+  padding: 22px 4px 10px;
+}
+
+.speed-hero-copy {
+  padding-left: 8px;
+}
+
+.speed-hero-title {
+  margin-bottom: 14px;
+  color: hsl(var(--foreground));
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: 0;
+}
+
+.speed-hero-description {
+  max-width: 280px;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.speed-hero-copy .speed-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 156px;
+  height: 48px;
+  margin-top: 4px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--speed-primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 14px 28px var(--speed-primary-shadow);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.speed-hero-copy .speed-start-btn:not(:disabled):hover {
+  background: var(--speed-primary-hover);
+  color: var(--primary-foreground);
+  box-shadow: 0 16px 30px var(--speed-primary-shadow);
+  transform: translateY(-1px);
+}
+
+.speed-hero-copy .speed-start-btn:not(:disabled):active {
+  box-shadow: 0 8px 18px var(--speed-primary-shadow);
+  transform: translateY(0);
+}
+
+.speed-hero-copy .speed-start-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.speed-hero-copy .speed-start-btn.speed-stop-btn {
+  background: #ff4d4f;
+  box-shadow: 0 14px 28px rgba(255, 77, 79, 0.24);
+}
+
+.speed-hero-copy .speed-start-btn.speed-stop-btn:not(:disabled):hover {
+  background: #ff7875;
+  color: #fff;
+  box-shadow: 0 16px 30px rgba(255, 77, 79, 0.24);
+}
+
+.speed-hero-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 26px;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+}
+
+.speed-hero-controls .speed-controls-icon {
+  color: #1677ff;
+}
+
+.speed-size-select {
+  width: 140px;
+  height: 34px;
+  border: 1px solid rgba(22, 119, 255, 0.2);
+  border-radius: 8px;
+  background: hsl(var(--background) / 0.9);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.speed-gauge-wrap {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
+.speed-gauge {
+  position: relative;
+  width: min(500px, 100%);
+  aspect-ratio: 480 / 310;
+  container-type: inline-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.speed-gauge-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.speed-gauge-arc-bg {
+  fill: none;
+  stroke: rgba(22, 119, 255, 0.12);
+  stroke-linecap: round;
+  stroke-width: 20;
+}
+
+.speed-gauge-arc-value {
+  fill: none;
+  stroke: url("#speedGaugeGradient");
+  stroke-linecap: butt;
+  stroke-width: 20;
+}
+
+.speed-gauge-tick,
+.speed-gauge-tick-major {
+  stroke: rgba(80, 112, 166, 0.32);
+  stroke-linecap: round;
+}
+
+.speed-gauge-tick {
+  stroke-width: 2.75;
+}
+
+.speed-gauge-tick-major {
+  stroke-width: 4.25;
+}
+
+.speed-gauge-tick-label {
+  fill: hsl(var(--foreground));
+  font-size: clamp(15px, 3.8cqi, 19px);
+  font-weight: 600;
+}
+
+.speed-gauge-end-dot {
+  fill: hsl(var(--background));
+  stroke: currentColor;
+  stroke-width: 5;
+}
+
+.speed-gauge-content {
+  position: absolute;
+  right: 12%;
+  bottom: 4%;
+  left: 12%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.speed-gauge-label {
+  display: block;
+  min-height: calc(clamp(11px, 2.6cqi, 13px) * 1.2);
+  color: var(--foreground);
+  font-size: clamp(11px, 2.6cqi, 13px);
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.speed-gauge-value {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: clamp(42px, 12.4cqi, 62px);
+  color: var(--foreground);
+  font-size: clamp(42px, 12.4cqi, 62px);
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-gauge-value-placeholder {
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.speed-gauge-value-current {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.speed-gauge-unit {
+  display: block;
+  min-height: calc(clamp(16px, 4cqi, 20px) * 1.2);
+  color: var(--muted-foreground);
+  font-size: clamp(16px, 4cqi, 20px);
+  line-height: 1.2;
+}
+
+.speed-sparkline {
+  display: block;
+  overflow: visible;
+  color: currentColor;
+}
+
+.speed-gauge-content .speed-sparkline {
+  width: min(150px, 62%);
+  height: 30px;
+  margin-top: 5px;
+}
+
+.speed-sparkline-placeholder {
+  visibility: hidden;
+}
+
+.speed-sparkline-fill {
+  fill: currentColor;
+  opacity: 0.08;
+}
+
+.speed-sparkline-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.speed-phase {
+  width: min(460px, 100%);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.speed-phase-label {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: calc(14px * 1.4);
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+
+.speed-phase-label-placeholder {
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.speed-phase-label-current {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.speed-phase-progress {
+  height: 8px;
+}
+
+.speed-side-metrics {
+  display: grid;
+  gap: 10px;
+}
+
+.speed-metric-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  width: 100%;
+  min-height: 78px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 8px;
+  background: hsl(var(--card) / 0.86);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.speed-metric-card-with-chart {
+  grid-template-columns: 42px minmax(0, 1fr) 118px;
+}
+
+.speed-metric-card:hover {
+  border-color: rgba(22, 119, 255, 0.38);
+}
+
+.speed-metric-icon,
+.speed-summary-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.speed-metric-icon svg,
+.speed-summary-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.speed-metric-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.speed-metric-body > span {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.speed-metric-body strong {
+  color: hsl(var(--foreground));
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speed-metric-body small {
+  margin-left: 6px;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.speed-metric-card .speed-sparkline {
+  width: 118px;
+  height: 42px;
+  justify-self: end;
+}
+
+.speed-blue { color: #1677ff; }
+.speed-purple { color: #8a2be2; }
+.speed-cyan { color: #13c2c2; }
+.speed-orange { color: #fa8c16; }
+
+.speed-summary-card,
+.speed-panel {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  background: hsl(var(--card));
+}
+
+.speed-summary-card {
+  margin-bottom: 16px;
+}
+
+.speed-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.speed-summary-item {
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-right: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.speed-summary-item:last-child {
+  border-right: 0;
+}
+
+.speed-summary-item > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.speed-summary-item small {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.speed-summary-item strong {
+  color: hsl(var(--foreground));
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.speed-summary-item em {
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.speed-server {
+  color: #4864b1;
+}
+
+.speed-server small,
+.speed-server strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speed-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.speed-panel-title {
+  color: hsl(var(--foreground));
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.speed-chart {
+  height: 254px;
+}
+
+.speed-results-card .speed-results-body {
+  height: 286px;
+}
+
+.speed-recent-list {
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 0;
+  height: 254px;
+  min-width: 0;
+}
+
+.speed-recent-row {
+  display: grid;
+  grid-template-columns: 26px minmax(74px, 1fr) minmax(86px, 0.9fr) minmax(82px, 0.85fr) minmax(62px, 0.65fr) minmax(62px, 0.65fr) 16px;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  color: hsl(var(--foreground));
+}
+
+.speed-recent-row:last-child {
+  border-bottom: 0;
+}
+
+.speed-recent-time {
+  min-width: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.speed-recent-metric {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.speed-recent-metric strong {
+  min-width: 0;
+  color: hsl(var(--foreground));
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.speed-recent-metric small {
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+}
+
+.speed-recent-arrow {
+  color: #94a3b8;
+}
+
+.speed-recent-empty {
+  display: flex;
+  grid-row: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.speed-result-wifi {
+  color: #1677ff;
+}
+
+@media (max-width: 1100px) {
+  .speed-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .speed-hero-copy {
+    padding-left: 0;
+  }
+
+  .speed-side-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .speed-metric-card-with-chart {
+    grid-template-columns: 42px minmax(0, 1fr) 104px;
+  }
+
+  .speed-metric-card .speed-sparkline {
+    width: 104px;
+  }
+
+  .speed-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .speed-summary-item {
+    border-right: 0;
+  }
+
+  .speed-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .speed-results-card .speed-results-body {
+    height: auto;
+  }
+
+  .speed-recent-list {
+    height: auto;
+    min-height: 254px;
+    grid-template-rows: none;
+  }
+
+  .speed-recent-row {
+    grid-template-columns: 24px minmax(0, 1fr) 14px;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  .speed-recent-time {
+    grid-column: 2 / 3;
+  }
+
+  .speed-recent-metric {
+    grid-column: 2 / 3;
+    display: grid;
+    grid-template-columns: 18px minmax(54px, max-content) 34px;
+    gap: 6px;
+  }
+
+  .speed-recent-arrow {
+    grid-column: 3 / 4;
+    grid-row: 1 / 6;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 576px) {
+  .speed-hero {
+    gap: 12px;
+    padding-top: 8px;
+  }
+
+  .speed-hero-title {
+    font-size: 32px;
+  }
+
+  .speed-side-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .speed-metric-card-with-chart {
+    grid-template-columns: 42px minmax(0, 1fr) 96px;
+  }
+
+  .speed-metric-card .speed-sparkline {
+    width: 96px;
+    height: 36px;
+  }
+
+  .speed-gauge-content {
+    bottom: 6%;
+  }
+
+  .speed-gauge-content .speed-sparkline {
+    width: min(126px, 58%);
+    height: 24px;
+    margin-top: 3px;
+  }
+
+  .speed-phase {
+    margin-top: 2px;
+  }
+
+  .speed-summary-item {
+    padding: 12px 0;
+  }
+
+  .speed-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -27,6 +27,7 @@ export function MonitorChart({
   max = 100,
   autoScaleY = false,
   metrics,
+  xAxisTitle,
   valueFormatter = (v) => v.toFixed(1),
 }: {
   title: string;
@@ -35,6 +36,7 @@ export function MonitorChart({
   max?: number;
   autoScaleY?: boolean;
   metrics?: Metric[];
+  xAxisTitle?: string;
   valueFormatter?: (v: number, key?: string) => string;
 }) {
   const [labels, setLabels] = useState<string[]>(Array(MAX_POINTS).fill(''));
@@ -47,7 +49,7 @@ export function MonitorChart({
 
   useEffect(() => {
     if (!sample) return;
-    setLabels((prev) => [...prev.slice(1), sample.time.slice(11, 19)]);
+    setLabels((prev) => [...prev.slice(1), sample.time]);
     setDatasets((prev) => {
       const next = { ...prev };
       metricDefs.forEach((m) => {
@@ -86,18 +88,37 @@ export function MonitorChart({
         <p className="text-muted-foreground text-sm">{latestValue}</p>
       </CardHeader>
       <CardContent className="px-4">
-        <Line
-          data={chartData}
-          options={{
-            responsive: true,
-            animation: false,
-            scales: {
-              y: { min: autoScaleY ? undefined : min, max: autoScaleY ? undefined : max, beginAtZero: true },
-              x: { display: false },
-            },
-            plugins: { legend: { display: metricDefs.length > 1 } },
-          }}
-        />
+        <div className="h-[280px] w-full min-w-0">
+          <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              scales: {
+                y: {
+                  min: autoScaleY ? undefined : min,
+                  max: autoScaleY ? undefined : max,
+                  beginAtZero: true,
+                },
+                x: {
+                  display: true,
+                  title: {
+                    display: Boolean(xAxisTitle),
+                    text: xAxisTitle ?? '',
+                  },
+                  ticks: {
+                    maxTicksLimit: 6,
+                    autoSkip: true,
+                    maxRotation: 0,
+                  },
+                  grid: { display: false },
+                },
+              },
+              plugins: { legend: { display: metricDefs.length > 1 } },
+            }}
+          />
+        </div>
       </CardContent>
     </Card>
   );

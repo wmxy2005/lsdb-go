@@ -6,29 +6,24 @@ import LoginPage from '@/pages/LoginPage';
 import RolePage from '@/pages/RolePage';
 import SpeedTestPage from '@/pages/SpeedTestPage';
 import ToolPage from '@/pages/ToolPage';
-import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     children: [
       { index: true, element: <Navigate to="/items" replace /> },
-      { path: 'login', element: <LoginPage /> },
       {
-        element: (
-          <ProtectedRoute>
-            <MasterLayout />
-          </ProtectedRoute>
-        ),
+        element: <MasterLayout />,
         children: [
-          { path: 'items', element: <ItemsPage /> },
-          { path: 'items/role', element: <RolePage /> },
-          { path: 'items/:itemId', element: <ItemDetailPage /> },
+          { path: 'login', element: <LoginPage /> },
           { path: 'tool', element: <ToolPage /> },
           { path: 'speedTest', element: <SpeedTestPage /> },
+          { path: 'items', element: <ProtectedRoute><ItemsPage /></ProtectedRoute> },
+          { path: 'items/role', element: <ProtectedRoute><RolePage /></ProtectedRoute> },
+          { path: 'items/:itemId', element: <ProtectedRoute><ItemDetailPage /></ProtectedRoute> },
         ],
       },
     ],
   },
 ]);
-

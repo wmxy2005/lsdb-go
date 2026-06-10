@@ -332,6 +332,9 @@ func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != "resource" {
 		t.Fatalf("resource status=%d body=%q", w.Code, w.Body.String())
 	}
+	if cc := w.Header().Get("Cache-Control"); cc != "public, max-age=86400" {
+		t.Fatalf("resource Cache-Control = %q, want public, max-age=86400", cc)
+	}
 
 	uploadPath := "/api/resource?base=wallpaper&category=4k&subcategory=&name=forestdawniv&filename=i.png"
 	req = httptest.NewRequest(http.MethodPost, uploadPath, nil)

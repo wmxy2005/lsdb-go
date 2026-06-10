@@ -25,7 +25,8 @@
   "sidebar": {
     "mainNav": "Main Navigation",
     "toolsAndSystem": "Tools & System",
-    "authenticatedUser": "Authenticated user"
+    "authenticatedUser": "Authenticated user",
+    "notLoggedIn": "Not signed in"
   },
   "layout": {
     "language": {
@@ -94,12 +95,17 @@
     "tagline": "Lightweight resource & archive management platform",
     "loginTitle": "System Login",
     "loginDescription": "Enter admin credentials to access the console",
+    "alreadyLogout": "Logged out",
+    "pleaseLogin": "Please log in to the system",
+    "accountLogin": "Account login",
+    "platformTagline": "Hosting platform",
+    "brandTitle": "LSDB",
     "username": "Username",
     "usernamePlaceholder": "Enter username",
     "password": "Password",
     "passwordPlaceholder": "Enter password",
     "loggingIn": "Signing in securely...",
-    "submit": "Sign in to console"
+    "submit": "Log in"
   },
   "items": {
     "filter": {
@@ -211,6 +217,11 @@
       "dataSize": "Test data size"
     },
     "size": {
+      "16": "16 MB",
+      "64": "64 MB",
+      "128": "128 MB",
+      "256": "256 MB",
+      "512": "512 MB",
       "quick": "16 MB (Quick)",
       "standard": "64 MB (Standard)",
       "deep": "128 MB (Deep)"

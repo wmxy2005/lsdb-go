@@ -34,7 +34,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 import { CommandMenu } from "./CommandMenu"
 
@@ -45,8 +45,6 @@ export function SiteHeader() {
   const { t } = useTranslation()
 
   const { isAuthenticated, user, logout } = useAuth()
-
-  const navigate = useNavigate()
 
   const location = useLocation()
 
@@ -77,8 +75,6 @@ export function SiteHeader() {
   const handleLogout = async () => {
 
     await logout()
-
-    navigate("/login")
 
   }
 

@@ -155,6 +155,7 @@ export default function ToolPage() {
               sample={cpuSample}
               min={0}
               max={100}
+              xAxisTitle={t('tool.monitor.xAxis')}
               valueFormatter={(v) => `${v.toFixed(1)}%`}
             />
           </div>
@@ -163,6 +164,7 @@ export default function ToolPage() {
               title={t('tool.chart.network')}
               sample={networkSample}
               autoScaleY
+              xAxisTitle={t('tool.monitor.xAxis')}
               metrics={[
                 { key: 'uploadSpeed', label: t('tool.chart.uploadSpeed'), color: 'rgb(99, 102, 241)', fillColor: 'rgba(99, 102, 241, 0.1)' },
                 { key: 'downloadSpeed', label: t('tool.chart.downloadSpeed'), color: 'rgb(16, 185, 129)', fillColor: 'rgba(16, 185, 129, 0.1)' },

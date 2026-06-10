@@ -29,6 +29,7 @@ func (h *ResourceHandler) Get(c *gin.Context) {
 		response.Fail(c, http.StatusNotFound, 404, "resource not found")
 		return
 	}
+	c.Header("Cache-Control", "public, max-age=86400")
 	http.ServeFile(c.Writer, c.Request, path)
 }
 

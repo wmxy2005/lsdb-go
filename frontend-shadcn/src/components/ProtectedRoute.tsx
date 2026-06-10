@@ -1,10 +1,9 @@
-import { useAuth } from '@/hooks/use-auth';
-import { Navigate, useLocation } from 'react-router-dom';
-import { Skeleton } from '@/components/ui/skeleton';
+import { UnauthorizedGate } from '@/components/auth/UnauthorizedGate'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/hooks/use-auth'
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
-  const location = useLocation();
+  const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
     return (
@@ -12,12 +11,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full" />
       </div>
-    );
+    )
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    return <UnauthorizedGate />
   }
 
-  return children;
+  return children
 }

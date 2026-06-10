@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useAuth } from '@/hooks/use-auth';
 import { LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `block rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -20,14 +20,12 @@ export function MobileNavSheet({
 }) {
   const { t } = useTranslation();
   const { isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
 
   const close = () => onOpenChange(false);
 
   const handleLogout = async () => {
     await logout();
     close();
-    navigate('/login');
   };
 
   return (

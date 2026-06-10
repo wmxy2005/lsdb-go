@@ -25,7 +25,8 @@
   "sidebar": {
     "mainNav": "主导航",
     "toolsAndSystem": "工具与系统",
-    "authenticatedUser": "已认证用户"
+    "authenticatedUser": "已认证用户",
+    "notLoggedIn": "未登录"
   },
   "layout": {
     "language": {
@@ -94,12 +95,17 @@
     "tagline": "轻量级系统资源与技术档案管理平台",
     "loginTitle": "系统登录",
     "loginDescription": "请输入您的管理员凭证以访问控制台",
+    "alreadyLogout": "已退出",
+    "pleaseLogin": "请登录系统",
+    "accountLogin": "账号密码登录",
+    "platformTagline": "托管平台",
+    "brandTitle": "LSDB",
     "username": "用户名",
     "usernamePlaceholder": "请输入用户名",
     "password": "密码",
     "passwordPlaceholder": "请输入密码",
     "loggingIn": "安全登录中...",
-    "submit": "登录控制台"
+    "submit": "登录"
   },
   "items": {
     "filter": {
@@ -211,6 +217,11 @@
       "dataSize": "测试数据量"
     },
     "size": {
+      "16": "16 MB",
+      "64": "64 MB",
+      "128": "128 MB",
+      "256": "256 MB",
+      "512": "512 MB",
       "quick": "16 MB (快速测试)",
       "standard": "64 MB (标准测试)",
       "deep": "128 MB (深度测试)"

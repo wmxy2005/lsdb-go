@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { AppLocale } from '@/i18n';
-import { Check, Languages } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const LOCALES: { code: AppLocale; labelKey: string }[] = [
@@ -14,20 +14,31 @@ const LOCALES: { code: AppLocale; labelKey: string }[] = [
   { code: 'en-US', labelKey: 'layout.language.en' },
 ];
 
+const LOCALE_BADGE: Record<AppLocale, string> = {
+  'zh-CN': '中',
+  'en-US': 'EN',
+};
+
+function normalizeLocale(lng: string): AppLocale {
+  return lng.startsWith('zh') ? 'zh-CN' : 'en-US';
+}
+
 export function LanguageToggle() {
   const { t, i18n } = useTranslation();
-  const current = i18n.language as AppLocale;
+  const current = normalizeLocale(i18n.language);
+  const currentLabelKey = current === 'zh-CN' ? 'layout.language.zh' : 'layout.language.en';
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+          variant="outline"
+          size="sm"
+          className="h-8 min-w-8 rounded-full border-border/60 bg-background/50 px-2.5 text-xs font-semibold text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
           aria-label={t('layout.language.toggle')}
+          title={t(currentLabelKey)}
         >
-          <Languages className="size-4" />
+          {LOCALE_BADGE[current]}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[8rem] rounded-xl p-1.5 border border-border/40">

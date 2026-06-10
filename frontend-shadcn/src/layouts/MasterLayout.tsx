@@ -13,14 +13,16 @@ export function MasterLayout({ children }: MasterLayoutProps) {
     <SidebarProvider>
       <PageTitleProvider>
         <AppSidebar />
-        <SidebarInset className="flex flex-col h-svh overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] bg-background transition-colors duration-300 min-w-0">
+        <SidebarInset className="flex h-svh flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] bg-background transition-colors duration-300 min-w-0">
           <SiteHeader />
-          <div className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 animate-fade-in-up min-w-0">
-            {children ?? <Outlet />}
+          <div className="flex flex-col min-h-[calc(100svh-3.5rem)] px-6 pt-6 md:px-8 md:pt-8 max-w-7xl w-full mx-auto min-w-0">
+            <div className="flex flex-1 flex-col space-y-8 animate-fade-in-up">
+              {children ?? <Outlet />}
+            </div>
+            <footer className="mt-8 shrink-0 border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
+              Copyright © 2026 By wmxy2005
+            </footer>
           </div>
-          <footer className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground mt-auto">
-            Copyright © 2026 By wmxy2005
-          </footer>
         </SidebarInset>
       </PageTitleProvider>
     </SidebarProvider>

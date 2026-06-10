@@ -1,6 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ItemThumbnailProps {
@@ -13,6 +14,7 @@ interface ItemThumbnailProps {
 
 export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumbnailProps) {
   const { t } = useTranslation();
+  const imgRef = useRef<HTMLImageElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -21,18 +23,16 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
   const timerRef = useRef<number | null>(null);
   const isTouch = useMediaQuery('(hover: none)');
 
-  useEffect(() => {
-    const image = new Image();
-    image.src = src;
-    image.onload = () => setIsLoading(false);
-    image.onerror = () => {
+  useLayoutEffect(() => {
+    setIsError(false);
+    const img = imgRef.current;
+    if (!img) return;
+    if (img.complete) {
       setIsLoading(false);
-      setIsError(true);
-    };
-    return () => {
-      image.onload = null;
-      image.onerror = null;
-    };
+      setIsError(img.naturalWidth === 0);
+    } else {
+      setIsLoading(true);
+    }
   }, [src]);
 
   useEffect(() => {
@@ -77,30 +77,18 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
     handleHover(!hovered);
   };
 
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setIsError(false);
+  };
+
+  const handleImageError = () => {
+    setIsLoading(false);
+    setIsError(true);
+  };
+
   const hasDimensions = (srcW ?? 0) > 0 && (srcH ?? 0) > 0;
   const maxHeightStyle = maxHeight != null ? { maxHeight } : undefined;
-
-  if (isLoading) {
-    return (
-      <div className="relative w-full overflow-hidden" style={maxHeightStyle}>
-        {hasDimensions ? (
-          <>
-            <img
-              width={srcW}
-              height={srcH}
-              alt=""
-              aria-hidden
-              style={maxHeightStyle}
-              className="block w-full h-auto opacity-0"
-            />
-            <Skeleton className="absolute inset-0 rounded-none" />
-          </>
-        ) : (
-          <Skeleton className="aspect-video w-full" style={maxHeightStyle} />
-        )}
-      </div>
-    );
-  }
 
   if (isError) {
     return (
@@ -122,13 +110,31 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
       onMouseLeave={!isTouch && rollSrc ? () => handleHover(false) : undefined}
     >
       <div className={`relative w-full ${hovered ? 'thumbnail__image-hovered' : ''}`}>
-        <img
-          src={src}
-          alt=""
-          style={maxHeightStyle}
-          className="block w-full object-cover"
-          loading="lazy"
-        />
+        <div className="relative w-full overflow-hidden" style={maxHeightStyle}>
+          {isLoading &&
+            (hasDimensions ? (
+              <Skeleton className="absolute inset-0 rounded-none" />
+            ) : (
+              <Skeleton className="aspect-video w-full absolute inset-0" />
+            ))}
+          <img
+            ref={imgRef}
+            src={src}
+            width={hasDimensions ? srcW : undefined}
+            height={hasDimensions ? srcH : undefined}
+            alt=""
+            style={maxHeightStyle}
+            className={cn(
+              'block w-full object-cover',
+              isLoading && 'opacity-0',
+              hasDimensions && 'h-auto',
+              !hasDimensions && 'aspect-video',
+            )}
+            loading="lazy"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        </div>
       </div>
       {rollSrc && (
         <div className={hovered ? 'thumbnail__video thumbnail__video-hovered' : 'thumbnail__video'}>
