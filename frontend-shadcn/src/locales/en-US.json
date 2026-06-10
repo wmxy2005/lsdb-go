@@ -137,6 +137,9 @@
     "pagination": {
       "prev": "Previous",
       "next": "Next",
+      "first": "First",
+      "last": "Last",
+      "gotoPage": "Page {{page}}",
       "pageInfo": "Page {{page}} of {{totalPages}}"
     }
   },

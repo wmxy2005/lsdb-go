@@ -149,6 +149,15 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
     const rows: SelectableRow[] = []
 
     if (hasDebouncedSearch) {
+      if (!isSearchFetching) {
+        rows.push({
+          kind: "viewAll",
+          id: "view-all",
+          label: t("commandMenu.viewAllResults", { count: itemTotal }),
+          action: navigateToAllResults,
+        })
+      }
+
       for (const item of itemResults) {
         rows.push({
           kind: "item",
@@ -158,15 +167,6 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
             navigate(`/items/${item.id}`)
             onOpenChange(false)
           },
-        })
-      }
-
-      if (!isSearchFetching) {
-        rows.push({
-          kind: "viewAll",
-          id: "view-all",
-          label: t("commandMenu.viewAllResults", { count: itemTotal }),
-          action: navigateToAllResults,
         })
       }
     }
@@ -277,6 +277,24 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
               <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                 {t("commandMenu.section.archiveResults")}
               </div>
+              {!isSearchFetching && hasDebouncedSearch && (
+                (() => {
+                  const viewAllIndex = selectableRows.findIndex((r) => r.kind === "viewAll")
+                  const isSelected = viewAllIndex === selectedIndex
+                  return (
+                    <button
+                      type="button"
+                      onClick={navigateToAllResults}
+                      className={rowButtonClass(isSelected)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <ArrowRight className={cn("size-4", isSelected ? "text-primary" : "text-zinc-400")} />
+                        <span>{t("commandMenu.viewAllResults", { count: itemTotal })}</span>
+                      </div>
+                    </button>
+                  )
+                })()
+              )}
               {isSearchFetching && itemResults.length === 0 ? (
                 <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
                   <Loader2 className="size-3.5 animate-spin" />
@@ -314,24 +332,6 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                     </button>
                   )
                 })
-              )}
-              {!isSearchFetching && hasDebouncedSearch && (
-                (() => {
-                  const viewAllIndex = selectableRows.findIndex((r) => r.kind === "viewAll")
-                  const isSelected = viewAllIndex === selectedIndex
-                  return (
-                    <button
-                      type="button"
-                      onClick={navigateToAllResults}
-                      className={rowButtonClass(isSelected)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <ArrowRight className={cn("size-4", isSelected ? "text-primary" : "text-zinc-400")} />
-                        <span>{t("commandMenu.viewAllResults", { count: itemTotal })}</span>
-                      </div>
-                    </button>
-                  )
-                })()
               )}
             </div>
           )}

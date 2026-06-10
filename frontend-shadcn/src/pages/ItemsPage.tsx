@@ -3,6 +3,7 @@ import type { PageInfo, RoleListItem } from '@/api/types';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
 import { ItemCard } from '@/components/ItemCard';
+import { ItemsPagination } from '@/components/ItemsPagination';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -15,12 +16,13 @@ import { Switch } from '@/components/ui/switch';
 import { CONFIG } from '@/constants/config';
 import { usePageTitle } from '@/hooks/use-page-title-context';
 import { resBaseLabel, resTypeLabel } from '@/lib/i18n-labels';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { SlidersHorizontal, Eye, Tag, Calendar as CalendarIcon, Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { SlidersHorizontal, Tag, Filter, Search } from 'lucide-react';
 
 const filterFieldFocus =
   'focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0';
@@ -105,6 +107,70 @@ function FilterChips({ pageInfo }: { pageInfo: PageInfo }) {
   );
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.03,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 120,
+      damping: 15,
+    },
+  },
+};
+
+function ItemCardSkeleton() {
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      {/* Thumbnail area */}
+      <div className="aspect-video w-full overflow-hidden bg-muted">
+        <Skeleton className="h-full w-full rounded-none" />
+      </div>
+
+      {/* Content Details */}
+      <div className="flex flex-1 flex-col px-3 pt-2 pb-1.5 space-y-3">
+        {/* Avatar + Title */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+          <div className="flex h-[2.5rem] flex-1 flex-col justify-center gap-1.5">
+            <Skeleton className="h-3.5 w-11/12 rounded" />
+            <Skeleton className="h-3 w-2/3 rounded" />
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="mt-auto flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5 py-1.5">
+            <Skeleton className="h-5 w-12 rounded-md" />
+            <Skeleton className="h-5 w-16 rounded-md" />
+            <Skeleton className="h-5 w-10 rounded-md" />
+          </div>
+
+          {/* Footer Divider */}
+          <div className="flex items-center justify-between border-t border-border/40 pt-1.5">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <div className="flex items-center gap-1">
+              <Skeleton className="h-3 w-3 rounded" />
+              <Skeleton className="h-3 w-16 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const searchParsers = {
   keyword: parseAsString,
   category: parseAsString,
@@ -124,9 +190,9 @@ export default function ItemsPage() {
   const { t } = useTranslation();
   const [params, setParams] = useQueryStates(searchParsers);
 
-  const { data, isPending, isError, refetch, isFetching } = useQuery({
+  const { data, isError, refetch, isFetching } = useQuery({
     queryKey: ['items', params],
-    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const res = await queryItemList({
         keyword: params.keyword ?? undefined,
@@ -147,7 +213,6 @@ export default function ItemsPage() {
   });
 
   const pageInfo: PageInfo | undefined = data?.success ? data.data : undefined;
-  const showInitialLoading = isPending && !data;
 
   const documentTitle = useMemo(() => {
     if (!pageInfo) return undefined;
@@ -162,6 +227,16 @@ export default function ItemsPage() {
 
   const breadcrumbLabel = pageInfo?.title?.trim() ? pageInfo.title : null;
   usePageTitle(documentTitle, breadcrumbLabel);
+
+  useEffect(() => {
+    if (isFetching) {
+      const mainEl = document.querySelector('main');
+      if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: 'auto' });
+      }
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [isFetching]);
 
   if (isError || (data && !data.success)) {
     return <ErrorState onRetry={() => refetch()} />;
@@ -331,7 +406,7 @@ export default function ItemsPage() {
       </div>
 
       {/* Metadata & Related Roles */}
-      {pageInfo && (
+      {!isFetching && pageInfo && (
         <div className="flex flex-col gap-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 px-5 py-3 text-xs border border-border/40 backdrop-blur-sm">
           <div className="flex flex-wrap items-center gap-2 text-zinc-500 dark:text-zinc-400">
             {hasFilterChips(pageInfo) && (
@@ -355,59 +430,38 @@ export default function ItemsPage() {
       )}
 
       {/* Item Cards Grid */}
-      {showInitialLoading ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex flex-col space-y-3">
-              <Skeleton className="aspect-video w-full rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-2/3 rounded-md" />
-                <Skeleton className="h-3 w-1/2 rounded-md" />
-              </div>
-            </div>
+      {isFetching ? (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+        >
+          {Array.from({ length: params.pageSize }).map((_, i) => (
+            <motion.div key={i} variants={itemVariants}>
+              <ItemCardSkeleton />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : !pageInfo?.list?.length ? (
         <div className="rounded-xl border border-border/40 bg-card/30 py-12 backdrop-blur-sm">
           <EmptyState title={t('items.empty.title')} description={t('items.empty.description')} />
         </div>
       ) : (
-        <div
-          className={`grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 transition-opacity duration-200 ${
-            isFetching ? 'opacity-60 pointer-events-none' : 'opacity-100'
-          }`}
-        >
-          {pageInfo.list.map((item, i) => <ItemCard key={item.id} item={item} index={i} />)}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {pageInfo.list.map((item, i) => (
+            <ItemCard key={item.id} item={item} index={i} />
+          ))}
         </div>
       )}
 
       {/* Pagination */}
-      {pageInfo && (pageInfo.pages ?? 0) > 1 && (
-        <div className="flex items-center justify-center gap-4 border-t border-border/40 pt-6">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 shadow-none text-xs font-medium"
-            disabled={params.page <= 1}
-            onClick={() => setParams({ page: params.page - 1 })}
-          >
-            <ChevronLeft className="mr-1 size-4" />
-            {t('items.pagination.prev')}
-          </Button>
-          <span className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
-            {t('items.pagination.pageInfo', { page: params.page, totalPages: pageInfo.pages })}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 shadow-none text-xs font-medium"
-            disabled={params.page >= (pageInfo.pages ?? 1)}
-            onClick={() => setParams({ page: params.page + 1 })}
-          >
-            {t('items.pagination.next')}
-            <ChevronRight className="ml-1 size-4" />
-          </Button>
-        </div>
+      {!isFetching && pageInfo && (pageInfo.pages ?? 0) > 1 && (
+        <ItemsPagination
+          page={params.page}
+          totalPages={pageInfo.pages ?? 1}
+          onPageChange={(page) => setParams({ page })}
+        />
       )}
     </div>
   );
