@@ -1,4 +1,3 @@
-import { queryItemList } from '@/api/items';
 import type { PageInfo, RoleListItem } from '@/api/types';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -14,13 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { CONFIG } from '@/constants/config';
+import { useItemsListScroll } from '@/hooks/use-items-list-scroll';
+import { useItemsPageData } from '@/hooks/use-items-page-data';
 import { usePageTitle } from '@/hooks/use-page-title-context';
 import { resBaseLabel, resTypeLabel } from '@/lib/i18n-labels';
-import { useQuery } from '@tanstack/react-query';
+import { buildItemsSearch, type ItemsUrlParams } from '@/lib/items-page-cache';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal, Tag, Filter, Search } from 'lucide-react';
 
@@ -188,31 +189,55 @@ const searchParsers = {
 
 export default function ItemsPage() {
   const { t } = useTranslation();
-  const [params, setParams] = useQueryStates(searchParsers);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [params] = useQueryStates(searchParsers, { history: 'push' });
+  const urlParams: ItemsUrlParams = useMemo(
+    () => ({
+      keyword: params.keyword,
+      category: params.category,
+      tag: params.tag,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      matchMode: params.matchMode,
+      base: params.base,
+      type: params.type,
+      favi: params.favi,
+      sort: params.sort,
+      page: params.page,
+      pageSize: params.pageSize,
+    }),
+    [
+      params.keyword,
+      params.category,
+      params.tag,
+      params.dateFrom,
+      params.dateTo,
+      params.matchMode,
+      params.base,
+      params.type,
+      params.favi,
+      params.sort,
+      params.page,
+      params.pageSize,
+    ],
+  );
+  const scrollKey = useMemo(
+    () => `${location.key}${location.search}`,
+    [location.key, location.search],
+  );
 
-  const { data, isError, refetch, isFetching } = useQuery({
-    queryKey: ['items', params],
-    refetchOnWindowFocus: false,
-    queryFn: async () => {
-      const res = await queryItemList({
-        keyword: params.keyword ?? undefined,
-        category: params.category ?? undefined,
-        tag: params.tag ?? undefined,
-        dateFrom: params.dateFrom ?? undefined,
-        dateTo: params.dateTo ?? undefined,
-        matchMode: params.matchMode ?? undefined,
-        base: params.base ?? undefined,
-        type: params.type ?? undefined,
-        favi: params.favi ?? undefined,
-        sort: params.sort ?? undefined,
-        page: String(params.page),
-        pageSize: String(params.pageSize),
-      });
-      return res;
+  const pushItemsSearch = useCallback(
+    (updates: Partial<ItemsUrlParams>) => {
+      const merged: ItemsUrlParams = { ...urlParams, ...updates };
+      const search = buildItemsSearch(merged);
+      navigate({ pathname: '/items', search }, { replace: false });
     },
-  });
+    [navigate, urlParams],
+  );
 
-  const pageInfo: PageInfo | undefined = data?.success ? data.data : undefined;
+  const { data, pageInfo, isLoading, isError, shouldRestoreCache, refetch, persistPageData } =
+    useItemsPageData(location);
 
   const documentTitle = useMemo(() => {
     if (!pageInfo) return undefined;
@@ -220,30 +245,34 @@ export default function ItemsPage() {
     const info = rawTitle === 'all' || !rawTitle ? t('config.all') : rawTitle;
     return t('page.documentTitle', {
       info,
-      page: pageInfo.current ?? params.page,
+      page: pageInfo.current ?? urlParams.page,
       pages: Math.max(pageInfo.pages ?? 1, 1),
     });
-  }, [pageInfo, params.page, t]);
+  }, [pageInfo, urlParams.page, t]);
 
   const breadcrumbLabel = pageInfo?.title?.trim() ? pageInfo.title : null;
   usePageTitle(documentTitle, breadcrumbLabel);
 
-  useEffect(() => {
-    if (isFetching) {
-      const mainEl = document.querySelector('main');
-      if (mainEl) {
-        mainEl.scrollTo({ top: 0, behavior: 'auto' });
-      }
-      window.scrollTo({ top: 0, behavior: 'auto' });
-    }
-  }, [isFetching]);
+  useItemsListScroll(scrollKey, !!pageInfo && !isLoading, shouldRestoreCache);
+
+  const handleFaviChange = useCallback(
+    (itemId: number, isFavi: boolean) => {
+      persistPageData((info) => ({
+        ...info,
+        list: info.list.map((item) =>
+          item.id === itemId ? { ...item, isFavi } : item,
+        ),
+      }));
+    },
+    [persistPageData],
+  );
 
   if (isError || (data && !data.success)) {
     return <ErrorState onRetry={() => refetch()} />;
   }
 
-  const applyFilter = (updates: Partial<typeof params>) => {
-    setParams({ ...updates, page: 1 });
+  const applyFilter = (updates: Partial<ItemsUrlParams>) => {
+    pushItemsSearch({ ...updates, page: 1 });
   };
 
   return (
@@ -358,7 +387,7 @@ export default function ItemsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.matchMode')}</Label>
-                  <Select value={params.matchMode ?? '__and__'} onValueChange={(v) => setParams({ matchMode: v === '__and__' ? null : v })}>
+                  <Select value={params.matchMode ?? '__and__'} onValueChange={(v) => pushItemsSearch({ matchMode: v === '__and__' ? null : v })}>
                     <SelectTrigger className={filterSelectClass}>
                       <SelectValue placeholder="AND" />
                     </SelectTrigger>
@@ -406,7 +435,7 @@ export default function ItemsPage() {
       </div>
 
       {/* Metadata & Related Roles */}
-      {!isFetching && pageInfo && (
+      {!isLoading && pageInfo && (
         <div className="flex flex-col gap-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 px-5 py-3 text-xs border border-border/40 backdrop-blur-sm">
           <div className="flex flex-wrap items-center gap-2 text-zinc-500 dark:text-zinc-400">
             {hasFilterChips(pageInfo) && (
@@ -430,14 +459,14 @@ export default function ItemsPage() {
       )}
 
       {/* Item Cards Grid */}
-      {isFetching ? (
+      {isLoading && !pageInfo ? (
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         >
-          {Array.from({ length: params.pageSize }).map((_, i) => (
+          {Array.from({ length: urlParams.pageSize }).map((_, i) => (
             <motion.div key={i} variants={itemVariants}>
               <ItemCardSkeleton />
             </motion.div>
@@ -450,17 +479,17 @@ export default function ItemsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {pageInfo.list.map((item, i) => (
-            <ItemCard key={item.id} item={item} index={i} />
+            <ItemCard key={item.id} item={item} index={i} onFaviChange={handleFaviChange} />
           ))}
         </div>
       )}
 
       {/* Pagination */}
-      {!isFetching && pageInfo && (pageInfo.pages ?? 0) > 1 && (
+      {!isLoading && pageInfo && (pageInfo.pages ?? 0) > 1 && (
         <ItemsPagination
-          page={params.page}
+          page={urlParams.page}
           totalPages={pageInfo.pages ?? 1}
-          onPageChange={(page) => setParams({ page })}
+          onPageChange={(page) => pushItemsSearch({ page })}
         />
       )}
     </div>

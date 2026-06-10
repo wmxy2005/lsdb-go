@@ -27,7 +27,15 @@ function truncateTag(value: string) {
   return { display: value.slice(0, sliceLen) + '...', full: value };
 }
 
-export function ItemCard({ item, index = 0 }: { item: ItemInfo; index?: number }) {
+export function ItemCard({
+  item,
+  index = 0,
+  onFaviChange,
+}: {
+  item: ItemInfo;
+  index?: number;
+  onFaviChange?: (itemId: number, isFavi: boolean) => void;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [isFavi, setIsFavi] = useState(item.isFavi ?? false);
@@ -71,7 +79,9 @@ export function ItemCard({ item, index = 0 }: { item: ItemInfo; index?: number }
     setFaviLoading(true);
     const res = await faviItem(item.id, isFavi);
     if (res.success) {
-      setIsFavi(!isFavi);
+      const nextFavi = !isFavi;
+      setIsFavi(nextFavi);
+      onFaviChange?.(item.id, nextFavi);
     } else {
       toast.error(res.message ?? t('toast.operationFailed'));
     }
