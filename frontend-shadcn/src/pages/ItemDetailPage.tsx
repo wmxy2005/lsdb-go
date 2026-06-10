@@ -11,15 +11,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { usePageTitle } from '@/hooks/use-page-title-context';
+import { getItemsScrollContainer } from '@/lib/items-page-cache';
 import { PHOTOSWIPE_DETAIL_OPTIONS } from '@/lib/photoswipe';
 import { resolveTagColor, resolveTagUrl, resolveUrl } from '@/lib/resource-url';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen, Heart, Pencil, RefreshCw, Calendar, Tag, ChevronLeft, Film, Image as ImageIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Gallery, Item as PsItem } from 'react-photoswipe-gallery';
 import { toast } from 'sonner';
+import Player from 'xgplayer';
+import 'xgplayer/dist/index.min.css';
 
 export default function ItemDetailPage() {
   const { t } = useTranslation();
@@ -40,9 +43,43 @@ export default function ItemDetailPage() {
 
   usePageTitle(item?.title, item?.title);
 
+  useLayoutEffect(() => {
+    getItemsScrollContainer()?.scrollTo({ top: 0, behavior: 'auto' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [id]);
+
   useEffect(() => {
     if (item) setIsFavi(!!item.isFavi);
   }, [item?.id, item?.isFavi]);
+
+  const playerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!playerRef.current) return;
+    const player = new Player({
+        el: playerRef.current,
+        fluid: true,
+        volume: 0.2,
+        poster: resolveUrl(
+          item?.base ?? '',
+          item?.category ?? '',
+          item?.subcategory ?? '',
+          item?.name ?? '',
+          item?.videoThumbnail??'',
+        ),
+        url: resolveUrl(
+          item?.base ?? '',
+          item?.category ?? '',
+          item?.subcategory ?? '',
+          item?.name ?? '',
+          item?.trailer ??'',
+        ),
+      });
+    return () => {
+      player?.pause();
+      player?.destroy();
+    };
+  }, [item?.trailer]);
 
   if (isLoading) {
     return (
@@ -224,12 +261,9 @@ export default function ItemDetailPage() {
               <span>{t('itemDetail.section.trailer')}</span>
             </div>
             <div className="relative overflow-hidden rounded-xl border border-border/40 bg-zinc-950 shadow-lg w-full max-w-3xl aspect-video">
-              <video
-                controls
-                className="w-full h-full object-contain"
-                poster={item.videoThumbnail ? resolveUrl(item.base ?? '', item.category ?? '', item.subcategory ?? '', item.name ?? '', item.videoThumbnail) : undefined}
-                src={resolveUrl(item.base ?? '', item.category ?? '', item.subcategory ?? '', item.name ?? '', item.trailer)}
-              />
+              <div className="w-full h-full object-contain">
+                <div ref={playerRef} />
+              </div>
             </div>
           </div>
         )}
@@ -287,7 +321,7 @@ export default function ItemDetailPage() {
               <ImageIcon className="size-4" />
               <span>{t('itemDetail.section.detailImages')}</span>
             </div>
-            <div className="columns-1 gap-4 sm:columns-2 md:columns-3 lg:columns-4 space-y-4">
+            <div className="columns-3 gap-1 sm:columns-4 md:columns-6 lg:columns-8 space-y-1">
               {imgList2.map((img, i) => {
                 const w = img.width ?? img.w;
                 const h = img.height ?? img.h;

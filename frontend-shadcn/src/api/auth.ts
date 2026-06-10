@@ -1,6 +1,6 @@
 import type { ApiResult, UserInfo } from '@/api/types';
 import { apiRequest, setToken } from '@/api/client';
-import { CONFIG } from '@/constants/config';
+import { CONFIG } from '@/constants';
 
 export async function authLogin(username: string, password: string) {
   return apiRequest<ApiResult<{ token?: string }>>(`${CONFIG.apiUrl}/api/auth/login`, {

@@ -1,4 +1,4 @@
-import { CONFIG, DIR_SEP } from '@/constants/config';
+import { CONFIG, DIR_SEP } from '@/constants';
 
 export function resolvePath(
   resBase: string | undefined,

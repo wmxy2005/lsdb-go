@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { CONFIG } from '@/constants/config';
+import { CONFIG } from '@/constants';
 import { useItemsListScroll } from '@/hooks/use-items-list-scroll';
 import { useItemsPageData } from '@/hooks/use-items-page-data';
 import { usePageTitle } from '@/hooks/use-page-title-context';
@@ -35,6 +35,25 @@ const filterInputIconClass = `pl-8 ${filterInputClass}`;
 const filterSelectClass = `h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium shadow-none ${filterFieldFocus}`;
 
 const filterChipClass = 'h-6 text-[10px] font-medium px-2.5 rounded-md';
+
+type ResBaseItem = (typeof CONFIG.resBaseList)[number];
+
+function getGroupedResBases() {
+  const childMap = new Map<string, ResBaseItem[]>();
+  for (const item of CONFIG.resBaseList) {
+    if (!item.parent) continue;
+    const children = childMap.get(item.parent) ?? [];
+    children.push(item);
+    childMap.set(item.parent, children);
+  }
+
+  return CONFIG.resBaseList
+    .filter((item) => !item.parent)
+    .map((item) => ({
+      item,
+      children: item.name ? childMap.get(item.name) ?? [] : [],
+    }));
+}
 
 function hasFilterChips(pageInfo: PageInfo) {
   return (
@@ -226,6 +245,7 @@ export default function ItemsPage() {
     () => `${location.key}${location.search}`,
     [location.key, location.search],
   );
+  const groupedResBases = useMemo(() => getGroupedResBases(), []);
 
   const pushItemsSearch = useCallback(
     (updates: Partial<ItemsUrlParams>) => {
@@ -289,9 +309,22 @@ export default function ItemsPage() {
                   <SelectValue placeholder={t('items.filter.allCategories')} />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg border-border/40">
-                  {CONFIG.resBaseList.map((b) => (
-                    <SelectItem key={b.name || 'all'} value={b.name || '__all__'} className="text-xs rounded-md">{resBaseLabel(t, b.name)}</SelectItem>
-                  ))}
+                  {groupedResBases.map(({ item, children }) =>
+                    children.length > 0 ? (
+                      <SelectGroup key={item.name}>
+                        <SelectLabel>{resBaseLabel(t, item.name)}</SelectLabel>
+                        {children.map((child) => (
+                          <SelectItem key={child.name} value={child.name} className="text-xs rounded-md pl-5">
+                            {resBaseLabel(t, child.name)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ) : (
+                      <SelectItem key={item.name || 'all'} value={item.name || '__all__'} className="text-xs rounded-md">
+                        {resBaseLabel(t, item.name)}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -459,12 +492,12 @@ export default function ItemsPage() {
       )}
 
       {/* Item Cards Grid */}
-      {isLoading && !pageInfo ? (
+      {isLoading ? (
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         >
           {Array.from({ length: urlParams.pageSize }).map((_, i) => (
             <motion.div key={i} variants={itemVariants}>
@@ -477,7 +510,7 @@ export default function ItemsPage() {
           <EmptyState title={t('items.empty.title')} description={t('items.empty.description')} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {pageInfo.list.map((item, i) => (
             <ItemCard key={item.id} item={item} index={i} onFaviChange={handleFaviChange} />
           ))}

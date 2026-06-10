@@ -1,5 +1,3 @@
-export const DIR_SEP = '/';
-
 export const CONFIG = {
   searchUrl: '/items',
   apiUrl: '',

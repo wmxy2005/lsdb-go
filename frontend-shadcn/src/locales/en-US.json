@@ -399,13 +399,8 @@
   },
   "config": {
     "all": "All",
-    "type0": "Type 0",
-    "type1": "Type 1",
     "resBase": {
-      "all": "All",
-      "wallpaperGroup": "Wallpaper",
-      "wallpaper": "Wallpaper",
-      "wallpaper2": "Wallpaper2-Long Long"
+      "all": "All"
     }
   },
   "media": {

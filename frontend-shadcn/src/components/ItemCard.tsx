@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CONFIG } from '@/constants/config';
+import { CONFIG } from '@/constants';
 import { resolveBaseColor, resolveTagColor, resolveTagUrl, resolveUrl } from '@/lib/resource-url';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
@@ -20,11 +20,8 @@ function getBaseLabel(base?: string) {
   return CONFIG.resBaseList.find((b) => b.name === base)?.label ?? base ?? '';
 }
 
-function truncateTag(value: string) {
-  const byteLen = new Blob([value]).size;
-  if (byteLen <= 24) return { display: value, full: value };
-  const sliceLen = Math.floor(24 / (byteLen / value.length));
-  return { display: value.slice(0, sliceLen) + '...', full: value };
+function getTagName(tag: NonNullable<ItemInfo['tagList']>[number]) {
+  return tag.value ?? tag.name ?? '';
 }
 
 export function ItemCard({
@@ -46,7 +43,8 @@ export function ItemCard({
     ? resolveUrl(item.base ?? '', item.category ?? '', item.subcategory ?? '', item.name ?? '', item.roll)
     : undefined;
 
-  const tags = (item.tagList ?? []).filter((t) => !['base', 'tag2', 'tag3'].includes(t.type ?? '')).slice(0, 3);
+  const tags = (item.tagList ?? []).filter((t) => !['base', 'tag2', 'tag3'].includes(t.type ?? ''));
+  const visibleTags = tags.slice(0, 3);
   const baseLabel = getBaseLabel(item.base);
   const avatarUrl = item.avatarSrc ? `${CONFIG.apiUrl}${item.avatarSrc}` : undefined;
   const hasThumbDimensions = (item.thumbnailW ?? 0) > 0 && (item.thumbnailH ?? 0) > 0;
@@ -62,7 +60,7 @@ export function ItemCard({
     const el = thumbRef.current;
     if (!el) return;
 
-    const updateMaxH = (width: number) => setThumbMaxH(width);
+    const updateMaxH = (width: number) => setThumbMaxH(width*0.75); // 4:3 ratio
     updateMaxH(el.getBoundingClientRect().width);
 
     const ro = new ResizeObserver(([entry]) => {
@@ -159,20 +157,18 @@ export function ItemCard({
 
           <div className="mt-auto flex flex-col gap-1.5">
             {tags.length > 0 && (
-              <div className="flex flex-nowrap items-center gap-1.5 overflow-hidden py-1.5">
-                {tags.map((tag, i) => {
-                  const tagName = tag.value ?? tag.name ?? '';
-                  const { display, full } = truncateTag(tagName);
-                  const isLong = display !== full;
+              <div className="flex min-w-0 grid-cols-3 items-center gap-1.5 overflow-hidden py-1.5">
+                {visibleTags.map((tag, i) => {
+                  const tagName = getTagName(tag);
                   return (
                     <Badge
                       key={`${tag.type}-${tag.tagIndex ?? i}`}
                       variant="secondary"
-                      title={isLong ? full : tagName}
-                      className={`flex min-w-0 shrink items-center truncate cursor-pointer text-xs font-normal px-3 py-1 rounded-md border-none transition-all duration-200 hover:scale-[1.02] ${resolveTagColor(tag.type ?? 'tag', tag.index ?? tag.tagIndex ?? i)}`}
+                      title={tagName}
+                      className={`flex min-w-0 cursor-pointer items-center rounded-md border-none px-2 py-1 text-xs font-normal transition-all duration-200 hover:scale-[1.02] ${resolveTagColor(tag.type ?? 'tag', tag.index ?? tag.tagIndex ?? i)}`}
                       onClick={(e) => handleTagClick(e, tag.type ?? 'tag', tagName)}
                     >
-                      {display}
+                      <span className="block min-w-0 truncate">{tagName}</span>
                     </Badge>
                   );
                 })}

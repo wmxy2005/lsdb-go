@@ -1,6 +1,6 @@
 import type { ApiResult, PCInfo } from '@/api/types';
 import { apiRequest, getToken } from '@/api/client';
-import { CONFIG } from '@/constants/config';
+import { CONFIG } from '@/constants';
 
 export async function openFolder(path: string) {
   return apiRequest<ApiResult<string>>(`${CONFIG.apiUrl}${CONFIG.cmdUrl}opendir`, {

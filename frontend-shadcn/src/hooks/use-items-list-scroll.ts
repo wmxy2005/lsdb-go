@@ -11,6 +11,10 @@ const ZERO_SAVE_DELAY_MS = 300;
 const RESTORE_TIMEOUT_MS = 5000;
 const LAYOUT_STABLE_FRAMES = 4;
 
+function canSaveItemsListScroll(): boolean {
+  return window.location.pathname === '/items';
+}
+
 function resolveScrollTarget(
   container: HTMLElement,
   state: ItemsScrollState,
@@ -45,6 +49,7 @@ export function useItemsListScroll(
   const scrollStateRef = useRef<ItemsScrollState>({ top: 0, ratio: 0 });
   const hadPositiveScrollRef = useRef(false);
   const isRestoringRef = useRef(false);
+  const saveEnabledRef = useRef(false);
   const zeroSaveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -69,6 +74,8 @@ export function useItemsListScroll(
     }
 
     const persistState = () => {
+      if (!saveEnabledRef.current) return;
+      if (!canSaveItemsListScroll()) return;
       const state = scrollStateRef.current;
       saveItemsScroll(scrollKey, state.top, state.ratio);
     };
@@ -89,6 +96,8 @@ export function useItemsListScroll(
 
       clearTimeout(zeroSaveTimerRef.current);
       zeroSaveTimerRef.current = setTimeout(() => {
+        if (!saveEnabledRef.current) return;
+        if (!canSaveItemsListScroll()) return;
         saveItemsScroll(scrollKey, 0, 0);
       }, ZERO_SAVE_DELAY_MS);
     };
@@ -105,7 +114,23 @@ export function useItemsListScroll(
   }, [scrollKey]);
 
   useLayoutEffect(() => {
-    if (!shouldRestore || !ready) return;
+    saveEnabledRef.current = false;
+    clearTimeout(zeroSaveTimerRef.current);
+
+    if (!ready) return;
+
+    if (!shouldRestore) {
+      const container = getItemsScrollContainer();
+      const top = container?.scrollTop ?? window.scrollY;
+      const maxScroll = container ? getItemsMaxScroll(container) : 0;
+      scrollStateRef.current = {
+        top,
+        ratio: maxScroll > 0 ? top / maxScroll : 0,
+      };
+      hadPositiveScrollRef.current = top > 0;
+      saveEnabledRef.current = true;
+      return;
+    }
 
     const savedState = loadItemsScrollState(scrollKey);
     const container = getItemsScrollContainer();
@@ -118,11 +143,15 @@ export function useItemsListScroll(
       } else {
         window.scrollTo({ top: 0, behavior: 'auto' });
       }
+      saveEnabledRef.current = true;
       return;
     }
 
     if (!container) {
       window.scrollTo({ top: savedState.top, behavior: 'auto' });
+      scrollStateRef.current = savedState;
+      hadPositiveScrollRef.current = savedState.top > 0;
+      saveEnabledRef.current = true;
       return;
     }
 
@@ -160,6 +189,8 @@ export function useItemsListScroll(
       if (stopped) return;
       stopped = true;
       isRestoringRef.current = false;
+      hadPositiveScrollRef.current = scrollStateRef.current.top > 0;
+      saveEnabledRef.current = true;
       resizeObserver.disconnect();
       mutationObserver.disconnect();
       clearTimeout(timeoutId);

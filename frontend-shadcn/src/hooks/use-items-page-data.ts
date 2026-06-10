@@ -9,7 +9,7 @@ import {
   loadItemsScrollState,
   saveItemsPageCache,
 } from '@/lib/items-page-cache';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Location } from 'react-router-dom';
 import { useNavigationType } from 'react-router-dom';
 
@@ -48,7 +48,7 @@ export function useItemsPageData(location: Location) {
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false;
 
     const fromPopState = isPopNavigationRef.current;
@@ -76,6 +76,7 @@ export function useItemsPageData(location: Location) {
     }
 
     setIsLoading(true);
+    setData(undefined);
     const mainEl = getItemsScrollContainer();
     mainEl?.scrollTo({ top: 0, behavior: 'auto' });
     window.scrollTo({ top: 0, behavior: 'auto' });

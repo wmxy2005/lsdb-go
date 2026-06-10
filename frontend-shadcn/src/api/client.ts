@@ -1,4 +1,4 @@
-import { CONFIG } from '@/constants/config';
+import { CONFIG } from '@/constants';
 
 const TOKEN_KEY = 'lsdb_token';
 

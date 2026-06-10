@@ -1,6 +1,6 @@
 import { authHeaders } from '@/api/client';
 import type { ApiResult } from '@/api/types';
-import { CONFIG } from '@/constants/config';
+import { CONFIG } from '@/constants';
 
 type ResourcePath = {
   base: string;

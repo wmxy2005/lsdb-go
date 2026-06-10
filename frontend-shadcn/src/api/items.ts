@@ -1,6 +1,6 @@
 import type { ApiResult, ItemInfo, ItemSearchParams, PageInfo } from '@/api/types';
 import { apiRequest } from '@/api/client';
-import { CONFIG } from '@/constants/config';
+import { CONFIG } from '@/constants';
 
 export async function queryItemList(params: ItemSearchParams) {
   return apiRequest<ApiResult<PageInfo>>(`${CONFIG.apiUrl}/api/items`, {

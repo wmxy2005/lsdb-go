@@ -36,15 +36,24 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
   }, [src]);
 
   useEffect(() => {
+    setHovered(false);
+    setProgress('0%');
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    videoRef.current?.pause();
+    if (rollSrc) {
+      videoRef.current?.load();
+    }
+  }, [rollSrc]);
+
+  useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.removeAttribute('src');
-        videoRef.current.load();
-      }
+      videoRef.current?.pause();
     };
-  }, [rollSrc]);
+  }, []);
 
   const handleHover = (play: boolean) => {
     const video = videoRef.current;
@@ -55,6 +64,9 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
       timerRef.current = null;
     }
     if (play) {
+      if (video.readyState === HTMLMediaElement.HAVE_NOTHING) {
+        video.load();
+      }
       video.play().catch(() => {});
       timerRef.current = window.setInterval(() => {
         const total = video.duration;
@@ -139,7 +151,15 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
       {rollSrc && (
         <div className={hovered ? 'thumbnail__video thumbnail__video-hovered' : 'thumbnail__video'}>
           <div className="video__progress" style={{ width: progress }} />
-          <video ref={videoRef} loop muted playsInline src={rollSrc} className="w-full h-full object-cover" />
+          <video
+            ref={videoRef}
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            src={rollSrc}
+            className="w-full h-full object-cover"
+          />
         </div>
       )}
     </div>

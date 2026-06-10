@@ -399,13 +399,8 @@
   },
   "config": {
     "all": "全部",
-    "type0": "类型0",
-    "type1": "类型1",
     "resBase": {
-      "all": "全部",
-      "wallpaperGroup": "Wallpaper",
-      "wallpaper": "Wallpaper",
-      "wallpaper2": "Wallpaper2-Long Long"
+      "all": "全部"
     }
   },
   "media": {
