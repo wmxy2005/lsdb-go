@@ -1,28 +1,38 @@
-import { openFolder } from '@/api/cmd';
-import { faviItem, queryItem } from '@/api/items';
-import type { ItemInfo } from '@/api/types';
-import { ConsoleDialog } from '@/components/ConsoleDialog';
-import { EditItemSheet } from '@/components/EditItemSheet';
-import { PageActionButton, PageActions } from '@/components/common/PageActions';
-import { ErrorState } from '@/components/common/ErrorState';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { usePageTitle } from '@/hooks/use-page-title-context';
-import { getItemsScrollContainer } from '@/lib/items-page-cache';
-import { PHOTOSWIPE_DETAIL_OPTIONS } from '@/lib/photoswipe';
-import { resolveTagColor, resolveTagUrl, resolveUrl } from '@/lib/resource-url';
-import { useQuery } from '@tanstack/react-query';
-import { FolderOpen, Heart, Pencil, RefreshCw, Calendar, Tag, ChevronLeft, Film, Image as ImageIcon } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Gallery, Item as PsItem } from 'react-photoswipe-gallery';
-import { toast } from 'sonner';
-import Player from 'xgplayer';
-import 'xgplayer/dist/index.min.css';
+import { openFolder } from "@/api/cmd";
+import { faviItem, queryItem } from "@/api/items";
+import type { ItemInfo } from "@/api/types";
+import { ConsoleDialog } from "@/components/ConsoleDialog";
+import { EditItemSheet } from "@/components/EditItemSheet";
+import { PageActionButton, PageActions } from "@/components/common/PageActions";
+import { ErrorState } from "@/components/common/ErrorState";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { usePageTitle } from "@/hooks/use-page-title-context";
+import { getItemsScrollContainer } from "@/lib/items-page-cache";
+import { PHOTOSWIPE_DETAIL_OPTIONS } from "@/lib/photoswipe";
+import { resolveTagColor, resolveTagUrl, resolveUrl } from "@/lib/resource-url";
+import { useQuery } from "@tanstack/react-query";
+import {
+  FolderOpen,
+  Heart,
+  Pencil,
+  RefreshCw,
+  Calendar,
+  Tag,
+  ChevronLeft,
+  Film,
+  Image as ImageIcon,
+} from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Gallery, Item as PsItem } from "react-photoswipe-gallery";
+import { toast } from "sonner";
+import Player from "xgplayer";
+import "xgplayer/dist/index.min.css";
 
 export default function ItemDetailPage() {
   const { t } = useTranslation();
@@ -34,7 +44,7 @@ export default function ItemDetailPage() {
   const [syncOpen, setSyncOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['item', id],
+    queryKey: ["item", id],
     queryFn: () => queryItem(id),
     enabled: id > 0,
   });
@@ -44,8 +54,8 @@ export default function ItemDetailPage() {
   usePageTitle(item?.title, item?.title);
 
   useLayoutEffect(() => {
-    getItemsScrollContainer()?.scrollTo({ top: 0, behavior: 'auto' });
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    getItemsScrollContainer()?.scrollTo({ top: 0, behavior: "auto" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   }, [id]);
 
   useEffect(() => {
@@ -53,33 +63,106 @@ export default function ItemDetailPage() {
   }, [item?.id, item?.isFavi]);
 
   const playerRef = useRef<HTMLDivElement>(null);
+  const playerInstanceRef = useRef<Player | null>(null);
 
   useEffect(() => {
-    if (!playerRef.current) return;
-    const player = new Player({
-        el: playerRef.current,
-        fluid: true,
-        volume: 0.2,
-        poster: resolveUrl(
-          item?.base ?? '',
-          item?.category ?? '',
-          item?.subcategory ?? '',
-          item?.name ?? '',
-          item?.videoThumbnail??'',
-        ),
-        url: resolveUrl(
-          item?.base ?? '',
-          item?.category ?? '',
-          item?.subcategory ?? '',
-          item?.name ?? '',
-          item?.trailer ??'',
-        ),
-      });
-    return () => {
-      player?.pause();
-      player?.destroy();
+    if (!item?.trailer || !playerRef.current) return;
+
+    const poster = resolveUrl(
+      item.base ?? "",
+      item.category ?? "",
+      item.subcategory ?? "",
+      item.name ?? "",
+      item.videoThumbnail ?? "",
+    );
+    const url = resolveUrl(
+      item.base ?? "",
+      item.category ?? "",
+      item.subcategory ?? "",
+      item.name ?? "",
+      item.trailer ?? "",
+    );
+
+    const mountEl = playerRef.current;
+    let placeholder: Comment | null = null;
+
+    const restoreMount = () => {
+      if (placeholder?.parentNode) {
+        placeholder.parentNode.insertBefore(mountEl, placeholder);
+        placeholder.remove();
+      }
+      placeholder = null;
+      document.body.classList.remove("item-detail-player-fs");
     };
-  }, [item?.trailer]);
+
+    const parseFullscreenPayload = (payload: unknown) => {
+      if (typeof payload === "boolean") return payload;
+      const data = payload as {
+        isCssFullScreen?: boolean;
+        isFullScreen?: boolean;
+      };
+      return data.isCssFullScreen ?? data.isFullScreen ?? false;
+    };
+
+    const reparentToBody = () => {
+      const parent = mountEl.parentNode;
+      if (!parent || parent === document.body) {
+        document.body.classList.add("item-detail-player-fs");
+        return;
+      }
+      placeholder = document.createComment("player-placeholder");
+      parent.insertBefore(placeholder, mountEl);
+      document.body.appendChild(mountEl);
+      document.body.classList.add("item-detail-player-fs");
+    };
+
+    const onCssFullscreenChange = (payload: unknown) => {
+      if (parseFullscreenPayload(payload)) {
+        reparentToBody();
+      } else {
+        restoreMount();
+      }
+    };
+
+    const player = new Player({
+      el: mountEl,
+      fluid: true,
+      volume: 0.2,
+      poster,
+      url,
+      fullscreen: {
+        target: mountEl,
+      },
+      cssFullscreen: {
+        target: mountEl,
+      },
+    });
+    playerInstanceRef.current = player;
+    player.on("cssFullscreen_change", onCssFullscreenChange);
+
+    return () => {
+      player.off("cssFullscreen_change", onCssFullscreenChange);
+      restoreMount();
+      player.pause();
+      player.destroy();
+      playerInstanceRef.current = null;
+      mountEl.classList.remove(
+        "xgplayer-fullscreen-parent",
+        "xgplayer-is-cssfullscreen",
+      );
+      document.body.classList.remove(
+        "xgplayer-fullscreen-parent",
+        "xgplayer-is-cssfullscreen",
+      );
+    };
+  }, [
+    item?.trailer,
+    item?.base,
+    item?.category,
+    item?.subcategory,
+    item?.name,
+    item?.videoThumbnail,
+  ]);
 
   if (isLoading) {
     return (
@@ -112,17 +195,21 @@ export default function ItemDetailPage() {
     const res = await faviItem(id, faviState);
     if (res.success) {
       setIsFavi(!faviState);
-      toast.success(!faviState ? t('toast.favoriteAdded') : t('toast.favoriteRemoved'));
+      toast.success(
+        !faviState ? t("toast.favoriteAdded") : t("toast.favoriteRemoved"),
+      );
     } else {
-      toast.error(res.message ?? t('toast.operationFailed'));
+      toast.error(res.message ?? t("toast.operationFailed"));
     }
   };
 
   const handleOpenFolder = async () => {
-    const path = [item.base, item.category, item.subcategory, item.name].filter(Boolean).join('/');
+    const path = [item.base, item.category, item.subcategory, item.name]
+      .filter(Boolean)
+      .join("/");
     const res = await openFolder(path);
-    if (res.success) toast.success(t('toast.openFolderSuccess'));
-    else toast.error(res.message ?? t('toast.openFolderFailed'));
+    if (res.success) toast.success(t("toast.openFolderSuccess"));
+    else toast.error(res.message ?? t("toast.openFolderFailed"));
   };
 
   const imgList1 = item.imgList1 ?? [];
@@ -130,11 +217,11 @@ export default function ItemDetailPage() {
 
   const imageUrl = (img: { value?: string; name?: string }) =>
     resolveUrl(
-      item.base ?? '',
-      item.category ?? '',
-      item.subcategory ?? '',
-      item.name ?? '',
-      img.value ?? img.name ?? '',
+      item.base ?? "",
+      item.category ?? "",
+      item.subcategory ?? "",
+      item.name ?? "",
+      img.value ?? img.name ?? "",
     );
 
   return (
@@ -147,13 +234,18 @@ export default function ItemDetailPage() {
             size="icon"
             onClick={() => navigate(-1)}
             className="h-8 w-8 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
-            title={t('common.back')}
+            title={t("common.back")}
           >
             <ChevronLeft className="size-4" />
           </Button>
           <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 font-medium">
             {item.base && (
-              <Link to={resolveTagUrl('base', item.base)} className="hover:text-foreground transition-colors">{item.base}</Link>
+              <Link
+                to={resolveTagUrl("base", item.base)}
+                className="hover:text-foreground transition-colors"
+              >
+                {item.base}
+              </Link>
             )}
             {item.category && (
               <>
@@ -170,27 +262,31 @@ export default function ItemDetailPage() {
             size="icon"
             onClick={handleFavi}
             className="h-9 w-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-all duration-200"
-            aria-label={faviState ? t('action.unfavorite') : t('action.favorite')}
+            aria-label={
+              faviState ? t("action.unfavorite") : t("action.favorite")
+            }
           >
-            <Heart className={`size-4 transition-transform duration-200 active:scale-125 ${faviState ? 'fill-destructive text-destructive' : 'text-zinc-500'}`} />
+            <Heart
+              className={`size-4 transition-transform duration-200 active:scale-125 ${faviState ? "fill-destructive text-destructive" : "text-zinc-500"}`}
+            />
           </Button>
           <PageActionButton
             variant="outline"
             icon={<FolderOpen className="size-4" />}
-            label={t('action.openFolder')}
+            label={t("action.openFolder")}
             onClick={handleOpenFolder}
             className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-xs font-medium"
           />
           <PageActionButton
             variant="outline"
             icon={<RefreshCw className="size-4" />}
-            label={t('action.sync')}
+            label={t("action.sync")}
             onClick={() => setSyncOpen(true)}
             className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-xs font-medium"
           />
           <PageActionButton
             icon={<Pencil className="size-4" />}
-            label={t('action.edit')}
+            label={t("action.edit")}
             onClick={() => setEditOpen(true)}
             className="h-9 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm"
           />
@@ -207,7 +303,11 @@ export default function ItemDetailPage() {
         {item.date && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <Calendar className="size-3.5 text-zinc-400" />
-            <span>{t('common.publishedOn', { date: String(item.date).slice(0, 10) })}</span>
+            <span>
+              {t("common.publishedOn", {
+                date: String(item.date).slice(0, 10),
+              })}
+            </span>
           </div>
         )}
       </div>
@@ -217,7 +317,7 @@ export default function ItemDetailPage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             <Pencil className="size-4" />
-            <span>{t('itemDetail.section.description')}</span>
+            <span>{t("itemDetail.section.description")}</span>
           </div>
           <Card className="border-border/40 bg-card/40 shadow-sm backdrop-blur-sm rounded-xl">
             <CardContent className="p-6">
@@ -233,13 +333,18 @@ export default function ItemDetailPage() {
       {(item.tagList ?? []).length > 0 && (
         <div className="flex flex-wrap gap-2 pt-1">
           {(item.tagList ?? []).map((tag, i) => {
-            const tagName = (tag as { value?: string; name?: string }).value ?? (tag as { name?: string }).name ?? '';
+            const tagName =
+              (tag as { value?: string; name?: string }).value ??
+              (tag as { name?: string }).name ??
+              "";
             return (
               <Badge
                 key={i}
                 variant="secondary"
-                className={`cursor-pointer text-xs px-3 py-1 rounded-md border-none transition-all duration-200 hover:scale-[1.02] ${resolveTagColor(tag.type ?? 'tag', tag.index ?? i)}`}
-                onClick={() => navigate(resolveTagUrl(tag.type ?? 'tag', tagName))}
+                className={`cursor-pointer text-xs px-3 py-1 rounded-md border-none transition-all duration-200 hover:scale-[1.02] ${resolveTagColor(tag.type ?? "tag", tag.index ?? i)}`}
+                onClick={() =>
+                  navigate(resolveTagUrl(tag.type ?? "tag", tagName))
+                }
               >
                 <Tag className="size-3 mr-1 opacity-70" />
                 {tagName}
@@ -256,14 +361,15 @@ export default function ItemDetailPage() {
         {/* Video Trailer */}
         {item.trailer && (
           <div className="space-y-3 flex flex-col items-center">
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider w-full max-w-3xl">
+            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider w-full max-w-3xl justify-center">
               <Film className="size-4" />
-              <span>{t('itemDetail.section.trailer')}</span>
+              <span>{t("itemDetail.section.trailer")}</span>
             </div>
-            <div className="relative overflow-hidden rounded-xl border border-border/40 bg-zinc-950 shadow-lg w-full max-w-3xl aspect-video">
-              <div className="w-full h-full object-contain">
-                <div ref={playerRef} />
-              </div>
+            <div className="w-full max-w-3xl">
+              <div
+                ref={playerRef}
+                className="justify-center item-detail-player w-full max-w-3xl aspect-video overflow-hidden rounded-xl border border-border/40 bg-zinc-950 shadow-lg"
+              />
             </div>
           </div>
         )}
@@ -273,7 +379,7 @@ export default function ItemDetailPage() {
           <div className="space-y-3 flex flex-col items-center">
             <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider w-full justify-center">
               <ImageIcon className="size-4" />
-              <span>{t('itemDetail.section.gallery')}</span>
+              <span>{t("itemDetail.section.gallery")}</span>
             </div>
             <div className="w-full">
               <Gallery options={PHOTOSWIPE_DETAIL_OPTIONS}>
@@ -292,12 +398,19 @@ export default function ItemDetailPage() {
                           <div
                             className="overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm transition-shadow duration-300 hover:shadow-md cursor-pointer max-w-full"
                             onClick={open}
-                            onKeyDown={(e) => e.key === 'Enter' && open()}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                (e.currentTarget as HTMLElement).click();
+                              }
+                            }}
                             role="button"
                             tabIndex={0}
                           >
                             <img
-                              ref={ref as React.RefObject<HTMLImageElement>}
+                              ref={
+                                ref as unknown as React.Ref<HTMLImageElement>
+                              }
                               src={src}
                               alt=""
                               className="max-h-[75vh] w-auto max-w-full object-contain"
@@ -319,13 +432,16 @@ export default function ItemDetailPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
               <ImageIcon className="size-4" />
-              <span>{t('itemDetail.section.detailImages')}</span>
+              <span>{t("itemDetail.section.detailImages")}</span>
             </div>
             <div className="columns-3 gap-1 sm:columns-4 md:columns-6 lg:columns-8 space-y-1">
               {imgList2.map((img, i) => {
                 const w = img.width ?? img.w;
                 const h = img.height ?? img.h;
-                const aspectRatioStyle = w && h && w > 0 && h > 0 ? { aspectRatio: `${w} / ${h}` } : undefined;
+                const aspectRatioStyle =
+                  w && h && w > 0 && h > 0
+                    ? { aspectRatio: `${w} / ${h}` }
+                    : undefined;
                 return (
                   <div
                     key={img.imgIndex ?? i}
@@ -346,11 +462,18 @@ export default function ItemDetailPage() {
         )}
       </div>
 
-      <EditItemSheet itemId={id} open={editOpen} onOpenChange={setEditOpen} onSaved={() => refetch()} />
+      <EditItemSheet
+        itemId={id}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSaved={() => refetch()}
+      />
       <ConsoleDialog
         open={syncOpen}
         onOpenChange={setSyncOpen}
-        path={[item.base, item.category, item.subcategory, item.name].filter(Boolean).join('/')}
+        path={[item.base, item.category, item.subcategory, item.name]
+          .filter(Boolean)
+          .join("/")}
       />
     </div>
   );

@@ -245,3 +245,47 @@
 .thumbnail__video-hovered .video__progress {
   @apply opacity-60;
 }
+
+/* xgplayer CSS fullscreen: lock page scroll */
+body.item-detail-player-fs {
+  overflow: hidden !important;
+}
+
+/* xgplayer CSS fullscreen: mount container (reparented to body) */
+body > .item-detail-player.xgplayer-fullscreen-parent,
+body.item-detail-player-fs > .item-detail-player,
+body.item-detail-player-fs .item-detail-player.xgplayer-fullscreen-parent,
+.item-detail-player.xgplayer-fullscreen-parent {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  aspect-ratio: auto !important;
+  overflow: visible !important;
+  z-index: 99999 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+/* xgplayer CSS fullscreen: fill mount container, reset fluid box model */
+body > .item-detail-player.xgplayer-fullscreen-parent .xgplayer.xgplayer-is-cssfullscreen,
+body.item-detail-player-fs .item-detail-player .xgplayer.xgplayer-is-cssfullscreen {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  max-width: none !important;
+  z-index: 1;
+}
+
+/* native fullscreen: reset fluid box model, browser handles viewport sizing */
+.item-detail-player .xgplayer.xgplayer-is-fullscreen {
+  width: 100% !important;
+  height: 100% !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
