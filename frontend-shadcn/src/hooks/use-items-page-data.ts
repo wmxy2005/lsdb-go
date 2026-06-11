@@ -8,6 +8,7 @@ import {
   loadItemsPageCache,
   loadItemsScrollState,
   saveItemsPageCache,
+  takeItemsPageSeed,
 } from '@/lib/items-page-cache';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Location } from 'react-router-dom';
@@ -73,6 +74,25 @@ export function useItemsPageData(location: Location) {
         }
         return;
       }
+    }
+
+    // Reuse data already fetched for this exact navigation instead of hitting
+    // the API: either a one-shot seed handed over from elsewhere (e.g. the
+    // command-menu search) or data this same history entry already cached.
+    // Both are keyed strictly to this navigation, so there is no staleness
+    // risk — and the cache lookup covers the React StrictMode dev double-mount,
+    // where the throwaway first pass consumes the seed and writes it here.
+    const reuse =
+      loadItemsPageCache(location.key, routerSearch) ??
+      takeItemsPageSeed(routerSearch);
+    if (reuse) {
+      setData(reuse);
+      saveItemsPageCache(location.key, reuse, routerSearch);
+      setIsLoading(false);
+      const mainEl = getItemsScrollContainer();
+      mainEl?.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
     }
 
     setIsLoading(true);

@@ -5,6 +5,7 @@ import { CONFIG } from "@/constants/config"
 import { useAuth } from "@/hooks/use-auth"
 import { useTheme } from "@/providers/ThemeProvider"
 import { cn } from "@/lib/utils"
+import { seedItemsPageData } from "@/lib/items-page-cache"
 import { useQuery } from "@tanstack/react-query"
 import { Archive, ArrowRight, FileText, Gauge, Loader2, LogOut, Moon, Search, Sun, Wrench } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -129,20 +130,23 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
       const res = await queryItemList({
         keyword: debouncedSearch.trim(),
         page: "1",
-        pageSize: "8",
+        pageSize: "20",
       })
       return res
     },
   })
 
-  const itemResults = searchData?.success ? (searchData.data?.list ?? []) : []
+  // Preview shows a compact subset; the full first page is kept for reuse on "view all".
+  const itemResults = searchData?.success ? (searchData.data?.list ?? []).slice(0, 8) : []
   const itemTotal = searchData?.success ? (searchData.data?.total ?? 0) : 0
   const hasDebouncedSearch = debouncedSearch.trim().length > 0
 
   const navigateToAllResults = useCallback(() => {
-    navigate(`/items?keyword=${encodeURIComponent(debouncedSearch.trim())}`)
+    const search = `?keyword=${encodeURIComponent(debouncedSearch.trim())}`
+    if (searchData?.success) seedItemsPageData(search, searchData)
+    navigate(`/items${search}`)
     onOpenChange(false)
-  }, [debouncedSearch, navigate, onOpenChange])
+  }, [debouncedSearch, navigate, onOpenChange, searchData])
 
   const selectableRows = useMemo<SelectableRow[]>(() => {
     const rows: SelectableRow[] = []

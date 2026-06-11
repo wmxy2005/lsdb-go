@@ -113,6 +113,27 @@ export function saveItemsPageCache(
   }
 }
 
+// One-shot in-memory seed: lets a fresh navigation reuse data already fetched
+// elsewhere (e.g. the command-menu search) instead of re-calling the API.
+// Keyed by the exact `location.search` string the items page will see.
+let pendingSeed: { search: string; data: ApiResult<PageInfo> } | null = null;
+
+export function seedItemsPageData(search: string, data: ApiResult<PageInfo>) {
+  if (!data.success) return;
+  pendingSeed = { search, data };
+}
+
+export function takeItemsPageSeed(
+  search: string,
+): ApiResult<PageInfo> | undefined {
+  if (pendingSeed?.search === search) {
+    const { data } = pendingSeed;
+    pendingSeed = null; // consume once
+    return data;
+  }
+  return undefined;
+}
+
 export type ItemsScrollState = {
   top: number;
   ratio: number;
