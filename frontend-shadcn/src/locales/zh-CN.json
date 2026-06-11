@@ -42,6 +42,8 @@
   },
   "commandMenu": {
     "brand": "LSDB Command Palette",
+    "title": "命令面板",
+    "srDescription": "搜索档案、跳转页面并执行操作。",
     "category": {
       "navigation": "导航",
       "systemActions": "系统操作"
@@ -273,6 +275,7 @@
     },
     "unit": {
       "mbps": "Mbps",
+      "gbps": "Gbps",
       "ms": "ms",
       "mb": "MB"
     },

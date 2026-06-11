@@ -1,6 +1,6 @@
 import { queryItemList } from "@/api/items"
 import type { ItemInfo } from "@/api/types"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { CONFIG } from "@/constants/config"
 import { useAuth } from "@/hooks/use-auth"
 import { useTheme } from "@/providers/ThemeProvider"
@@ -263,6 +263,8 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0 overflow-hidden border-border/40 shadow-2xl rounded-xl">
+        <DialogTitle className="sr-only">{t("commandMenu.title")}</DialogTitle>
+        <DialogDescription className="sr-only">{t("commandMenu.srDescription")}</DialogDescription>
         <div className="flex items-center px-4 border-b border-border/40 bg-zinc-50/50 dark:bg-zinc-900/30">
           <Search className="size-4 mr-3 text-zinc-400 shrink-0" />
           <input

@@ -18,6 +18,16 @@ export function formatNumber(value?: number, fractionDigits = 2) {
   });
 }
 
+// Formats a throughput value (in Mbps), switching to Gbps once it reaches
+// 1000 Mbps so large numbers stay readable. Returns the formatted number plus
+// whether the Gbps unit should be used.
+export function formatRate(mbps?: number): { value: string; isGbps: boolean } {
+  if (mbps !== undefined && Number.isFinite(mbps) && mbps >= 1000) {
+    return { value: formatNumber(mbps / 1000, 2), isGbps: true };
+  }
+  return { value: formatNumber(mbps, 2), isGbps: false };
+}
+
 export function median(values: number[]) {
   if (!values.length) return 0;
   const sortedValues = [...values].sort((a, b) => a - b);

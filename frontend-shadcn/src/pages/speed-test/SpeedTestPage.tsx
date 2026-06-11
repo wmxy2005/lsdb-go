@@ -12,7 +12,6 @@ import {
 import {
   ArrowDown,
   ArrowUp,
-  ChevronRight,
   Gauge,
   GitBranch,
   Globe,
@@ -58,6 +57,7 @@ import {
   emptySparklineSampleBuffer,
   emptySparklineSeries,
   formatNumber,
+  formatRate,
   getGaugeMax,
   getServerName,
   hasSparkline,
@@ -254,44 +254,60 @@ export default function SpeedTestPage() {
   };
 
   const metricCards = useMemo(
-    () => [
-      {
-        key: 'download' as MetricKey,
-        title: t('speedTest.metric.download'),
-        value: liveValues.downloadMbps ?? currentResult?.downloadMbps,
-        unit: t('speedTest.unit.mbps'),
-        icon: <ArrowDown />,
-        tone: 'blue',
-        sparklineValues: sparklineSeries.download,
-      },
-      {
-        key: 'upload' as MetricKey,
-        title: t('speedTest.metric.upload'),
-        value: liveValues.uploadMbps ?? currentResult?.uploadMbps,
-        unit: t('speedTest.unit.mbps'),
-        icon: <ArrowUp />,
-        tone: 'purple',
-        sparklineValues: sparklineSeries.upload,
-      },
-      {
-        key: 'ping' as MetricKey,
-        title: t('speedTest.metric.ping'),
-        value: liveValues.latencyMs ?? currentResult?.latencyMs,
-        unit: t('speedTest.unit.ms'),
-        icon: <Gauge />,
-        tone: 'cyan',
-        sparklineValues: sparklineSeries.ping,
-      },
-      {
-        key: 'jitter' as MetricKey,
-        title: t('speedTest.metric.jitter'),
-        value: liveValues.jitterMs ?? currentResult?.jitterMs,
-        unit: t('speedTest.unit.ms'),
-        icon: <GitBranch />,
-        tone: 'orange',
-        sparklineValues: sparklineSeries.jitter,
-      },
-    ],
+    () =>
+      [
+        {
+          key: 'download' as MetricKey,
+          title: t('speedTest.metric.download'),
+          value: liveValues.downloadMbps ?? currentResult?.downloadMbps,
+          unit: t('speedTest.unit.mbps'),
+          icon: <ArrowDown />,
+          tone: 'blue',
+          sparklineValues: sparklineSeries.download,
+        },
+        {
+          key: 'upload' as MetricKey,
+          title: t('speedTest.metric.upload'),
+          value: liveValues.uploadMbps ?? currentResult?.uploadMbps,
+          unit: t('speedTest.unit.mbps'),
+          icon: <ArrowUp />,
+          tone: 'purple',
+          sparklineValues: sparklineSeries.upload,
+        },
+        {
+          key: 'ping' as MetricKey,
+          title: t('speedTest.metric.ping'),
+          value: liveValues.latencyMs ?? currentResult?.latencyMs,
+          unit: t('speedTest.unit.ms'),
+          icon: <Gauge />,
+          tone: 'cyan',
+          sparklineValues: sparklineSeries.ping,
+        },
+        {
+          key: 'jitter' as MetricKey,
+          title: t('speedTest.metric.jitter'),
+          value: liveValues.jitterMs ?? currentResult?.jitterMs,
+          unit: t('speedTest.unit.ms'),
+          icon: <GitBranch />,
+          tone: 'orange',
+          sparklineValues: sparklineSeries.jitter,
+        },
+      ].map((card) => {
+        const isRate = card.key === 'download' || card.key === 'upload';
+        if (isRate) {
+          const { value, isGbps } = formatRate(card.value);
+          return {
+            ...card,
+            displayValue: value,
+            displayUnit: isGbps ? t('speedTest.unit.gbps') : t('speedTest.unit.mbps'),
+          };
+        }
+        return {
+          ...card,
+          displayValue: formatNumber(card.value, 1),
+          displayUnit: card.unit,
+        };
+      }),
     [currentResult, liveValues, sparklineSeries, t, i18n.language],
   );
 
@@ -613,11 +629,8 @@ export default function SpeedTestPage() {
               <span className="speed-metric-body">
                 <span>{metric.title}</span>
                 <strong>
-                  {formatNumber(
-                    metric.value,
-                    metric.key === 'ping' || metric.key === 'jitter' ? 1 : 2,
-                  )}
-                  <small>{metric.unit}</small>
+                  {metric.displayValue}
+                  <small>{metric.displayUnit}</small>
                 </strong>
               </span>
               <MiniSparkline values={metric.sparklineValues} tone={metric.tone} />
@@ -635,11 +648,7 @@ export default function SpeedTestPage() {
                 <span>
                   <small>{metric.title}</small>
                   <strong>
-                    {formatNumber(
-                      metric.value,
-                      metric.key === 'ping' || metric.key === 'jitter' ? 1 : 2,
-                    )}{' '}
-                    <em>{metric.unit}</em>
+                    {metric.displayValue} <em>{metric.displayUnit}</em>
                   </strong>
                   <small>
                     {metric.key === 'ping' || metric.key === 'jitter'
@@ -698,7 +707,6 @@ export default function SpeedTestPage() {
                       <strong>{formatNumber(item.jitterMs, 1)}</strong>
                       <small>{t('speedTest.unit.ms')}</small>
                     </span>
-                    <ChevronRight className="speed-recent-arrow size-3.5" />
                   </div>
                 ))
               ) : (
