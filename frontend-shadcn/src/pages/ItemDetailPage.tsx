@@ -342,8 +342,8 @@ export default function ItemDetailPage() {
             <Pencil className="size-4" />
             <span>{t("itemDetail.section.description")}</span>
           </div>
-          <Card className="border-border/40 bg-card/40 shadow-sm backdrop-blur-sm rounded-xl">
-            <CardContent className="px-5 py-4">
+          <Card className="border-border/40 bg-card/40 shadow-sm backdrop-blur-sm rounded-xl gap-3 px-3 py-1">
+            <CardContent className="px-3 py-3">
               <div
                 ref={descRef}
                 className={cn(

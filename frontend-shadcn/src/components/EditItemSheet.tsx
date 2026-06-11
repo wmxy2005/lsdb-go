@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Loader2, Save, FolderOpen, Calendar, FileText } from "lucide-react";
@@ -261,8 +262,17 @@ export function EditItemSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange} modal={false}>
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-40 bg-black/50 animate-fade-in"
+            aria-hidden="true"
+          />,
+          document.body,
+        )}
       <SheetContent
         className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-2xl border-l border-border/40 bg-background/95 backdrop-blur-md"
+        onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {
           if (isOutsidePreviewTarget(e.target)) e.preventDefault();
         }}

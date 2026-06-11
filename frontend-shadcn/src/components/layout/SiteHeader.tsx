@@ -151,7 +151,7 @@ export function SiteHeader() {
 
   return (
 
-    <header className="sticky top-0 z-30 flex h-14 w-full items-center gap-4 border-b border-border/40 bg-background/80 px-4 backdrop-blur-md md:px-6 transition-colors duration-300">
+    <header className="sticky shrink-0 top-0 z-30 flex h-14 w-full items-center gap-4 border-b border-border/40 bg-background/80 px-4 backdrop-blur-md md:px-6 transition-colors duration-300">
 
       <SidebarTrigger className="-ml-1 h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 lg:hidden" />
 
