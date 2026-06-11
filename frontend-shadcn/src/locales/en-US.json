@@ -155,6 +155,10 @@
       "trailer": "Trailer / Demo",
       "gallery": "Gallery (click to enlarge)",
       "detailImages": "Detail images"
+    },
+    "description": {
+      "expand": "Show more",
+      "collapse": "Show less"
     }
   },
   "role": {

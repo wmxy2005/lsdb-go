@@ -14,6 +14,7 @@ import { usePageTitle } from "@/hooks/use-page-title-context";
 import { getItemsScrollContainer } from "@/lib/items-page-cache";
 import { PHOTOSWIPE_DETAIL_OPTIONS } from "@/lib/photoswipe";
 import { resolveTagColor, resolveTagUrl, resolveUrl } from "@/lib/resource-url";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   FolderOpen,
@@ -42,6 +43,9 @@ export default function ItemDetailPage() {
   const [isFavi, setIsFavi] = useState<boolean | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [descOverflow, setDescOverflow] = useState(false);
+  const descRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["item", id],
@@ -61,6 +65,25 @@ export default function ItemDetailPage() {
   useEffect(() => {
     if (item) setIsFavi(!!item.isFavi);
   }, [item?.id, item?.isFavi]);
+
+  useLayoutEffect(() => {
+    setDescExpanded(false);
+    setDescOverflow(false);
+  }, [item?.id]);
+
+  useLayoutEffect(() => {
+    const el = descRef.current;
+    if (!el || descExpanded) return;
+
+    const measure = () => {
+      setDescOverflow(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [item?.content, descExpanded]);
 
   const playerRef = useRef<HTMLDivElement>(null);
   const playerInstanceRef = useRef<Player | null>(null);
@@ -320,10 +343,31 @@ export default function ItemDetailPage() {
             <span>{t("itemDetail.section.description")}</span>
           </div>
           <Card className="border-border/40 bg-card/40 shadow-sm backdrop-blur-sm rounded-xl">
-            <CardContent className="p-6">
-              <div className="prose prose-content dark:prose-invert max-w-none text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">
+            <CardContent className="px-5 py-4">
+              <div
+                ref={descRef}
+                className={cn(
+                  "prose prose-content dark:prose-invert max-w-none text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap break-words",
+                  !descExpanded && "line-clamp-3",
+                )}
+              >
                 {item.content}
               </div>
+              {(descOverflow || descExpanded) && (
+                <div className="mt-1 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => setDescExpanded((v) => !v)}
+                  >
+                    {descExpanded
+                      ? t("itemDetail.description.collapse")
+                      : t("itemDetail.description.expand")}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
