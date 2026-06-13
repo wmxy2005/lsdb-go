@@ -34,13 +34,13 @@ func openItemTestDB(t *testing.T) *gorm.DB {
 		// Items for filter tests:
 		// id=1: category=4k, tag=;4k;sky;
 		`INSERT INTO items(id,base,category,subcategory,name,title,date,tag,tag2,tag3,content,images)
-		 VALUES(1,'wall','4k','','sky','Sky','2026-01-01',';4k;sky;',';JPEG;',';HD;','content','a.png')`,
+		 VALUES(1,'wall','4k','2026','sky','Sky','2026-01-01',';4k;sky;',';JPEG;',';HD;','content','a.png')`,
 		// id=2: category=4k, tag=;plain;
 		`INSERT INTO items(id,base,category,subcategory,name,title,date,tag,tag2,tag3,content,images)
-		 VALUES(2,'wall','4k','','plain','Plain','2026-01-02',';plain;',';JPEG;',';HD;','content','b.png')`,
+		 VALUES(2,'wall','4k','2026','plain','Plain','2026-01-02',';plain;',';JPEG;',';HD;','content','b.png')`,
 		// id=3: category=hd, keyword in title
 		`INSERT INTO items(id,base,category,subcategory,name,title,date,tag,tag2,tag3,content,images)
-		 VALUES(3,'wall','hd','','night','Night Sky','2026-01-03',';hd;',';PNG;','','night content','c.png')`,
+		 VALUES(3,'wall','hd','2025','night','Night Sky','2026-01-03',';hd;',';PNG;','','night content','c.png')`,
 	}
 	for _, s := range stmts {
 		if _, err := rawDB.Exec(s); err != nil {
@@ -135,6 +135,22 @@ func TestFiltersSingleCategory(t *testing.T) {
 	items := query(t, db, q)
 	if len(items) != 1 || items[0].ID != 3 {
 		t.Fatalf("expected [3], got %v", ids(items))
+	}
+}
+
+func TestFiltersSubcategory(t *testing.T) {
+	db := openItemTestDB(t)
+	// Single subcategory → only id=3
+	if got := ids(query(t, db, model.ItemQuery{Subcategory: []string{"2025"}, Page: 1, PageSize: 10})); len(got) != 1 || got[0] != 3 {
+		t.Fatalf("subcategory=2025: expected [3], got %v", got)
+	}
+	// Multi-value subcategory IN (...) → id=1 and id=2
+	if got := ids(query(t, db, model.ItemQuery{Subcategory: []string{"2026"}, Page: 1, PageSize: 10})); len(got) != 2 {
+		t.Fatalf("subcategory=2026: expected 2 items, got %v", got)
+	}
+	// AND with category: subcategory=2026 AND category=4k → id=1,2
+	if got := ids(query(t, db, model.ItemQuery{Subcategory: []string{"2026"}, Category: []string{"4k"}, Page: 1, PageSize: 10})); len(got) != 2 {
+		t.Fatalf("subcategory=2026 AND category=4k: expected 2 items, got %v", got)
 	}
 }
 

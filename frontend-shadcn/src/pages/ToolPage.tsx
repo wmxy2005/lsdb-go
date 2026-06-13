@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { usePageTitle } from '@/hooks/use-page-title-context';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ type StreamSample = { time?: string; cpu?: number; uploadSpeed?: number; downloa
 export default function ToolPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState('');
+  usePageTitle(t('breadcrumb.toolbox'));
   const [showMonitor, setShowMonitor] = useState(false);
   const [cpuSample, setCpuSample] = useState<{ time: string; value: number }>();
   const [networkSample, setNetworkSample] = useState<{ time: string; value: Record<string, number> }>();

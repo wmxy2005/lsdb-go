@@ -1,27 +1,32 @@
 import { openFolder } from "@/api/cmd";
 import { faviItem, queryItem } from "@/api/items";
 import type { ItemInfo } from "@/api/types";
+import { CONFIG } from "@/constants";
 import { ConsoleDialog } from "@/components/ConsoleDialog";
 import { EditItemSheet } from "@/components/EditItemSheet";
+import { MasonryGallery } from "@/components/MasonryGallery";
 import { PageActionButton, PageActions } from "@/components/common/PageActions";
 import { ErrorState } from "@/components/common/ErrorState";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { usePageTitle } from "@/hooks/use-page-title-context";
 import { getItemsScrollContainer } from "@/lib/items-page-cache";
-import { PHOTOSWIPE_DETAIL_OPTIONS } from "@/lib/photoswipe";
-import { resolveTagColor, resolveTagUrl, resolveUrl } from "@/lib/resource-url";
+import { PHOTOSWIPE_DETAIL_OPTIONS, attachPreviewHistory } from "@/lib/photoswipe";
+import { resolveBaseColor, resolveTagColor, resolveTagUrl, resolveUrl } from "@/lib/resource-url";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   FolderOpen,
   Heart,
   Pencil,
+  AlignLeft,
   RefreshCw,
   Calendar,
+  Clock,
   Tag,
   ChevronLeft,
   Film,
@@ -55,7 +60,7 @@ export default function ItemDetailPage() {
 
   const item: ItemInfo | undefined = data?.success ? data.data : undefined;
 
-  usePageTitle(item?.title, item?.title);
+  usePageTitle(item?.title ?? t('breadcrumb.itemDetail'), item?.title);
 
   useLayoutEffect(() => {
     getItemsScrollContainer()?.scrollTo({ top: 0, behavior: "auto" });
@@ -276,6 +281,18 @@ export default function ItemDetailPage() {
                 <span>{item.category}</span>
               </>
             )}
+            {item.subcategory && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-700">/</span>
+                <span>{item.subcategory}</span>
+              </>
+            )}
+            {item.name && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-700">/</span>
+                <span>{item.name}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -284,13 +301,13 @@ export default function ItemDetailPage() {
             variant="outline"
             size="icon"
             onClick={handleFavi}
-            className="h-9 w-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-all duration-200"
+            className="h-9 w-9 rounded-lg border-border/60 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all duration-200"
             aria-label={
               faviState ? t("action.unfavorite") : t("action.favorite")
             }
           >
             <Heart
-              className={`size-4 transition-transform duration-200 active:scale-125 ${faviState ? "fill-destructive text-destructive" : "text-zinc-500"}`}
+              className={`size-4 transition-transform duration-200 active:scale-125 ${faviState ? "fill-destructive text-destructive" : ""}`}
             />
           </Button>
           <PageActionButton
@@ -323,14 +340,25 @@ export default function ItemDetailPage() {
             {item.title}
           </h1>
         )}
-        {item.date && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-            <Calendar className="size-3.5 text-zinc-400" />
-            <span>
-              {t("common.publishedOn", {
-                date: String(item.date).slice(0, 10),
-              })}
-            </span>
+        {(item.date || item.extra) && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground font-medium">
+            {item.date && (
+              <span className="flex items-center gap-1.5">
+                <Calendar className="size-3.5 text-zinc-400" />
+                {t("common.publishedOn", {
+                  date: String(item.date).slice(0, 10),
+                })}
+              </span>
+            )}
+            {item.extra && (
+              <Badge
+                variant="secondary"
+                className="gap-1 px-2 py-0.5 font-medium text-muted-foreground"
+              >
+                <Clock className="size-3 opacity-70" />
+                {item.extra}
+              </Badge>
+            )}
           </div>
         )}
       </div>
@@ -339,7 +367,7 @@ export default function ItemDetailPage() {
       {item.content && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-            <Pencil className="size-4" />
+            <AlignLeft className="size-4" />
             <span>{t("itemDetail.section.description")}</span>
           </div>
           <Card className="border-border/40 bg-card/40 shadow-sm backdrop-blur-sm rounded-xl gap-3 px-3 py-1">
@@ -375,12 +403,38 @@ export default function ItemDetailPage() {
 
       {/* Tags Grid */}
       {(item.tagList ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           {(item.tagList ?? []).map((tag, i) => {
             const tagName =
               (tag as { value?: string; name?: string }).value ??
               (tag as { name?: string }).name ??
               "";
+            if (tag.type === "base") {
+              const avatarUrl = item.avatarSrc
+                ? `${CONFIG.apiUrl}${item.avatarSrc}`
+                : undefined;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  title={tagName}
+                  onClick={() => navigate(resolveTagUrl("base", tagName))}
+                  className="shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:scale-105"
+                >
+                  <Avatar className="h-7 w-7 ring-2 ring-background shadow-sm">
+                    {avatarUrl && (
+                      <AvatarImage src={avatarUrl} alt={item.avatar ?? tagName} />
+                    )}
+                    <AvatarFallback
+                      className="text-[10px] font-semibold text-white"
+                      style={{ backgroundColor: resolveBaseColor(tagName) }}
+                    >
+                      {item.avatar ?? tagName.slice(0, 3).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              );
+            }
             return (
               <Badge
                 key={i}
@@ -426,7 +480,7 @@ export default function ItemDetailPage() {
               <span>{t("itemDetail.section.gallery")}</span>
             </div>
             <div className="w-full">
-              <Gallery options={PHOTOSWIPE_DETAIL_OPTIONS}>
+              <Gallery options={PHOTOSWIPE_DETAIL_OPTIONS} onBeforeOpen={attachPreviewHistory}>
                 <div className="flex flex-wrap justify-center gap-4 w-full">
                   {imgList1.map((img, i) => {
                     const src = imageUrl(img);
@@ -457,7 +511,7 @@ export default function ItemDetailPage() {
                               }
                               src={src}
                               alt=""
-                              className="max-h-[75vh] w-auto max-w-full object-contain"
+                              className="w-auto max-w-full object-contain"
                               loading="lazy"
                             />
                           </div>
@@ -474,34 +528,11 @@ export default function ItemDetailPage() {
         {/* Image Gallery 2 (Masonry Columns) */}
         {imgList2.length > 0 && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider justify-center">
               <ImageIcon className="size-4" />
               <span>{t("itemDetail.section.detailImages")}</span>
             </div>
-            <div className="columns-3 gap-1 sm:columns-4 md:columns-6 lg:columns-8 space-y-1">
-              {imgList2.map((img, i) => {
-                const w = img.width ?? img.w;
-                const h = img.height ?? img.h;
-                const aspectRatioStyle =
-                  w && h && w > 0 && h > 0
-                    ? { aspectRatio: `${w} / ${h}` }
-                    : undefined;
-                return (
-                  <div
-                    key={img.imgIndex ?? i}
-                    style={aspectRatioStyle}
-                    className="break-inside-avoid overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.01]"
-                  >
-                    <img
-                      src={imageUrl(img)}
-                      alt=""
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-102"
-                      loading="lazy"
-                    />
-                  </div>
-                );
-              })}
-            </div>
+            <MasonryGallery images={imgList2} imageUrl={imageUrl} />
           </div>
         )}
       </div>

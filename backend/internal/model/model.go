@@ -194,7 +194,7 @@ type ItemQuery struct {
 	UserID      int64
 	Base        string
 	Category    []string
-	Subcategory string
+	Subcategory []string
 	Keyword     []string
 	Tag         []string
 	DateFrom    string

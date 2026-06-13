@@ -83,6 +83,7 @@
     "goLogin": "去登录",
     "publishedOn": "发布于 {{date}}",
     "dragToReorder": "拖拽调整顺序",
+    "clickToCopy": "点击复制",
     "themeToggle": "切换主题",
     "loadFailed": "加载失败",
     "empty": {
@@ -124,12 +125,18 @@
       "tagPlaceholder": "精确标签搜索...",
       "category": "分类",
       "categoryPlaceholder": "分类目录检索...",
+      "subcategory": "子分类",
+      "subcategoryPlaceholder": "子分类目录检索...",
       "matchMode": "逻辑匹配模式",
       "matchAnd": "与 (AND)",
       "matchOr": "或 (OR)",
       "dateFrom": "发布开始日期",
       "dateTo": "发布结束日期",
-      "apply": "应用高级筛选"
+      "datePlaceholder": "选择日期",
+      "dateToday": "今天",
+      "dateClear": "清除",
+      "apply": "应用高级筛选",
+      "reset": "重置"
     },
     "sort": {
       "createdAt": "创建时间",
@@ -387,6 +394,7 @@
   },
   "toast": {
     "operationFailed": "操作失败",
+    "copied": "已复制到剪贴板",
     "openFolderSuccess": "已成功打开本地文件夹",
     "openFolderFailed": "打开失败",
     "saveSuccess": "保存成功",

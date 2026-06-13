@@ -129,9 +129,6 @@ func applyFilters(baseDB *gorm.DB, tx *gorm.DB, q model.ItemQuery) *gorm.DB {
 	if q.Base != "" {
 		tx = tx.Where("a.base = ?", q.Base)
 	}
-	if q.Subcategory != "" {
-		tx = tx.Where("a.subcategory = ?", q.Subcategory)
-	}
 	if q.DateFrom != "" {
 		tx = tx.Where("a.date >= ?", q.DateFrom)
 	}
@@ -155,6 +152,15 @@ func applyFilters(baseDB *gorm.DB, tx *gorm.DB, q model.ItemQuery) *gorm.DB {
 			args[i] = v
 		}
 		textConds = append(textConds, cond{fmt.Sprintf("a.category IN (%s)", placeholders), args})
+	}
+	if len(q.Subcategory) > 0 {
+		placeholders := strings.Repeat("?,", len(q.Subcategory))
+		placeholders = placeholders[:len(placeholders)-1]
+		args := make([]any, len(q.Subcategory))
+		for i, v := range q.Subcategory {
+			args[i] = v
+		}
+		textConds = append(textConds, cond{fmt.Sprintf("a.subcategory IN (%s)", placeholders), args})
 	}
 	for _, v := range q.Tag {
 		pat := "%;" + v + ";%"

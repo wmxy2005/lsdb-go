@@ -261,6 +261,9 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3;
+  /* viewBox is stretched to fill the box (preserveAspectRatio="none"); keep the
+     line a constant width instead of scaling with the non-uniform stretch. */
+  vector-effect: non-scaling-stroke;
 }
 
 .speed-phase {
@@ -323,7 +326,7 @@
 }
 
 .speed-metric-card-with-chart {
-  grid-template-columns: 42px minmax(0, 1fr) 118px;
+  grid-template-columns: 42px minmax(0, 1fr) minmax(56px, 0.9fr);
 }
 
 .speed-metric-card:hover {
@@ -382,9 +385,9 @@
 }
 
 .speed-metric-card .speed-sparkline {
-  width: 118px;
+  width: 100%;
   height: 42px;
-  justify-self: end;
+  justify-self: stretch;
 }
 
 .speed-blue { color: #1677ff; }
@@ -565,14 +568,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .speed-metric-card-with-chart {
-    grid-template-columns: 42px minmax(0, 1fr) 104px;
-  }
-
-  .speed-metric-card .speed-sparkline {
-    width: 104px;
-  }
-
   .speed-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -629,12 +624,7 @@
     grid-template-columns: 1fr;
   }
 
-  .speed-metric-card-with-chart {
-    grid-template-columns: 42px minmax(0, 1fr) 96px;
-  }
-
   .speed-metric-card .speed-sparkline {
-    width: 96px;
     height: 36px;
   }
 

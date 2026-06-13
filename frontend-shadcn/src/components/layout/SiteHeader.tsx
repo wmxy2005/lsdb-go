@@ -227,13 +227,13 @@ export function SiteHeader() {
 
                 to={crumb.href}
 
-                className={`transition-colors hover:text-foreground ${
+                className={`transition-colors hover:text-foreground whitespace-nowrap ${
 
                   index === breadcrumbs.length - 1
 
-                    ? "text-zinc-900 dark:text-zinc-100 font-semibold"
+                    ? "text-zinc-900 dark:text-zinc-100 font-semibold truncate max-w-[200px]"
 
-                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0"
 
                 }`}
 

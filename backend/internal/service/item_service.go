@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"lsdb-go/backend/internal/model"
@@ -13,9 +14,10 @@ import (
 )
 
 type ItemService struct {
-	items     *repository.ItemRepository
-	roles     *RoleService
-	resources *ResourceService
+	items       *repository.ItemRepository
+	roles       *RoleService
+	resources   *ResourceService
+	avatarCache sync.Map // key: base\x00category\x00subcategory -> resolved avatar URL ("" = none)
 }
 
 func NewItemService(items *repository.ItemRepository, roles *RoleService, resources *ResourceService) *ItemService {
@@ -145,6 +147,10 @@ func (s *ItemService) ItemMap(item model.Item, detail bool) map[string]any {
 }
 
 func (s *ItemService) avatarSrc(item model.Item) string {
+	key := item.Base + "\x00" + item.Category + "\x00" + item.Subcategory
+	if cached, ok := s.avatarCache.Load(key); ok {
+		return cached.(string)
+	}
 	checks := []struct {
 		base        string
 		category    string
@@ -155,10 +161,13 @@ func (s *ItemService) avatarSrc(item model.Item) string {
 		for _, logo := range logos {
 			path, err := s.resources.Resolve(chk.base, chk.category, chk.subcategory, "", logo)
 			if err == nil && FileExists(path) {
-				return s.resources.URL(item.Base, chk.category, chk.subcategory, "", logo, false)
+				src := s.resources.URL(item.Base, chk.category, chk.subcategory, "", logo, false)
+				s.avatarCache.Store(key, src)
+				return src
 			}
 		}
 	}
+	s.avatarCache.Store(key, "")
 	return ""
 }
 

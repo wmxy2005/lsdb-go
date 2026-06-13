@@ -7,6 +7,7 @@ const SEARCH_PREFIX = 'lsdb-items-search:';
 export type ItemsUrlParams = {
   keyword: string | null;
   category: string | null;
+  subcategory: string | null;
   tag: string | null;
   dateFrom: string | null;
   dateTo: string | null;
@@ -30,6 +31,7 @@ export function parseItemsParamsFromSearch(search: string): ItemsUrlParams {
   return {
     keyword: sp.get('keyword'),
     category: sp.get('category'),
+    subcategory: sp.get('subcategory'),
     tag: sp.get('tag'),
     dateFrom: sp.get('dateFrom'),
     dateTo: sp.get('dateTo'),
@@ -48,6 +50,7 @@ export function buildItemsSearch(params: ItemsUrlParams): string {
   const fields: Array<[string, string | null]> = [
     ['keyword', params.keyword],
     ['category', params.category],
+    ['subcategory', params.subcategory],
     ['tag', params.tag],
     ['dateFrom', params.dateFrom],
     ['dateTo', params.dateTo],
@@ -70,6 +73,7 @@ export function itemsParamsToApiParams(params: ItemsUrlParams) {
   return {
     keyword: params.keyword ?? undefined,
     category: params.category ?? undefined,
+    subcategory: params.subcategory ?? undefined,
     tag: params.tag ?? undefined,
     dateFrom: params.dateFrom ?? undefined,
     dateTo: params.dateTo ?? undefined,

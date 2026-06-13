@@ -14,6 +14,7 @@ import type { FileOption } from "@/components/edit/EditResourceList";
 import { EditSection } from "@/components/edit/EditSection";
 import { EditTagInput } from "@/components/EditTagInput";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,10 +28,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { guardHistoryBack } from "@/lib/history-guard";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, FolderOpen, Calendar, FileText } from "lucide-react";
+import { Loader2, Save, FolderOpen, FileText } from "lucide-react";
 
 function EditSheetSkeleton() {
   return (
@@ -54,7 +56,7 @@ function EditSheetSkeleton() {
 const IMAGE_FILE_PATTERN = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
 
 function isGalleryImageFile(f: FileOption): boolean {
-  if (f.type === "image") return true;
+  if (f.type === "image" || f.type === "thumbnail") return true;
   if (f.type === "file" || !f.type) return IMAGE_FILE_PATTERN.test(f.name);
   return false;
 }
@@ -89,7 +91,7 @@ export function EditItemSheet({
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isNew = itemId <= 0;
   const { data, isLoading } = useQuery({
     queryKey: ["item-edit", itemId],
@@ -119,6 +121,15 @@ export function EditItemSheet({
   useEffect(() => {
     if (!open) setVideoPreview(null);
   }, [open]);
+
+  // Browser Back closes the sheet instead of navigating away. Nested overlays
+  // (image/video preview) register their own guard on top of this one, so Back
+  // closes them first and only closes the sheet once they're gone. Keyed on the
+  // `open` transition (not a mount) to stay clear of StrictMode's effect replay.
+  useEffect(() => {
+    if (!open) return;
+    return guardHistoryBack(() => onOpenChange(false));
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!item) return;
@@ -386,15 +397,14 @@ export function EditItemSheet({
                       <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                         {t("edit.field.publishDate")}
                       </Label>
-                      <div className="relative">
-                        <Calendar className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
-                        <Input
-                          type="date"
-                          value={date}
-                          onChange={(e) => setDate(e.target.value)}
-                          className="pl-9 h-9 bg-background/50 border-border/60 rounded-lg text-xs"
-                        />
-                      </div>
+                      <DatePicker
+                        value={date}
+                        onChange={setDate}
+                        locale={i18n.language}
+                        placeholder={t("items.filter.datePlaceholder")}
+                        todayLabel={t("items.filter.dateToday")}
+                        clearLabel={t("items.filter.dateClear")}
+                      />
                     </div>
                   </div>
                   <div className="space-y-1.5">

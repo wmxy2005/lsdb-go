@@ -1,5 +1,7 @@
 import { UnauthorizedIllustration } from '@/components/auth/UnauthorizedIllustration'
 import { Button } from '@/components/ui/button'
+import { usePageTitle } from '@/hooks/use-page-title-context'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -7,6 +9,19 @@ export function UnauthorizedGate() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // The gate replaces the protected page, so set that page's own title here
+  // instead of leaving a stale one (mirrors the breadcrumb route mapping).
+  const titleKey = useMemo(() => {
+    const paths = location.pathname.split('/').filter(Boolean)
+    if (paths[0] === 'items') {
+      if (paths[1] === 'role') return 'breadcrumb.roleManagement'
+      if (paths[1]) return 'breadcrumb.itemDetail'
+      return 'breadcrumb.itemsList'
+    }
+    return null
+  }, [location.pathname])
+  usePageTitle(titleKey ? t(titleKey) : undefined)
 
   return (
     <div className="flex min-h-[50vh] flex-1 flex-col items-center justify-center text-center">

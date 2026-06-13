@@ -21,6 +21,7 @@ export interface ItemInfo {
   created_at?: string;
   updated_at?: string;
   date?: string;
+  extra?: string;
   thumbnail?: string;
   thumbnailW?: number;
   thumbnailH?: number;
@@ -96,7 +97,7 @@ export interface RoleListItem {
 export interface PageInfo {
   base?: string;
   category?: string[];
-  subcategory?: string;
+  subcategory?: string[];
   keyword?: string[];
   tag?: string[];
   dateFrom?: string;
@@ -126,6 +127,7 @@ export interface PCInfo {
 export type ItemSearchParams = {
   keyword?: string;
   category?: string;
+  subcategory?: string;
   tag?: string;
   dateFrom?: string;
   dateTo?: string;

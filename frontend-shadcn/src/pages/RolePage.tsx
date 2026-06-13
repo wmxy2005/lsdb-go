@@ -12,13 +12,13 @@ import { resolveTagUrl } from '@/lib/resource-url';
 import { useQuery } from '@tanstack/react-query';
 import { FolderOpen, ChevronLeft, Calendar, Tag, Image as ImageIcon, BookOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function RolePage() {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
-  const roleId = Number(searchParams.get('id'));
+  const { id } = useParams();
+  const roleId = Number(id);
   const navigate = useNavigate();
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -29,7 +29,7 @@ export default function RolePage() {
 
   const role = data?.success ? data.data : undefined;
 
-  usePageTitle(role?.title, role?.title);
+  usePageTitle(role?.title ?? t('breadcrumb.roleManagement'), role?.title);
 
   if (isLoading) {
     return (
@@ -133,9 +133,9 @@ export default function RolePage() {
               <ImageIcon className="size-4" />
               <span>{t('role.section.gallery')}</span>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
               {role.imageList.map((img, i) => (
-                <div key={i} className="group relative aspect-video overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.01]">
+                <div key={i} className="group relative aspect-image overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.01]">
                   <img
                     src={img.imageSrc ?? img.url}
                     alt={img.name}

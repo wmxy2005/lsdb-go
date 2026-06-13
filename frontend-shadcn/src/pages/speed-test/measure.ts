@@ -1,6 +1,6 @@
 import { authHeaders } from '@/api/client';
 import { speedTestUrl } from '@/api/cmd';
-import { SPEED_TEST_CONCURRENCY, UPLOAD_CHUNK_BYTES } from '@/pages/speed-test/constants';
+import { PROGRESS_REPORT_INTERVAL_MS, SPEED_TEST_CONCURRENCY, UPLOAD_CHUNK_BYTES } from '@/pages/speed-test/constants';
 
 function bytesToMbps(bytes: number, durationMs: number) {
   if (durationMs <= 0) return 0;
@@ -49,11 +49,15 @@ export async function measureDownload(
   const loadedByRequest = new Array(SPEED_TEST_CONCURRENCY).fill(0);
   let totalLoaded = 0;
 
+  let lastReportAt = 0;
   const reportProgress = (requestIndex: number, loaded: number) => {
     const nextLoaded = Math.max(loadedByRequest[requestIndex], loaded);
     totalLoaded += nextLoaded - loadedByRequest[requestIndex];
     loadedByRequest[requestIndex] = nextLoaded;
-    const durationMs = Math.max(1, performance.now() - start);
+    const now = performance.now();
+    if (now - lastReportAt < PROGRESS_REPORT_INTERVAL_MS) return;
+    lastReportAt = now;
+    const durationMs = Math.max(1, now - start);
     onProgress(
       Math.min(100, Math.round((totalLoaded / targetBytes) * 100)),
       bytesToMbps(totalLoaded, durationMs),
@@ -104,13 +108,17 @@ export async function measureUpload(
   const loadedByRequest = new Array(SPEED_TEST_CONCURRENCY).fill(0);
   let totalLoaded = 0;
 
+  let lastReportAt = 0;
   const reportProgress = (requestIndex: number, loaded: number) => {
     const nextLoaded = Math.max(loadedByRequest[requestIndex], loaded);
     totalLoaded += nextLoaded - loadedByRequest[requestIndex];
     loadedByRequest[requestIndex] = nextLoaded;
+    const now = performance.now();
+    if (now - lastReportAt < PROGRESS_REPORT_INTERVAL_MS) return;
+    lastReportAt = now;
     onProgress(
       Math.min(100, Math.round((totalLoaded / targetBytes) * 100)),
-      bytesToMbps(totalLoaded, Math.max(1, performance.now() - start)),
+      bytesToMbps(totalLoaded, Math.max(1, now - start)),
     );
   };
 

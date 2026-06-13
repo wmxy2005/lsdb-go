@@ -8,6 +8,11 @@ export const SPARKLINE_REFRESH_SAMPLE_COUNT = 10;
 export const MB = 1024 * 1024;
 export const UPLOAD_CHUNK_BYTES = 4 * MB;
 export const SPEED_TEST_CONCURRENCY = 6;
+// Min gap between progress emissions during a transfer. Network chunks arrive
+// far faster than this on fast links; throttling here keeps live-value and
+// sparkline state updates bounded regardless of chunk rate. Byte accounting is
+// unaffected — only the UI emission is throttled.
+export const PROGRESS_REPORT_INTERVAL_MS = 100;
 
 export const TEST_SIZE_KEYS = ['16', '64', '128', '256', '512'] as const;
 

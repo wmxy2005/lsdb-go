@@ -107,7 +107,7 @@ func itemQuery(c *gin.Context) model.ItemQuery {
 		UserID:      middleware.CurrentUserID(c),
 		Base:        c.Query("base"),
 		Category:    splitQueryValues(c.QueryArray("category"), c.Query("category")),
-		Subcategory: c.Query("subcategory"),
+		Subcategory: splitQueryValues(c.QueryArray("subcategory"), c.Query("subcategory")),
 		Keyword:     splitQueryValues(c.QueryArray("keyword"), c.Query("keyword")),
 		Tag:         splitQueryValues(c.QueryArray("tag"), c.Query("tag")),
 		DateFrom:    c.Query("dateFrom"),

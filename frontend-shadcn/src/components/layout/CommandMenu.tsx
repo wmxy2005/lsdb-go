@@ -152,7 +152,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
     const rows: SelectableRow[] = []
 
     if (hasDebouncedSearch) {
-      if (!isSearchFetching) {
+      if (!isSearchFetching && itemTotal > 0) {
         rows.push({
           kind: "viewAll",
           id: "view-all",
@@ -282,7 +282,7 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
               <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                 {t("commandMenu.section.archiveResults")}
               </div>
-              {!isSearchFetching && hasDebouncedSearch && (
+              {!isSearchFetching && hasDebouncedSearch && itemTotal > 0 && (
                 (() => {
                   const viewAllIndex = selectableRows.findIndex((r) => r.kind === "viewAll")
                   const isSelected = viewAllIndex === selectedIndex
@@ -311,7 +311,14 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
                 itemResults.map((item) => {
                   const rowIndex = selectableRows.findIndex((r) => r.kind === "item" && r.item.id === item.id)
                   const isSelected = rowIndex === selectedIndex
-                  const subtitle = [baseLabel(item.base), item.category].filter(Boolean).join(" · ")
+                  const subtitle = [
+                    baseLabel(item.base),
+                    item.category,
+                    item.subcategory,
+                    item.title ? item.name : undefined,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
 
                   return (
                     <button

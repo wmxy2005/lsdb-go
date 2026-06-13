@@ -98,6 +98,18 @@ export function ItemCard({
     if (item.base) navigate(resolveTagUrl('base', item.base));
   };
 
+  const handleCopyName = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!item.name) return;
+    try {
+      await navigator.clipboard.writeText(item.name);
+      toast.success(t('toast.copied'));
+    } catch {
+      toast.error(t('toast.operationFailed'));
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -176,26 +188,38 @@ export function ItemCard({
             )}
 
             {/* Card Footer Divider */}
-            <div className="flex items-center justify-between border-t pt-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
-              onClick={handleFavi}
-              disabled={faviLoading}
-            >
-              {faviLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Heart className={`h-4 w-4 transition-transform duration-200 active:scale-125 ${isFavi ? 'fill-destructive text-destructive' : ''}`} />
-              )}
-            </Button>
-            {item.date && (
-              <div className="text-muted-foreground flex items-center gap-1.5 text-[11px] font-medium">
-                <Calendar className="h-3.5 w-3.5 opacity-70" />
-                <span>{String(item.date).slice(0, 10)}</span>
+            <div className="flex items-center justify-between gap-4 border-t pt-1">
+              <div className="flex min-w-0 items-center gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                  onClick={handleFavi}
+                  disabled={faviLoading}
+                >
+                  {faviLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Heart className={`h-4 w-4 transition-transform duration-200 active:scale-125 ${isFavi ? 'fill-destructive text-destructive' : ''}`} />
+                  )}
+                </Button>
+                {item.name && (
+                  <button
+                    type="button"
+                    className="min-w-0 cursor-pointer truncate text-left text-[11px] font-mono text-muted-foreground transition-colors hover:text-foreground"
+                    title={item.name}
+                    onClick={handleCopyName}
+                  >
+                    {item.name}
+                  </button>
+                )}
               </div>
-            )}
+              {item.date && (
+                <div className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-[11px] font-medium">
+                  <Calendar className="h-3.5 w-3.5 opacity-70" />
+                  <span>{String(item.date).slice(0, 10)}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

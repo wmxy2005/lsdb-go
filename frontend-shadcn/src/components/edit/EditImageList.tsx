@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PHOTOSWIPE_OPTIONS } from '@/lib/photoswipe';
+import { PHOTOSWIPE_OPTIONS, attachPreviewHistory } from '@/lib/photoswipe';
 import { resolveUrl } from '@/lib/resource-url';
 import { cn } from '@/lib/utils';
 import { Plus, X, Image as ImageIcon, Eye, GripVertical } from 'lucide-react';
@@ -207,7 +207,7 @@ export function EditImageList({
           <p className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 px-0.5">
             {t('edit.gallery.dragHandleHint')}
           </p>
-          <Gallery options={PHOTOSWIPE_OPTIONS}>
+          <Gallery options={PHOTOSWIPE_OPTIONS} onBeforeOpen={attachPreviewHistory}>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {imgList.map((img, index) => {
                 const src = resolveUrl(base, category, subcategory, name, img);

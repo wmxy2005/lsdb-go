@@ -1,7 +1,9 @@
+import { memo } from 'react';
+
 import { hasSparkline, smoothSparklinePath } from '@/pages/speed-test/utils';
 import type { SparklineValue } from '@/pages/speed-test/types';
 
-export function MiniSparkline({
+function MiniSparklineInner({
   values,
   tone,
   width = 132,
@@ -31,6 +33,7 @@ export function MiniSparkline({
     <svg
       className={`speed-sparkline speed-${tone}`}
       viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
       aria-hidden="true"
       focusable="false"
     >
@@ -39,3 +42,5 @@ export function MiniSparkline({
     </svg>
   );
 }
+
+export const MiniSparkline = memo(MiniSparklineInner);

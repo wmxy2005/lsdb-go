@@ -3,6 +3,8 @@ import type { PhotoSwipeOptions } from 'photoswipe';
 
 import 'photoswipe/dist/photoswipe.css';
 
+import { guardHistoryBack } from '@/lib/history-guard';
+
 /**
  * Shared PhotoSwipe options for all lightbox entry points.
  * bgOpacity: 1 avoids the default 0.8 element opacity; backdrop level is set via --pswp-bg in index.css.
@@ -22,6 +24,12 @@ export function createPhotoSwipe(options: PhotoSwipeOptions): PhotoSwipe {
     ...PHOTOSWIPE_OPTIONS,
     ...options,
   });
+}
+
+/** Wire a PhotoSwipe instance so the browser Back button closes it. */
+export function attachPreviewHistory(pswp: PhotoSwipe): void {
+  const release = guardHistoryBack(() => pswp.close());
+  pswp.on('destroy', () => release());
 }
 
 export function loadImageSize(url: string): Promise<{ width: number; height: number }> {
@@ -44,6 +52,7 @@ export function openPhotoSwipeFromUrl(url: string): void {
       dataSource: [{ src: url, width, height }],
       index: 0,
     });
+    attachPreviewHistory(pswp);
     pswp.init();
   });
 }

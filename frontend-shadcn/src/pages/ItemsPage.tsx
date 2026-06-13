@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { DatePicker } from '@/components/ui/date-picker';
 import { CONFIG } from '@/constants';
 import { useItemsListScroll } from '@/hooks/use-items-list-scroll';
 import { useItemsPageData } from '@/hooks/use-items-page-data';
@@ -19,11 +20,12 @@ import { usePageTitle } from '@/hooks/use-page-title-context';
 import { resBaseLabel, resTypeLabel } from '@/lib/i18n-labels';
 import { buildItemsSearch, type ItemsUrlParams } from '@/lib/items-page-cache';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { SlidersHorizontal, Tag, Filter, Search } from 'lucide-react';
+import { SlidersHorizontal, Tag, Filter, Search, RotateCcw, Folder, FolderTree } from 'lucide-react';
+import { toast } from 'sonner';
 
 const filterFieldFocus =
   'focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-0';
@@ -59,8 +61,8 @@ function hasFilterChips(pageInfo: PageInfo) {
   return (
     (pageInfo.keyword?.length ?? 0) > 0 ||
     (pageInfo.category?.length ?? 0) > 0 ||
-    (pageInfo.tag?.length ?? 0) > 0 ||
-    !!pageInfo.subcategory?.trim()
+    (pageInfo.subcategory?.length ?? 0) > 0 ||
+    (pageInfo.tag?.length ?? 0) > 0
   );
 }
 
@@ -78,7 +80,7 @@ function RelatedRoleButtons({ roleList }: { roleList: RoleListItem[] }) {
             className="rounded-full h-9 pl-1 pr-3 gap-2 font-semibold text-primary border-primary/30 hover:bg-primary/5"
             asChild
           >
-            <Link to={`/items/role?id=${role.id}`}>
+            <Link to={`/items/role/${role.id}`}>
               <Avatar className="size-7">
                 {avatarUrl && <AvatarImage src={avatarUrl} alt={label} />}
                 <AvatarFallback className="text-[10px] font-semibold">{label.charAt(0).toUpperCase() || '?'}</AvatarFallback>
@@ -93,10 +95,30 @@ function RelatedRoleButtons({ roleList }: { roleList: RoleListItem[] }) {
 }
 
 function FilterChips({ pageInfo }: { pageInfo: PageInfo }) {
+  const { t } = useTranslation();
+
+  const handleCopy = async (text: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(t('toast.copied'));
+    } catch {
+      toast.error(t('toast.operationFailed'));
+    }
+  };
+
+  const copyableChipClass = `${filterChipClass} cursor-pointer transition-colors hover:bg-muted`;
+
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {pageInfo.keyword?.map((kw) => (
-        <Badge key={`keyword-${kw}`} variant="outline" className={filterChipClass}>
+        <Badge
+          key={`keyword-${kw}`}
+          variant="outline"
+          className={copyableChipClass}
+          title={t('common.clickToCopy')}
+          onClick={() => handleCopy(kw)}
+        >
           {kw}
         </Badge>
       ))}
@@ -104,7 +126,9 @@ function FilterChips({ pageInfo }: { pageInfo: PageInfo }) {
         <Badge
           key={`category-${cat}`}
           variant="outline"
-          className={`${filterChipClass} border-red-500/30 text-red-600 dark:text-red-400`}
+          className={`${copyableChipClass} border-red-500/30 text-red-600 dark:text-red-400`}
+          title={cat}
+          onClick={() => handleCopy(cat)}
         >
           {cat}
         </Badge>
@@ -113,16 +137,24 @@ function FilterChips({ pageInfo }: { pageInfo: PageInfo }) {
         <Badge
           key={`tag-${tag}`}
           variant="outline"
-          className={`${filterChipClass} border-emerald-500/30 text-emerald-600 dark:text-emerald-400`}
+          className={`${copyableChipClass} border-emerald-500/30 text-emerald-600 dark:text-emerald-400`}
+          title={tag}
+          onClick={() => handleCopy(tag)}
         >
           {tag}
         </Badge>
       ))}
-      {pageInfo.subcategory?.trim() && (
-        <Badge variant="outline" className={filterChipClass}>
-          {pageInfo.subcategory}
+      {pageInfo.subcategory?.map((sub) => (
+        <Badge
+          key={`subcategory-${sub}`}
+          variant="outline"
+          className={copyableChipClass}
+          title={sub}
+          onClick={() => handleCopy(sub)}
+        >
+          {sub}
         </Badge>
-      )}
+      ))}
     </div>
   );
 }
@@ -179,7 +211,10 @@ function ItemCardSkeleton() {
 
           {/* Footer Divider */}
           <div className="flex items-center justify-between border-t border-border/40 pt-1.5">
-            <Skeleton className="h-5 w-5 rounded-full" />
+            <div className="flex items-center gap-1">
+              <Skeleton className="h-5 w-5 rounded-full" />
+              <Skeleton className="h-3 w-32 rounded" />
+            </div>
             <div className="flex items-center gap-1">
               <Skeleton className="h-3 w-3 rounded" />
               <Skeleton className="h-3 w-16 rounded" />
@@ -191,9 +226,20 @@ function ItemCardSkeleton() {
   );
 }
 
+function ResultsSummarySkeleton() {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 px-5 py-3 text-xs border border-border/40 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <Skeleton className="h-4 w-64 rounded" />
+      </div>
+    </div>
+  );
+}
+
 const searchParsers = {
   keyword: parseAsString,
   category: parseAsString,
+  subcategory: parseAsString,
   tag: parseAsString,
   dateFrom: parseAsString,
   dateTo: parseAsString,
@@ -207,7 +253,7 @@ const searchParsers = {
 };
 
 export default function ItemsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [params] = useQueryStates(searchParsers, { history: 'push' });
@@ -215,6 +261,7 @@ export default function ItemsPage() {
     () => ({
       keyword: params.keyword,
       category: params.category,
+      subcategory: params.subcategory,
       tag: params.tag,
       dateFrom: params.dateFrom,
       dateTo: params.dateTo,
@@ -229,6 +276,7 @@ export default function ItemsPage() {
     [
       params.keyword,
       params.category,
+      params.subcategory,
       params.tag,
       params.dateFrom,
       params.dateTo,
@@ -247,6 +295,13 @@ export default function ItemsPage() {
   );
   const groupedResBases = useMemo(() => getGroupedResBases(), []);
 
+  // Date filters are controlled (custom locale-aware picker); seed from the URL
+  // and resync whenever navigation changes them.
+  const [dateFrom, setDateFrom] = useState(params.dateFrom ?? '');
+  const [dateTo, setDateTo] = useState(params.dateTo ?? '');
+  useEffect(() => setDateFrom(params.dateFrom ?? ''), [params.dateFrom]);
+  useEffect(() => setDateTo(params.dateTo ?? ''), [params.dateTo]);
+
   const pushItemsSearch = useCallback(
     (updates: Partial<ItemsUrlParams>) => {
       const merged: ItemsUrlParams = { ...urlParams, ...updates };
@@ -259,15 +314,21 @@ export default function ItemsPage() {
   const { data, pageInfo, isLoading, isError, shouldRestoreCache, refetch, persistPageData } =
     useItemsPageData(location);
 
+  // Remember the last resolved title so re-reads (pagination/filter changes,
+  // which briefly clear pageInfo) keep showing it instead of flashing back to
+  // the page default. The default is only used on the very first load.
+  const lastDocumentTitleRef = useRef<string | null>(null);
   const documentTitle = useMemo(() => {
-    if (!pageInfo) return undefined;
+    if (!pageInfo) return lastDocumentTitleRef.current ?? t('breadcrumb.itemsList');
     const rawTitle = pageInfo.title?.trim() ?? '';
     const info = rawTitle === 'all' || !rawTitle ? t('config.all') : rawTitle;
-    return t('page.documentTitle', {
+    const title = t('page.documentTitle', {
       info,
       page: pageInfo.current ?? urlParams.page,
       pages: Math.max(pageInfo.pages ?? 1, 1),
     });
+    lastDocumentTitleRef.current = title;
+    return title;
   }, [pageInfo, urlParams.page, t]);
 
   const breadcrumbLabel = pageInfo?.title?.trim() ? pageInfo.title : null;
@@ -295,11 +356,54 @@ export default function ItemsPage() {
     pushItemsSearch({ ...updates, page: 1 });
   };
 
+  const resetFilter = () => {
+    for (const id of ['filter-keyword', 'filter-tag', 'filter-category', 'filter-subcategory']) {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (el) el.value = '';
+    }
+    setDateFrom('');
+    setDateTo('');
+    applyFilter({
+      keyword: null,
+      tag: null,
+      category: null,
+      subcategory: null,
+      matchMode: null,
+      dateFrom: null,
+      dateTo: null,
+    });
+  };
+
   return (
     <div className="w-full space-y-6">
       {/* Control Bar */}
       <div className="flex flex-col gap-4 rounded-xl border border-border/40 bg-card/50 p-5 shadow-sm backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Resource Types Buttons */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider self-start">{t('items.filter.displayType')}</span>
+            <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-zinc-100/50 dark:bg-zinc-900/30 p-1 h-9">
+              {CONFIG.resTypeList.map((typeItem) => {
+                const isSelected = params.type === typeItem.name || (!params.type && !typeItem.name);
+                return (
+                  <Button
+                    key={typeItem.name || 'all'}
+                    size="sm"
+                    variant={isSelected ? 'secondary' : 'ghost'}
+                    className={`h-7 rounded-md px-3 text-xs font-medium transition-all duration-200 active:scale-95 ${
+                      isSelected
+                        ? 'bg-background text-primary font-semibold shadow-sm ring-1 ring-primary/20 hover:bg-background'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-background hover:shadow-sm'
+                    }`}
+                    onClick={() => applyFilter({ type: typeItem.name || null })}
+                  >
+                    {resTypeLabel(t, typeItem.name)}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center gap-3">
             {/* Base Categories */}
             <div className="flex flex-col gap-1.5">
@@ -359,31 +463,6 @@ export default function ItemsPage() {
               </div>
             </div>
           </div>
-
-          {/* Resource Types Buttons */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider self-start sm:self-end">{t('items.filter.displayType')}</span>
-            <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-zinc-100/50 dark:bg-zinc-900/30 p-1 h-9">
-              {CONFIG.resTypeList.map((typeItem) => {
-                const isSelected = params.type === typeItem.name || (!params.type && !typeItem.name);
-                return (
-                  <Button
-                    key={typeItem.name || 'all'}
-                    size="sm"
-                    variant={isSelected ? 'secondary' : 'ghost'}
-                    className={`h-7 rounded-md px-3 text-xs font-medium transition-all duration-200 ${
-                      isSelected
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-background/20'
-                    }`}
-                    onClick={() => applyFilter({ type: typeItem.name || null })}
-                  >
-                    {resTypeLabel(t, typeItem.name)}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Advanced Filters Accordion */}
@@ -414,9 +493,40 @@ export default function ItemsPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="filter-category" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.category')}</Label>
                   <div className="relative">
-                    <SlidersHorizontal className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input defaultValue={params.category ?? ''} id="filter-category" placeholder={t('items.filter.categoryPlaceholder')} className={filterInputIconClass} />
+                    <Folder className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
+                    <Input key={`filter-category-${params.category ?? ''}`} defaultValue={params.category ?? ''} id="filter-category" placeholder={t('items.filter.categoryPlaceholder')} className={filterInputIconClass} />
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="filter-subcategory" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.subcategory')}</Label>
+                  <div className="relative">
+                    <FolderTree className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
+                    <Input key={`filter-subcategory-${params.subcategory ?? ''}`} defaultValue={params.subcategory ?? ''} id="filter-subcategory" placeholder={t('items.filter.subcategoryPlaceholder')} className={filterInputIconClass} />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="filter-date-from" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.dateFrom')}</Label>
+                  <DatePicker
+                    id="filter-date-from"
+                    value={dateFrom}
+                    onChange={setDateFrom}
+                    locale={i18n.language}
+                    placeholder={t('items.filter.datePlaceholder')}
+                    todayLabel={t('items.filter.dateToday')}
+                    clearLabel={t('items.filter.dateClear')}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="filter-date-to" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.dateTo')}</Label>
+                  <DatePicker
+                    id="filter-date-to"
+                    value={dateTo}
+                    onChange={setDateTo}
+                    locale={i18n.language}
+                    placeholder={t('items.filter.datePlaceholder')}
+                    todayLabel={t('items.filter.dateToday')}
+                    clearLabel={t('items.filter.dateClear')}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.matchMode')}</Label>
@@ -430,16 +540,17 @@ export default function ItemsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="filter-date-from" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.dateFrom')}</Label>
-                  <Input type="date" defaultValue={params.dateFrom ?? ''} id="filter-date-from" className={filterInputClass} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="filter-date-to" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.dateTo')}</Label>
-                  <Input type="date" defaultValue={params.dateTo ?? ''} id="filter-date-to" className={filterInputClass} />
-                </div>
               </div>
               <div className="flex justify-end gap-2 pt-3 border-t border-border/40">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-lg text-xs font-medium transition-all duration-200"
+                  onClick={resetFilter}
+                >
+                  <RotateCcw className="mr-1.5 size-3.5" />
+                  {t('items.filter.reset')}
+                </Button>
                 <Button
                   size="sm"
                   className="h-8 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm"
@@ -447,12 +558,12 @@ export default function ItemsPage() {
                     const keyword = (document.getElementById('filter-keyword') as HTMLInputElement)?.value;
                     const tag = (document.getElementById('filter-tag') as HTMLInputElement)?.value;
                     const category = (document.getElementById('filter-category') as HTMLInputElement)?.value;
-                    const dateFrom = (document.getElementById('filter-date-from') as HTMLInputElement)?.value;
-                    const dateTo = (document.getElementById('filter-date-to') as HTMLInputElement)?.value;
+                    const subcategory = (document.getElementById('filter-subcategory') as HTMLInputElement)?.value;
                     applyFilter({
                       keyword: keyword || null,
                       tag: tag || null,
                       category: category || null,
+                      subcategory: subcategory || null,
                       dateFrom: dateFrom || null,
                       dateTo: dateTo || null,
                     });
@@ -468,7 +579,9 @@ export default function ItemsPage() {
       </div>
 
       {/* Metadata & Related Roles */}
-      {!isLoading && pageInfo && (
+      {isLoading ? (
+        <ResultsSummarySkeleton />
+      ) : pageInfo ? (
         <div className="flex flex-col gap-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 px-5 py-3 text-xs border border-border/40 backdrop-blur-sm">
           <div className="flex flex-wrap items-center gap-2 text-zinc-500 dark:text-zinc-400">
             {hasFilterChips(pageInfo) && (
@@ -489,7 +602,7 @@ export default function ItemsPage() {
             <RelatedRoleButtons roleList={pageInfo.roleList} />
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Item Cards Grid */}
       {isLoading ? (

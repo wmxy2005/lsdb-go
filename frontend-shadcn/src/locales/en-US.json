@@ -83,6 +83,7 @@
     "goLogin": "Go to login",
     "publishedOn": "Published on {{date}}",
     "dragToReorder": "Drag to reorder",
+    "clickToCopy": "Click to copy",
     "themeToggle": "Toggle theme",
     "loadFailed": "Failed to load",
     "empty": {
@@ -124,12 +125,18 @@
       "tagPlaceholder": "Exact tag search...",
       "category": "Category",
       "categoryPlaceholder": "Category search...",
+      "subcategory": "Subcategory",
+      "subcategoryPlaceholder": "Subcategory search...",
       "matchMode": "Match mode",
       "matchAnd": "AND",
       "matchOr": "OR",
       "dateFrom": "Publish start date",
       "dateTo": "Publish end date",
-      "apply": "Apply filters"
+      "datePlaceholder": "Select date",
+      "dateToday": "Today",
+      "dateClear": "Clear",
+      "apply": "Apply filters",
+      "reset": "Reset"
     },
     "sort": {
       "createdAt": "Created at",
@@ -387,6 +394,7 @@
   },
   "toast": {
     "operationFailed": "Operation failed",
+    "copied": "Copied to clipboard",
     "openFolderSuccess": "Folder opened successfully",
     "openFolderFailed": "Failed to open",
     "saveSuccess": "Saved successfully",

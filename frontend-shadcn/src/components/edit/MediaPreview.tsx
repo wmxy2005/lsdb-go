@@ -1,4 +1,5 @@
 import { openPhotoSwipeFromUrl } from '@/lib/photoswipe';
+import { guardHistoryBack } from '@/lib/history-guard';
 import { resolveUrl } from '@/lib/resource-url';
 import { Loader2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -180,6 +181,14 @@ export function MediaPreviewProvider({
   const closeVideoPreview = useCallback(() => {
     onVideoPreviewChange(null);
   }, [onVideoPreviewChange]);
+
+  // Browser Back closes the video preview instead of leaving the page. Keyed on
+  // the `videoPreview` state transition (not a component mount), so StrictMode's
+  // mount-time effect double-invoke can't race the pushed history entry.
+  useEffect(() => {
+    if (!videoPreview) return;
+    return guardHistoryBack(() => onVideoPreviewChange(null));
+  }, [videoPreview, onVideoPreviewChange]);
 
   return (
     <MediaPreviewContext.Provider value={{ openMediaPreview }}>

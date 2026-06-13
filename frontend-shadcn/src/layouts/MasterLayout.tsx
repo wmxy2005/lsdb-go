@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar"
 import { BackToTopButton } from "@/components/layout/BackToTopButton"
 import { SiteHeader } from "@/components/layout/SiteHeader"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { useSidebarDefaultOpen } from "@/hooks/use-mobile"
 import { PageTitleProvider } from "@/hooks/use-page-title-context"
 import { useRef } from "react"
 import { Outlet } from "react-router-dom"
@@ -12,9 +13,10 @@ interface MasterLayoutProps {
 
 export function MasterLayout({ children }: MasterLayoutProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const defaultSidebarOpen = useSidebarDefaultOpen()
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultSidebarOpen}>
       <PageTitleProvider>
         <AppSidebar />
         <SidebarInset ref={scrollContainerRef} className="flex h-svh flex-col overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable] bg-background transition-colors duration-300 min-w-0">

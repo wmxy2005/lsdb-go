@@ -41,7 +41,7 @@ pnpm dev
 |------|------|------|
 | `/items` | 档案列表（筛选、分页、hover roll 预览） | 需登录 |
 | `/items/:itemId` | 档案详情（画廊、视频、编辑） | 需登录 |
-| `/items/role?id=` | 角色详情 | 需登录 |
+| `/items/role/:id` | 角色详情 | 需登录 |
 | `/tool` | 关机/重启 + SSE 监控 | 公开（API 需 token） |
 | `/speedTest` | 网络测速 | 公开（API 需 token） |
 | `/login` | 登录 | 公开 |

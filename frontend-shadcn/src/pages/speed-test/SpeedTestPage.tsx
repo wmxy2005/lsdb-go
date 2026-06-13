@@ -41,6 +41,7 @@ import {
   TOTAL_PROGRESS_UNITS,
 } from '@/pages/speed-test/constants';
 import { measureDownload, measureLatency, measureUpload } from '@/pages/speed-test/measure';
+import { usePageTitle } from '@/hooks/use-page-title-context';
 import { MiniSparkline } from '@/pages/speed-test/MiniSparkline';
 import { SpeedGauge } from '@/pages/speed-test/SpeedGauge';
 import type {
@@ -94,6 +95,7 @@ type PendingUiUpdate = {
 
 export default function SpeedTestPage() {
   const { t, i18n } = useTranslation();
+  usePageTitle(t('breadcrumb.speedTest'));
   const [phase, setPhase] = useState<TestPhase>('idle');
   const [activeRound, setActiveRound] = useState(0);
   const [testBytes, setTestBytes] = useState(TEST_SIZE_OPTIONS[1].value);
@@ -312,31 +314,34 @@ export default function SpeedTestPage() {
   );
 
   const chartData = useMemo(
-    () => ({
-      labels: history.slice().reverse().map((item) => item.time),
-      datasets: [
-        {
-          label: t('speedTest.metric.download'),
-          data: history.slice().reverse().map((item) => item.downloadMbps),
-          borderColor: '#1677ff',
-          backgroundColor: 'rgba(22, 119, 255, 0.12)',
-          borderWidth: 3,
-          fill: true,
-          tension: 0.35,
-          pointRadius: 4,
-        },
-        {
-          label: t('speedTest.metric.upload'),
-          data: history.slice().reverse().map((item) => item.uploadMbps),
-          borderColor: '#8a2be2',
-          backgroundColor: 'rgba(138, 43, 226, 0.1)',
-          borderWidth: 3,
-          fill: false,
-          tension: 0.35,
-          pointRadius: 4,
-        },
-      ],
-    }),
+    () => {
+      const orderedHistory = history.slice().reverse();
+      return {
+        labels: orderedHistory.map((item) => item.time),
+        datasets: [
+          {
+            label: t('speedTest.metric.download'),
+            data: orderedHistory.map((item) => item.downloadMbps),
+            borderColor: '#1677ff',
+            backgroundColor: 'rgba(22, 119, 255, 0.12)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+          },
+          {
+            label: t('speedTest.metric.upload'),
+            data: orderedHistory.map((item) => item.uploadMbps),
+            borderColor: '#8a2be2',
+            backgroundColor: 'rgba(138, 43, 226, 0.1)',
+            borderWidth: 3,
+            fill: false,
+            tension: 0.35,
+            pointRadius: 4,
+          },
+        ],
+      };
+    },
     [history, t, i18n.language],
   );
 

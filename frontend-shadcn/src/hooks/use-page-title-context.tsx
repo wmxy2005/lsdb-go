@@ -32,11 +32,14 @@ export function usePageTitle(
   const setBreadcrumbLabel = useContext(PageTitleContext)?.setBreadcrumbLabel;
 
   useEffect(() => {
-    document.title = title?.trim() ? title : DEFAULT_DOCUMENT_TITLE;
+    // Only update the tab title once a real title is ready — don't flash the
+    // default ("LSDB") while the page is still loading or when navigating away.
+    if (title?.trim()) {
+      document.title = title;
+    }
     setBreadcrumbLabel?.(breadcrumbLabel?.trim() ? breadcrumbLabel : null);
 
     return () => {
-      document.title = DEFAULT_DOCUMENT_TITLE;
       setBreadcrumbLabel?.(null);
     };
   }, [title, breadcrumbLabel, setBreadcrumbLabel]);

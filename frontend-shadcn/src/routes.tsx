@@ -20,7 +20,7 @@ export const router = createBrowserRouter([
           { path: 'tool', element: <ToolPage /> },
           { path: 'speedTest', element: <SpeedTestPage /> },
           { path: 'items', element: <ProtectedRoute><ItemsPage /></ProtectedRoute> },
-          { path: 'items/role', element: <ProtectedRoute><RolePage /></ProtectedRoute> },
+          { path: 'items/role/:id', element: <ProtectedRoute><RolePage /></ProtectedRoute> },
           { path: 'items/:itemId', element: <ProtectedRoute><ItemDetailPage /></ProtectedRoute> },
         ],
       },
