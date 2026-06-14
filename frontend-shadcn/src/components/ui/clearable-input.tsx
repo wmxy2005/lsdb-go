@@ -44,7 +44,7 @@ const ClearableInput = React.forwardRef<HTMLInputElement, ClearableInputProps>(
     },
     forwardedRef,
   ) => {
-    const innerRef = React.useRef<HTMLInputElement>(null);
+    const innerRef = React.useRef<HTMLInputElement | null>(null);
     const setRefs = React.useCallback(
       (node: HTMLInputElement | null) => {
         innerRef.current = node;
