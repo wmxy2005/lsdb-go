@@ -1,4 +1,4 @@
-import { Input } from '@/components/ui/input';
+import { ClearableInput } from '@/components/ui/clearable-input';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,11 +37,12 @@ export function SearchBar({
       )}
     >
       <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-      <Input
+      <ClearableInput
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
         placeholder={t('search.placeholder')}
         className={cn('pl-8', isMobile ? 'w-full' : 'w-48 lg:w-64')}
+        clearLabel={t('common.clear')}
       />
     </form>
   );

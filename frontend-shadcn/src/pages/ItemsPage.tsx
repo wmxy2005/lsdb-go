@@ -7,7 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ClearableInput, clearNativeInput } from '@/components/ui/clearable-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -359,7 +359,7 @@ export default function ItemsPage() {
   const resetFilter = () => {
     for (const id of ['filter-keyword', 'filter-tag', 'filter-category', 'filter-subcategory']) {
       const el = document.getElementById(id) as HTMLInputElement | null;
-      if (el) el.value = '';
+      clearNativeInput(el);
     }
     setDateFrom('');
     setDateTo('');
@@ -480,28 +480,28 @@ export default function ItemsPage() {
                   <Label htmlFor="filter-keyword" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.keyword')}</Label>
                   <div className="relative">
                     <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input defaultValue={params.keyword ?? ''} id="filter-keyword" placeholder={t('items.filter.keywordPlaceholder')} className={filterInputIconClass} />
+                    <ClearableInput key={`filter-keyword-${params.keyword ?? ''}`} defaultValue={params.keyword ?? ''} id="filter-keyword" placeholder={t('items.filter.keywordPlaceholder')} className={filterInputIconClass} clearLabel={t('common.clear')} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="filter-tag" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.tag')}</Label>
                   <div className="relative">
                     <Tag className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input defaultValue={params.tag ?? ''} id="filter-tag" placeholder={t('items.filter.tagPlaceholder')} className={filterInputIconClass} />
+                    <ClearableInput key={`filter-tag-${params.tag ?? ''}`} defaultValue={params.tag ?? ''} id="filter-tag" placeholder={t('items.filter.tagPlaceholder')} className={filterInputIconClass} clearLabel={t('common.clear')} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="filter-category" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.category')}</Label>
                   <div className="relative">
                     <Folder className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input key={`filter-category-${params.category ?? ''}`} defaultValue={params.category ?? ''} id="filter-category" placeholder={t('items.filter.categoryPlaceholder')} className={filterInputIconClass} />
+                    <ClearableInput key={`filter-category-${params.category ?? ''}`} defaultValue={params.category ?? ''} id="filter-category" placeholder={t('items.filter.categoryPlaceholder')} className={filterInputIconClass} clearLabel={t('common.clear')} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="filter-subcategory" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{t('items.filter.subcategory')}</Label>
                   <div className="relative">
                     <FolderTree className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
-                    <Input key={`filter-subcategory-${params.subcategory ?? ''}`} defaultValue={params.subcategory ?? ''} id="filter-subcategory" placeholder={t('items.filter.subcategoryPlaceholder')} className={filterInputIconClass} />
+                    <ClearableInput key={`filter-subcategory-${params.subcategory ?? ''}`} defaultValue={params.subcategory ?? ''} id="filter-subcategory" placeholder={t('items.filter.subcategoryPlaceholder')} className={filterInputIconClass} clearLabel={t('common.clear')} />
                   </div>
                 </div>
                 <div className="space-y-1.5">

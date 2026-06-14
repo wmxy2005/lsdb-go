@@ -15,7 +15,7 @@ import { EditSection } from "@/components/edit/EditSection";
 import { EditTagInput } from "@/components/EditTagInput";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Input } from "@/components/ui/input";
+import { ClearableInput } from "@/components/ui/clearable-input";
 import { Label } from "@/components/ui/label";
 import {
   Sheet,
@@ -27,12 +27,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { guardHistoryBack } from "@/lib/history-guard";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, FolderOpen, FileText } from "lucide-react";
+import { Loader2, Save, FolderOpen, FileText, RotateCcw } from "lucide-react";
 
 function EditSheetSkeleton() {
   return (
@@ -131,35 +131,41 @@ export function EditItemSheet({
     return guardHistoryBack(() => onOpenChange(false));
   }, [open, onOpenChange]);
 
-  useEffect(() => {
-    if (!item) return;
-    setTitle(item.title ?? "");
-    setDate(String(item.date ?? "").slice(0, 10));
-    setContent(item.content ?? "");
-    setBase(item.base ?? "");
-    setCategory(item.category ?? "");
-    setSubcategory(item.subcategory ?? "");
-    setName(item.name ?? "");
-    setThumbnail(item.thumbnail ?? "");
-    setRoll(item.roll ?? "");
-    setTrailer(item.trailer ?? "");
+  // Populate the form from the loaded item (or clear it when creating a new
+  // one). Exposed as a callback so the Reset button can re-read the current
+  // data and discard unsaved edits.
+  const resetForm = useCallback(() => {
+    setTitle(item?.title ?? "");
+    setDate(String(item?.date ?? "").slice(0, 10));
+    setContent(item?.content ?? "");
+    setBase(item?.base ?? "");
+    setCategory(item?.category ?? "");
+    setSubcategory(item?.subcategory ?? "");
+    setName(item?.name ?? "");
+    setThumbnail(item?.thumbnail ?? "");
+    setRoll(item?.roll ?? "");
+    setTrailer(item?.trailer ?? "");
     const t1: string[] = [],
       t2: string[] = [],
       t3: string[] = [];
-    item.tagList?.forEach((t) => {
-      const v = t.value ?? t.name ?? "";
-      if (t.type === "tag") t1.push(v);
-      else if (t.type === "tag2") t2.push(v);
-      else if (t.type === "tag3") t3.push(v);
+    item?.tagList?.forEach((entry) => {
+      const v = entry.value ?? entry.name ?? "";
+      if (entry.type === "tag") t1.push(v);
+      else if (entry.type === "tag2") t2.push(v);
+      else if (entry.type === "tag3") t3.push(v);
     });
     setTags(t1);
     setTags2(t2);
     setTags3(t3);
-    const imgNames = (item.imgList ?? [])
+    const imgNames = (item?.imgList ?? [])
       .map((img) => img.value ?? img.name ?? "")
       .filter(Boolean);
     setImgList(imgNames);
   }, [item]);
+
+  useEffect(() => {
+    if (item) resetForm();
+  }, [item, resetForm]);
 
   const fileOptions: FileOption[] = (item?.fileList ?? [])
     .map((f) => ({
@@ -221,6 +227,11 @@ export function EditItemSheet({
       toast.error(res.message ?? t("toast.saveFailed"));
     }
     setSaving(false);
+  };
+
+  const handleReset = () => {
+    resetForm();
+    toast.success(t("toast.resetDone"));
   };
 
   const resourcePath = (filename: string) => ({
@@ -333,44 +344,48 @@ export function EditItemSheet({
                         <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           {t("edit.field.base")}
                         </Label>
-                        <Input
+                        <ClearableInput
                           value={base}
                           onChange={(e) => setBase(e.target.value)}
                           placeholder={t("edit.field.basePlaceholder")}
                           className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                          clearLabel={t("common.clear")}
                         />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           {t("edit.field.category")}
                         </Label>
-                        <Input
+                        <ClearableInput
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
                           placeholder={t("edit.field.categoryPlaceholder")}
                           className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                          clearLabel={t("common.clear")}
                         />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           {t("edit.field.subcategory")}
                         </Label>
-                        <Input
+                        <ClearableInput
                           value={subcategory}
                           onChange={(e) => setSubcategory(e.target.value)}
                           placeholder={t("edit.field.subcategoryPlaceholder")}
                           className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                          clearLabel={t("common.clear")}
                         />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                           {t("edit.field.name")}
                         </Label>
-                        <Input
+                        <ClearableInput
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder={t("edit.field.namePlaceholder")}
                           className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                          clearLabel={t("common.clear")}
                         />
                       </div>
                     </div>
@@ -385,11 +400,12 @@ export function EditItemSheet({
                       </Label>
                       <div className="relative">
                         <FileText className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
-                        <Input
+                        <ClearableInput
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
                           placeholder={t("edit.field.titlePlaceholder")}
                           className="pl-9 h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                          clearLabel={t("common.clear")}
                         />
                       </div>
                     </div>
@@ -483,32 +499,47 @@ export function EditItemSheet({
             )}
           </div>
 
-          <div className="flex shrink-0 justify-end gap-2.5 border-t border-border/40 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/10">
-            <Button
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={saving}
-              className="h-9 rounded-lg text-xs font-semibold border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving || showLoading}
-              className="h-9 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm shadow-primary/10 flex items-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="size-3.5 animate-spin" />
-                  {t("edit.saving")}
-                </>
-              ) : (
-                <>
-                  <Save className="size-3.5" />
-                  {t("edit.save")}
-                </>
-              )}
-            </Button>
+          <div className="flex shrink-0 items-center justify-between gap-2.5 border-t border-border/40 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/10">
+            {!isNew ? (
+              <Button
+                variant="ghost"
+                onClick={handleReset}
+                disabled={saving || showLoading}
+                className="h-9 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors flex items-center gap-2"
+              >
+                <RotateCcw className="size-3.5" />
+                {t("edit.reset")}
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-2.5">
+              <Button
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={saving}
+                className="h-9 rounded-lg text-xs font-semibold border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || showLoading}
+                className="h-9 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm shadow-primary/10 flex items-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    {t("edit.saving")}
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-3.5" />
+                    {t("edit.save")}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </MediaPreviewProvider>
       </SheetContent>

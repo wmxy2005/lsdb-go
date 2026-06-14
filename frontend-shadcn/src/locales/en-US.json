@@ -79,6 +79,7 @@
     "add": "Add",
     "cancel": "Cancel",
     "close": "Close",
+    "clear": "Clear",
     "retry": "Retry",
     "goLogin": "Go to login",
     "publishedOn": "Published on {{date}}",
@@ -384,7 +385,8 @@
       "orDragHint": "Or drag files to the area above"
     },
     "saving": "Saving...",
-    "save": "Save archive"
+    "save": "Save archive",
+    "reset": "Reset"
   },
   "sync": {
     "title": "Sync folder",
@@ -395,6 +397,7 @@
   "toast": {
     "operationFailed": "Operation failed",
     "copied": "Copied to clipboard",
+    "resetDone": "Reloaded current data",
     "openFolderSuccess": "Folder opened successfully",
     "openFolderFailed": "Failed to open",
     "saveSuccess": "Saved successfully",

@@ -256,17 +256,17 @@ export default function ItemDetailPage() {
     <div className="space-y-8 animate-fade-in-up">
       {/* Back Button & Actions Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate(-1)}
-            className="h-8 w-8 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
+            className="h-8 w-8 shrink-0 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
             title={t("common.back")}
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 font-medium">
+          <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate min-w-0">
             {item.base && (
               <Link
                 to={resolveTagUrl("base", item.base)}
@@ -277,26 +277,26 @@ export default function ItemDetailPage() {
             )}
             {item.category && (
               <>
-                <span className="text-zinc-300 dark:text-zinc-700">/</span>
+                <span className="text-zinc-300 dark:text-zinc-700 mx-1.5">/</span>
                 <span>{item.category}</span>
               </>
             )}
             {item.subcategory && (
               <>
-                <span className="text-zinc-300 dark:text-zinc-700">/</span>
+                <span className="text-zinc-300 dark:text-zinc-700 mx-1.5">/</span>
                 <span>{item.subcategory}</span>
               </>
             )}
             {item.name && (
               <>
-                <span className="text-zinc-300 dark:text-zinc-700">/</span>
+                <span className="text-zinc-300 dark:text-zinc-700 mx-1.5">/</span>
                 <span>{item.name}</span>
               </>
             )}
           </div>
         </div>
 
-        <PageActions className="gap-2">
+        <PageActions className="gap-2 shrink-0">
           <Button
             variant="outline"
             size="icon"
