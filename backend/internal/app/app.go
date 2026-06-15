@@ -63,6 +63,9 @@ func New() (*Server, error) {
 		gin.SetMode(mode)
 	}
 	r := gin.Default()
+	if len(cfg.CORSOrigins) > 0 {
+		r.Use(middleware.CORS(cfg.CORSOrigins))
+	}
 	r.POST("/api/auth/register", authHandler.Register)
 	r.POST("/api/auth/login", authHandler.Login)
 	r.GET("/api/resource", resourceHandler.Get)

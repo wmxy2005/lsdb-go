@@ -20,6 +20,7 @@ type Config struct {
 	JWTRefreshDays     int
 	CmdSkipAuth        bool
 	MonitorIdleTimeout time.Duration
+	CORSOrigins        []string
 }
 
 var executablePath = os.Executable
@@ -37,6 +38,7 @@ func Load() Config {
 		JWTRefreshDays:     envIntDefault(env, "LSDB_JWT_REFRESH_DAYS", 2),
 		CmdSkipAuth:        envBoolDefault(env, "LSDB_CMD_SKIP_AUTH", false),
 		MonitorIdleTimeout: envDurationDefault(env, "LSDB_MONITOR_IDLE_TIMEOUT", 30*time.Second),
+		CORSOrigins:        envStringSliceDefault(env, "LSDB_CORS_ORIGINS", nil),
 	}
 }
 
@@ -98,6 +100,25 @@ func envIntDefault(dotEnv map[string]string, key string, fallback int) int {
 		return fallback
 	}
 	return n
+}
+
+func envStringSliceDefault(dotEnv map[string]string, key string, fallback []string) []string {
+	raw := envDefault(dotEnv, key, "")
+	if raw == "" {
+		return fallback
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	if len(out) == 0 {
+		return fallback
+	}
+	return out
 }
 
 func defaultPath(rootPath, backendPath string) string {
