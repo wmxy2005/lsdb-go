@@ -73,6 +73,39 @@ func TestImageSizeCacheHit(t *testing.T) {
 	}
 }
 
+func TestImageSizeCacheServesWithinRecheckWindow(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "stable.png")
+	if err := os.WriteFile(path, tinyWebP(t), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var decodeCount atomic.Int32
+	decoder := func(r io.Reader) (image.Config, string, error) {
+		decodeCount.Add(1)
+		return image.DecodeConfig(r)
+	}
+	svc := NewResourceServiceWithDecoder(tmp, decoder) // default 5m recheck window
+
+	w, h := svc.ImageSize("", "", "", "", "stable.png")
+	if w != 1 || h != 1 {
+		t.Fatalf("initial size = %dx%d, want 1x1", w, h)
+	}
+
+	// Replace with a different-sized image. Within the recheck window the
+	// cached dimensions are intentionally served without a stat/decode.
+	if err := os.WriteFile(path, testPNG(t, 3, 2), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	w, h = svc.ImageSize("", "", "", "", "stable.png")
+	if w != 1 || h != 1 {
+		t.Fatalf("within-window size = %dx%d, want cached 1x1", w, h)
+	}
+	if decodeCount.Load() != 1 {
+		t.Fatalf("decode count = %d, want 1 (fast path must skip re-decode)", decodeCount.Load())
+	}
+}
+
 func TestImageSizeCacheInvalidatesOnReplace(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "mutable.png")
@@ -81,6 +114,7 @@ func TestImageSizeCacheInvalidatesOnReplace(t *testing.T) {
 	}
 
 	svc := NewResourceService(tmp)
+	svc.sizeRecheckInterval = 0 // always revalidate against the file
 	w, h := svc.ImageSize("", "", "", "", "mutable.png")
 	if w != 1 || h != 1 {
 		t.Fatalf("initial size = %dx%d, want 1x1", w, h)
@@ -103,6 +137,7 @@ func TestImageSizeCachePurgesOnDelete(t *testing.T) {
 	}
 
 	svc := NewResourceService(tmp)
+	svc.sizeRecheckInterval = 0 // always revalidate against the file
 	w, h := svc.ImageSize("", "", "", "", "gone.webp")
 	if w != 1 || h != 1 {
 		t.Fatalf("initial size = %dx%d, want 1x1", w, h)

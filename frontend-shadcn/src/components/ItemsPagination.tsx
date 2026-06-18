@@ -17,10 +17,10 @@ interface ItemsPaginationProps {
 }
 
 const navButtonClass =
-  'h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 shadow-none text-xs font-medium';
+  'h-9 cursor-pointer rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 shadow-none text-xs font-medium';
 
 const pageButtonClass =
-  'h-9 min-w-9 rounded-lg shadow-none text-xs font-medium px-2.5';
+  'h-9 min-w-9 cursor-pointer rounded-lg shadow-none text-xs font-medium px-2.5';
 
 export function ItemsPagination({
   page,

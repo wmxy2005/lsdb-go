@@ -390,7 +390,7 @@ export default function ItemsPage() {
                     key={typeItem.name || 'all'}
                     size="sm"
                     variant={isSelected ? 'secondary' : 'ghost'}
-                    className={`h-7 rounded-md px-3 text-xs font-medium transition-all duration-200 active:scale-95 ${
+                    className={`h-7 cursor-pointer rounded-md px-3 text-xs font-medium transition-all duration-200 active:scale-95 ${
                       isSelected
                         ? 'bg-background text-primary font-semibold shadow-sm ring-1 ring-primary/20 hover:bg-background'
                         : 'text-muted-foreground hover:text-foreground hover:bg-background hover:shadow-sm'

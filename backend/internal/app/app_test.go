@@ -754,3 +754,51 @@ func tinyPNG() []byte {
 		0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
 	}
 }
+
+func TestGzipCompressesJSONButNotResources(t *testing.T) {
+	tmp := t.TempDir()
+	fileRoot := filepath.Join(tmp, "files")
+	imgDir := filepath.Join(fileRoot, "wallpaper", "4k", "sky")
+	if err := os.MkdirAll(imgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(imgDir, "extra.png"), tinyPNG(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LSDB_DB_PATH", filepath.Join(tmp, "test.db"))
+	t.Setenv("LSDB_FILE_ROOT", fileRoot)
+	t.Setenv("LSDB_JWT_SECRET", "test-secret")
+	srv, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { sqlDB, _ := srv.DB.DB(); sqlDB.Close() }()
+
+	token := registerAndLogin(t, srv)
+
+	// JSON endpoint should be gzip-compressed when the client accepts it.
+	req := httptest.NewRequest(http.MethodGet, "/api/items", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept-Encoding", "gzip")
+	w := httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("items status = %d body=%s", w.Code, w.Body.String())
+	}
+	if got := w.Header().Get("Content-Encoding"); got != "gzip" {
+		t.Fatalf("items Content-Encoding = %q, want gzip", got)
+	}
+
+	// Raw resource bytes are on an excluded path and must not be compressed.
+	req = httptest.NewRequest(http.MethodGet, "/api/resource?base=wallpaper&category=4k&name=sky&filename=extra.png", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	w = httptest.NewRecorder()
+	srv.Router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("resource status = %d body=%s", w.Code, w.Body.String())
+	}
+	if got := w.Header().Get("Content-Encoding"); got == "gzip" {
+		t.Fatal("resource Content-Encoding = gzip, want uncompressed")
+	}
+}
+

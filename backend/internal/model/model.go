@@ -17,14 +17,14 @@ func (User) TableName() string { return "user" }
 
 type Item struct {
 	ID          int64   `json:"id"          gorm:"column:id;primaryKey"`
-	Base        string  `json:"base"         gorm:"column:base"`
-	Category    string  `json:"category"     gorm:"column:category"`
-	Subcategory string  `json:"subcategory"  gorm:"column:subcategory"`
+	Base        string  `json:"base"         gorm:"column:base;index:idx_items_base_date,priority:1"`
+	Category    string  `json:"category"     gorm:"column:category;index"`
+	Subcategory string  `json:"subcategory"  gorm:"column:subcategory;index"`
 	Name        string  `json:"name"         gorm:"column:name"`
 	CreatedAt   *string `json:"created_at"   gorm:"column:created_at"`
 	UpdatedAt   *string `json:"updated_at"   gorm:"column:updated_at"`
 	Title       string  `json:"title"        gorm:"column:title"`
-	Date        *string `json:"date"         gorm:"column:date"`
+	Date        *string `json:"date"         gorm:"column:date;index:idx_items_base_date,priority:2;index"`
 	Thumbnail   *string `json:"thumbnail"    gorm:"column:thumbnail"`
 	Roll        *string `json:"roll"         gorm:"column:roll"`
 	Trailer     *string `json:"trailer"      gorm:"column:trailer"`
@@ -34,7 +34,7 @@ type Item struct {
 	Extra       *string `json:"extra"        gorm:"column:extra"`
 	Content     string  `json:"content"      gorm:"column:content"`
 	Images      string  `json:"images"       gorm:"column:images"`
-	Type        *int64  `json:"type"         gorm:"column:type"`
+	Type        *int64  `json:"type"         gorm:"column:type;index"`
 	Favi        *int64  `json:"favi"         gorm:"column:favi;->;<-:false"`
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 
@@ -163,10 +164,17 @@ func applyFilters(baseDB *gorm.DB, tx *gorm.DB, q model.ItemQuery) *gorm.DB {
 		textConds = append(textConds, cond{fmt.Sprintf("a.subcategory IN (%s)", placeholders), args})
 	}
 	for _, v := range q.Tag {
-		pat := "%;" + v + ";%"
-		textConds = append(textConds, cond{"(a.tag LIKE ? OR a.tag2 LIKE ? OR a.tag3 LIKE ?)", []any{pat, pat, pat}})
+		// Exact tag membership via FTS: match the wrapped token ;v; restricted to
+		// the tag columns. The ;..; wrapper is always >=3 chars, so trigram always
+		// applies — no length fallback needed. Same result as LIKE '%;v;%'.
+		textConds = append(textConds, cond{"a.id IN (SELECT rowid FROM items_fts WHERE items_fts MATCH ?)", []any{ftsTagQuery(v)}})
 	}
 	for _, v := range q.Keyword {
+		// Trigram FTS needs >=3 characters; shorter terms fall back to a LIKE scan.
+		if utf8.RuneCountInString(v) >= 3 {
+			textConds = append(textConds, cond{"a.id IN (SELECT rowid FROM items_fts WHERE items_fts MATCH ?)", []any{ftsMatchQuery(v)}})
+			continue
+		}
 		pat := "%" + v + "%"
 		textConds = append(textConds, cond{"(a.name LIKE ? OR a.title LIKE ? OR a.content LIKE ? OR a.extra LIKE ? OR a.tag LIKE ? OR a.tag2 LIKE ? OR a.tag3 LIKE ?)", []any{pat, pat, pat, pat, pat, pat, pat}})
 	}
@@ -212,6 +220,19 @@ func sortClause(sort string, isFavi bool) string {
 		}
 		return `a.id DESC`
 	}
+}
+
+// ftsMatchQuery wraps a term as an FTS5 string literal so the trigram matcher
+// treats punctuation and query operators (", *, OR, NEAR, ...) as literal text,
+// preserving plain substring search semantics.
+func ftsMatchQuery(v string) string {
+	return `"` + strings.ReplaceAll(v, `"`, `""`) + `"`
+}
+
+// ftsTagQuery builds a column-restricted FTS5 query matching the wrapped token
+// ;v; only within the tag columns, reproducing LIKE '%;v;%' exact membership.
+func ftsTagQuery(v string) string {
+	return `{tag tag2 tag3} : ` + ftsMatchQuery(";"+v+";")
 }
 
 func derefStr(v *string) string {

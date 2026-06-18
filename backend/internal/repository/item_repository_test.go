@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"lsdb-go/backend/internal/database"
 	"lsdb-go/backend/internal/model"
 )
 
@@ -19,7 +20,9 @@ func openItemTestDB(t *testing.T) *gorm.DB {
 		t.Fatal(err)
 	}
 	rawDB, _ := db.DB()
-	stmts := []string{
+	// Pin to one connection so every statement hits the same in-memory database.
+	rawDB.SetMaxOpenConns(1)
+	schema := []string{
 		`CREATE TABLE items (
 			id INTEGER PRIMARY KEY, base TEXT, category TEXT, subcategory TEXT, name TEXT,
 			created_at TEXT, updated_at TEXT,
@@ -31,6 +34,17 @@ func openItemTestDB(t *testing.T) *gorm.DB {
 			user_id INTEGER DEFAULT 0, item_id INTEGER DEFAULT 0,
 			created_at TEXT, updated_at TEXT, expired INTEGER DEFAULT 0
 		)`,
+	}
+	for _, s := range schema {
+		if _, err := rawDB.Exec(s); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Build the FTS index + sync triggers so keyword/tag search behaves like prod.
+	if err := database.MigrateItemsFTS(db); err != nil {
+		t.Fatal(err)
+	}
+	rows := []string{
 		// Items for filter tests:
 		// id=1: category=4k, tag=;4k;sky;
 		`INSERT INTO items(id,base,category,subcategory,name,title,date,tag,tag2,tag3,content,images)
@@ -42,7 +56,7 @@ func openItemTestDB(t *testing.T) *gorm.DB {
 		`INSERT INTO items(id,base,category,subcategory,name,title,date,tag,tag2,tag3,content,images)
 		 VALUES(3,'wall','hd','2025','night','Night Sky','2026-01-03',';hd;',';PNG;','','night content','c.png')`,
 	}
-	for _, s := range stmts {
+	for _, s := range rows {
 		if _, err := rawDB.Exec(s); err != nil {
 			t.Fatal(err)
 		}
@@ -178,5 +192,87 @@ func TestFiltersKeywordMatchesTag(t *testing.T) {
 	// JPEG only appears in tag2 (;JPEG;), not in name/title/content/extra
 	if len(items) != 2 {
 		t.Fatalf("expected [1,2], got %v", ids(items))
+	}
+}
+
+func TestFiltersKeywordSubstringMidWord(t *testing.T) {
+	db := openItemTestDB(t)
+	// "igh" is a mid-word substring of "Night" (id=3 title/content) — trigram FTS
+	// must still find it, matching the old LIKE '%igh%' behavior.
+	items := query(t, db, model.ItemQuery{Keyword: []string{"igh"}, Page: 1, PageSize: 10})
+	if len(items) != 1 || items[0].ID != 3 {
+		t.Fatalf("expected [3], got %v", ids(items))
+	}
+}
+
+func TestFiltersKeywordCJKSubstring(t *testing.T) {
+	db := openItemTestDB(t)
+	if err := db.Exec(`INSERT INTO items(id,base,category,subcategory,name,title,date,tag,tag2,tag3,content,images)
+		VALUES(10,'wall','4k','2026','cn','蓝色天空','2026-02-01','','','','晴朗的蓝色天空','x.png')`).Error; err != nil {
+		t.Fatal(err)
+	}
+	// Substring inside a run of Han characters (no word boundaries).
+	items := query(t, db, model.ItemQuery{Keyword: []string{"色天空"}, Page: 1, PageSize: 10})
+	if len(items) != 1 || items[0].ID != 10 {
+		t.Fatalf("expected [10], got %v", ids(items))
+	}
+}
+
+func TestFiltersKeywordShortFallsBackToLike(t *testing.T) {
+	db := openItemTestDB(t)
+	// "4k" is 2 chars, below the trigram minimum, so it must use the LIKE fallback.
+	// It appears in id=1's tag (;4k;sky;).
+	items := query(t, db, model.ItemQuery{Keyword: []string{"4k"}, Page: 1, PageSize: 10})
+	if len(items) != 1 || items[0].ID != 1 {
+		t.Fatalf("expected [1], got %v", ids(items))
+	}
+}
+
+func TestFiltersKeywordReflectsUpdate(t *testing.T) {
+	db := openItemTestDB(t)
+	repo := NewItemRepository(db)
+
+	if got := ids(query(t, db, model.ItemQuery{Keyword: []string{"zebra"}, Page: 1, PageSize: 10})); len(got) != 0 {
+		t.Fatalf("pre-update expected none, got %v", got)
+	}
+
+	title := "zebra crossing"
+	if err := repo.Update("3", model.ItemWrite{Title: &title}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The AFTER UPDATE trigger must have re-synced the FTS index.
+	got := ids(query(t, db, model.ItemQuery{Keyword: []string{"zebra"}, Page: 1, PageSize: 10}))
+	if len(got) != 1 || got[0] != 3 {
+		t.Fatalf("post-update expected [3], got %v", got)
+	}
+}
+
+func TestFiltersTagExactMembership(t *testing.T) {
+	db := openItemTestDB(t)
+	// "sky" is a member of id=1's tag (;4k;sky;).
+	if got := ids(query(t, db, model.ItemQuery{Tag: []string{"sky"}, Page: 1, PageSize: 10})); len(got) != 1 || got[0] != 1 {
+		t.Fatalf("tag=sky expected [1], got %v", got)
+	}
+	// "4" is NOT a member (only ;4k; exists) — must not match as a prefix.
+	if got := ids(query(t, db, model.ItemQuery{Tag: []string{"4"}, Page: 1, PageSize: 10})); len(got) != 0 {
+		t.Fatalf("tag=4 expected none (exact membership, not prefix), got %v", got)
+	}
+}
+
+func TestFiltersTagIsColumnRestricted(t *testing.T) {
+	db := openItemTestDB(t)
+	// id=20: ";solo;" appears only in content, never as a tag.
+	if err := db.Exec(`INSERT INTO items(id,base,category,subcategory,name,title,date,tag,tag2,tag3,content,images)
+		VALUES(20,'wall','4k','2026','c','t','2026-03-01',';other;','','','has ;solo; in content','z.png')`).Error; err != nil {
+		t.Fatal(err)
+	}
+	// A tag filter must look only at tag columns, so "solo" matches nothing.
+	if got := ids(query(t, db, model.ItemQuery{Tag: []string{"solo"}, Page: 1, PageSize: 10})); len(got) != 0 {
+		t.Fatalf("tag=solo expected none (content-only), got %v", got)
+	}
+	// A real tag on the same row still matches.
+	if got := ids(query(t, db, model.ItemQuery{Tag: []string{"other"}, Page: 1, PageSize: 10})); len(got) != 1 || got[0] != 20 {
+		t.Fatalf("tag=other expected [20], got %v", got)
 	}
 }

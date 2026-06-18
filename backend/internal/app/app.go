@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
@@ -63,6 +64,13 @@ func New() (*Server, error) {
 		gin.SetMode(mode)
 	}
 	r := gin.Default()
+	// Compress JSON/static responses; skip raw file bytes, throughput-test
+	// payloads, and the SSE stream (which must not be buffered).
+	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{
+		"/api/resource",
+		"/api/speedtest",
+		"/api/pc/stream",
+	})))
 	r.POST("/api/auth/register", authHandler.Register)
 	r.POST("/api/auth/login", authHandler.Login)
 	r.GET("/api/resource", resourceHandler.Get)

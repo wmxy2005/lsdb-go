@@ -246,6 +246,31 @@
   @apply opacity-60;
 }
 
+/* Image skeleton: a shimmer sweep layered over the base pulse while loading */
+.thumbnail__skeleton {
+  overflow: hidden;
+}
+
+.thumbnail__skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--foreground) 14%, transparent),
+    transparent
+  );
+  animation: thumbnail-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes thumbnail-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* xgplayer CSS fullscreen: lock page scroll */
 body.item-detail-player-fs {
   overflow: hidden !important;

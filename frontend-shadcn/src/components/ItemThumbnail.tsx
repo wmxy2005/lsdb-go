@@ -18,9 +18,9 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [progress, setProgress] = useState('0%');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const timerRef = useRef<number | null>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const isTouch = useMediaQuery('(hover: none)');
 
   useLayoutEffect(() => {
@@ -37,11 +37,11 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
 
   useEffect(() => {
     setHovered(false);
-    setProgress('0%');
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
+    if (progressRef.current) progressRef.current.style.width = '0%';
     videoRef.current?.pause();
     if (rollSrc) {
       videoRef.current?.load();
@@ -50,7 +50,7 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       videoRef.current?.pause();
     };
   }, []);
@@ -59,26 +59,26 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
     const video = videoRef.current;
     if (!video || !rollSrc) return;
     setHovered(play);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
     if (play) {
       if (video.readyState === HTMLMediaElement.HAVE_NOTHING) {
         video.load();
       }
       video.play().catch(() => {});
-      timerRef.current = window.setInterval(() => {
-        const total = video.duration;
-        const current = video.currentTime;
-        if (total > 0) {
-          const pct = ((current / total) * 100).toFixed(0);
-          setProgress(`${pct}%`);
+      const tick = () => {
+        const bar = progressRef.current;
+        if (bar && video.duration > 0) {
+          bar.style.width = `${(video.currentTime / video.duration) * 100}%`;
         }
-      }, 500);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
     } else {
       video.pause();
-      setProgress('0%');
+      if (progressRef.current) progressRef.current.style.width = '0%';
     }
   };
 
@@ -125,9 +125,9 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
         <div className="relative w-full overflow-hidden" style={maxHeightStyle}>
           {isLoading &&
             (hasDimensions ? (
-              <Skeleton className="absolute inset-0 rounded-none" />
+              <Skeleton className="thumbnail__skeleton absolute inset-0 rounded-none" />
             ) : (
-              <Skeleton className="aspect-video w-full absolute inset-0" />
+              <Skeleton className="thumbnail__skeleton aspect-video w-full absolute inset-0" />
             ))}
           <img
             ref={imgRef}
@@ -150,7 +150,7 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
       </div>
       {rollSrc && (
         <div className={hovered ? 'thumbnail__video thumbnail__video-hovered' : 'thumbnail__video'}>
-          <div className="video__progress" style={{ width: progress }} />
+          <div ref={progressRef} className="video__progress" style={{ width: '0%' }} />
           <video
             ref={videoRef}
             loop
