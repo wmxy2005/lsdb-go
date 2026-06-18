@@ -7,11 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CONFIG } from '@/constants';
 import { resolveBaseColor, resolveTagColor, resolveTagUrl, resolveUrl } from '@/lib/resource-url';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Calendar, Heart, Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -24,7 +23,7 @@ function getTagName(tag: NonNullable<ItemInfo['tagList']>[number]) {
   return tag.value ?? tag.name ?? '';
 }
 
-export function ItemCard({
+function ItemCardComponent({
   item,
   index = 0,
   onFaviChange,
@@ -48,27 +47,6 @@ export function ItemCard({
   const baseLabel = getBaseLabel(item.base);
   const avatarUrl = item.avatarSrc ? `${CONFIG.apiUrl}${item.avatarSrc}` : undefined;
   const hasThumbDimensions = (item.thumbnailW ?? 0) > 0 && (item.thumbnailH ?? 0) > 0;
-  const isMultiColumn = useMediaQuery('(min-width: 640px)');
-  const thumbRef = useRef<HTMLAnchorElement>(null);
-  const [thumbMaxH, setThumbMaxH] = useState<number | undefined>();
-
-  useEffect(() => {
-    if (!isMultiColumn) {
-      setThumbMaxH(undefined);
-      return;
-    }
-    const el = thumbRef.current;
-    if (!el) return;
-
-    const updateMaxH = (width: number) => setThumbMaxH(width*0.75); // 4:3 ratio
-    updateMaxH(el.getBoundingClientRect().width);
-
-    const ro = new ResizeObserver(([entry]) => {
-      updateMaxH(entry.contentRect.width);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [isMultiColumn]);
 
   const handleFavi = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -121,11 +99,9 @@ export function ItemCard({
       <Card className="group flex h-full flex-col overflow-hidden border-border bg-card py-0 gap-0 shadow-sm transition-all duration-300 hover:shadow-md hover:border-border/85">
         {/* Thumbnail area */}
         <Link
-          ref={thumbRef}
           to={`/items/${item.id}`}
-          style={thumbMaxH != null ? { maxHeight: thumbMaxH } : undefined}
           className={cn(
-            'thumbnail__link relative block w-full overflow-hidden bg-muted',
+            'thumbnail__link @container relative block w-full overflow-hidden bg-muted',
             !hasThumbDimensions && 'aspect-video',
           )}
         >
@@ -134,7 +110,6 @@ export function ItemCard({
             rollSrc={rollUrl}
             srcW={item.thumbnailW}
             srcH={item.thumbnailH}
-            maxHeight={thumbMaxH}
           />
         </Link>
 
@@ -227,3 +202,7 @@ export function ItemCard({
     </motion.div>
   );
 }
+
+// Memoized: the items grid re-renders on favorite toggles / data refreshes, but
+// only the card whose `item` reference actually changed needs to re-render.
+export const ItemCard = memo(ItemCardComponent);

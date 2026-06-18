@@ -1,12 +1,16 @@
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { MasterLayout } from '@/layouts/MasterLayout';
-import ItemDetailPage from '@/pages/ItemDetailPage';
 import ItemsPage from '@/pages/ItemsPage';
-import LoginPage from '@/pages/LoginPage';
-import RolePage from '@/pages/RolePage';
-import SpeedTestPage from '@/pages/SpeedTestPage';
-import ToolPage from '@/pages/ToolPage';
+import { lazy } from 'react';
 import { Navigate, createBrowserRouter } from 'react-router-dom';
+
+// Code-split the heavier / less-frequent routes so the landing page (/items)
+// doesn't pull in xgplayer, photoswipe or chart.js on first load.
+const ItemDetailPage = lazy(() => import('@/pages/ItemDetailPage'));
+const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const RolePage = lazy(() => import('@/pages/RolePage'));
+const SpeedTestPage = lazy(() => import('@/pages/SpeedTestPage'));
+const ToolPage = lazy(() => import('@/pages/ToolPage'));
 
 export const router = createBrowserRouter([
   {

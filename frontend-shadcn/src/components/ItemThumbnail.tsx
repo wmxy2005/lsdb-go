@@ -9,10 +9,15 @@ interface ItemThumbnailProps {
   srcW?: number;
   srcH?: number;
   rollSrc?: string;
-  maxHeight?: number;
 }
 
-export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumbnailProps) {
+// Cap the thumbnail height at a 4:3 ratio of the card width on >=sm screens.
+// `cqw` resolves against the @container ancestor (the card's thumbnail link),
+// so 75cqw == 0.75 * card width — the same value the old ResizeObserver computed,
+// now done purely in CSS with no per-card observers or state.
+const HEIGHT_CAP = 'sm:max-h-[75cqw]';
+
+export function ItemThumbnail({ src, srcW, srcH, rollSrc }: ItemThumbnailProps) {
   const { t } = useTranslation();
   const imgRef = useRef<HTMLImageElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,13 +105,14 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
   };
 
   const hasDimensions = (srcW ?? 0) > 0 && (srcH ?? 0) > 0;
-  const maxHeightStyle = maxHeight != null ? { maxHeight } : undefined;
 
   if (isError) {
     return (
       <div
-        style={maxHeightStyle}
-        className="bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 flex h-full w-full items-center justify-center text-xs font-medium"
+        className={cn(
+          'bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 flex h-full w-full items-center justify-center text-xs font-medium',
+          HEIGHT_CAP,
+        )}
       >
         {t('common.loadFailed')}
       </div>
@@ -115,14 +121,13 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
 
   return (
     <div
-      style={maxHeightStyle}
-      className="relative w-full h-full overflow-hidden"
+      className={cn('relative w-full h-full overflow-hidden', HEIGHT_CAP)}
       onClick={handleTouchToggle}
       onMouseEnter={!isTouch && rollSrc ? () => handleHover(true) : undefined}
       onMouseLeave={!isTouch && rollSrc ? () => handleHover(false) : undefined}
     >
       <div className={`relative w-full ${hovered ? 'thumbnail__image-hovered' : ''}`}>
-        <div className="relative w-full overflow-hidden" style={maxHeightStyle}>
+        <div className={cn('relative w-full overflow-hidden', HEIGHT_CAP)}>
           {isLoading &&
             (hasDimensions ? (
               <Skeleton className="thumbnail__skeleton absolute inset-0 rounded-none" />
@@ -135,9 +140,9 @@ export function ItemThumbnail({ src, srcW, srcH, rollSrc, maxHeight }: ItemThumb
             width={hasDimensions ? srcW : undefined}
             height={hasDimensions ? srcH : undefined}
             alt=""
-            style={maxHeightStyle}
             className={cn(
               'block w-full object-cover',
+              HEIGHT_CAP,
               isLoading && 'opacity-0',
               hasDimensions && 'h-auto',
               !hasDimensions && 'aspect-video',
