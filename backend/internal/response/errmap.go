@@ -41,6 +41,8 @@ func mapError(err error) (status, code int, msg string) {
 		return http.StatusBadRequest, 400, service.ErrInvalidInput.Error()
 	case errors.Is(err, service.ErrUsernameTaken):
 		return http.StatusConflict, 409, service.ErrUsernameTaken.Error()
+	case errors.Is(err, service.ErrWrongPassword):
+		return http.StatusBadRequest, 400, service.ErrWrongPassword.Error()
 	case errors.Is(err, service.ErrUnsupportedCommand),
 		errors.Is(err, service.ErrUnsupportedPlatform),
 		errors.Is(err, service.ErrMissingPath),

@@ -26,9 +26,9 @@ import {
 
 import { useAuth } from "@/hooks/use-auth"
 
-import { Archive, ChevronUp, Gauge, LogOut, Wrench } from "lucide-react"
+import { Archive, ChevronUp, Gauge, KeyRound, LogOut, Wrench } from "lucide-react"
 
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import {
 
@@ -37,6 +37,8 @@ import {
   DropdownMenuContent,
 
   DropdownMenuItem,
+
+  DropdownMenuSeparator,
 
   DropdownMenuTrigger,
 
@@ -79,6 +81,8 @@ export function AppSidebar() {
   const { user, logout, isAuthenticated } = useAuth()
 
   const location = useLocation()
+
+  const navigate = useNavigate()
 
 
 
@@ -280,6 +284,16 @@ export function AppSidebar() {
                   sideOffset={8}
 
                 >
+
+                  <DropdownMenuItem onClick={() => navigate("/change-password")} className="rounded-lg py-2 cursor-pointer">
+
+                    <KeyRound className="mr-2.5 size-4" />
+
+                    <span className="font-medium">{t("nav.changePassword")}</span>
+
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator className="my-1" />
 
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10 rounded-lg py-2 cursor-pointer">
 

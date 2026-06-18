@@ -1,4 +1,4 @@
-import { authCurrent, authLogout, loginAndStoreToken } from '@/api/auth';
+import { authCurrent, authLogout, authRegister, loginAndStoreToken } from '@/api/auth';
 import { setToken } from '@/api/client';
 import type { UserInfo } from '@/api/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -8,6 +8,7 @@ type AuthContextValue = {
   loading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  register: (username: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -41,6 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, message: res.message };
   }, [refresh]);
 
+  const register = useCallback(async (username: string, password: string) => {
+    const res = await authRegister(username, password);
+    if (res.success) {
+      return login(username, password);
+    }
+    return { success: false, message: res.message };
+  }, [login]);
+
   const logout = useCallback(async () => {
     await authLogout();
     setToken(null);
@@ -53,10 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isAuthenticated: (user?.id ?? 0) > 0,
       login,
+      register,
       logout,
       refresh,
     }),
-    [user, loading, login, logout, refresh],
+    [user, loading, login, register, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

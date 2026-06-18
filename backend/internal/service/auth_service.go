@@ -16,6 +16,7 @@ var (
 	ErrInvalidInput       = errors.New("username and password length >= 6 are required")
 	ErrInvalidCredentials = errors.New("invalid username or password")
 	ErrUsernameTaken      = errors.New("username already exists")
+	ErrWrongPassword      = errors.New("current password is incorrect")
 )
 
 type Claims struct {
@@ -78,6 +79,24 @@ func (s *AuthService) Login(username, password string) (map[string]any, error) {
 		return nil, err
 	}
 	return map[string]any{"token": token, "user": map[string]any{"id": user.ID, "username": user.Username}}, nil
+}
+
+func (s *AuthService) ChangePassword(username, oldPassword, newPassword string) error {
+	if len(newPassword) < 6 {
+		return ErrInvalidInput
+	}
+	user, err := s.users.FindByUsername(strings.TrimSpace(username))
+	if err != nil {
+		return ErrInvalidCredentials
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+		return ErrWrongPassword
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	return s.users.UpdatePasswordHash(user.ID, string(hash))
 }
 
 func (s *AuthService) SignToken(userID int64, username string) (string, error) {

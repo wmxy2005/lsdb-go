@@ -21,3 +21,7 @@ func (r *UserRepository) FindByUsername(username string) (model.User, error) {
 	err := r.db.Where("username = ?", username).First(&u).Error
 	return u, err
 }
+
+func (r *UserRepository) UpdatePasswordHash(id int64, passwordHash string) error {
+	return r.db.Model(&model.User{}).Where("id = ?", id).Update("password_hash", passwordHash).Error
+}

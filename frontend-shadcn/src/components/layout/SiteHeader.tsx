@@ -14,6 +14,8 @@ import {
 
   DropdownMenuItem,
 
+  DropdownMenuSeparator,
+
   DropdownMenuTrigger,
 
 } from "@/components/ui/dropdown-menu"
@@ -28,13 +30,13 @@ import { usePageBreadcrumbLabel } from "@/hooks/use-page-title-context"
 
 import { Logo } from "@/components/Logo"
 
-import { ChevronDown, LogOut, Search } from "lucide-react"
+import { ChevronDown, KeyRound, LogOut, Search } from "lucide-react"
 
 import { useEffect, useMemo, useState } from "react"
 
 import { useTranslation } from "react-i18next"
 
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import { CommandMenu } from "./CommandMenu"
 
@@ -47,6 +49,8 @@ export function SiteHeader() {
   const { isAuthenticated, user, logout } = useAuth()
 
   const location = useLocation()
+
+  const navigate = useNavigate()
 
   const dynamicBreadcrumbLabel = usePageBreadcrumbLabel()
 
@@ -344,6 +348,22 @@ export function SiteHeader() {
                 sideOffset={8}
 
               >
+
+                <DropdownMenuItem
+
+                  onClick={() => navigate("/change-password")}
+
+                  className="rounded-lg py-2 cursor-pointer"
+
+                >
+
+                  <KeyRound className="mr-2.5 size-4" />
+
+                  <span className="font-medium">{t("nav.changePassword")}</span>
+
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="my-1" />
 
                 <DropdownMenuItem
 

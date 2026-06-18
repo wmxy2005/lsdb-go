@@ -63,6 +63,24 @@ func (h *AuthHandler) Current(c *gin.Context) {
 	response.OK(c, data)
 }
 
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	var req struct {
+		OldPassword string `json:"oldPassword"`
+		NewPassword string `json:"newPassword"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, http.StatusBadRequest, 400, "invalid request")
+		return
+	}
+	username, _ := c.Get("username")
+	name, _ := username.(string)
+	if err := h.auth.ChangePassword(name, req.OldPassword, req.NewPassword); err != nil {
+		response.FailErr(c, err)
+		return
+	}
+	response.OK(c, gin.H{})
+}
+
 func (h *AuthHandler) Logout(c *gin.Context) {
 	response.OK(c, gin.H{})
 }

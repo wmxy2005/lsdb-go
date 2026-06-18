@@ -1,27 +1,51 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/auth/PasswordInput'
 import { useAuth } from '@/hooks/use-auth'
-import { Loader2, Lock, User } from 'lucide-react'
+import { apiErrorMessage } from '@/lib/api-error'
+import { Loader2, User } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 export function LoginPanel({ onSuccess }: { onSuccess?: () => void }) {
   const { t } = useTranslation()
-  const { login } = useAuth()
+  const { login, register } = useAuth()
+  const [mode, setMode] = useState<'login' | 'register'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const isRegister = mode === 'register'
+
+  const toggleMode = () => {
+    setMode((prev) => (prev === 'login' ? 'register' : 'login'))
+    setPassword('')
+    setConfirmPassword('')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (isRegister) {
+      if (password.length < 6) {
+        toast.error(t('auth.passwordTooShort'))
+        return
+      }
+      if (password !== confirmPassword) {
+        toast.error(t('auth.passwordMismatch'))
+        return
+      }
+    }
+
     setLoading(true)
-    const res = await login(username, password)
+    const res = isRegister ? await register(username, password) : await login(username, password)
     if (res.success) {
       onSuccess?.()
     } else {
-      toast.error(res.message ?? t('toast.loginFailed'))
+      toast.error(apiErrorMessage(t, res.message, isRegister ? 'toast.registerFailed' : 'toast.loginFailed'))
     }
     setLoading(false)
   }
@@ -37,7 +61,7 @@ export function LoginPanel({ onSuccess }: { onSuccess?: () => void }) {
           </div>
 
           <div className="mb-6 border-b border-border/60 pb-3 text-center text-sm font-medium text-foreground">
-            {t('auth.accountLogin')}
+            {t(isRegister ? 'auth.accountRegister' : 'auth.accountLogin')}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -52,29 +76,42 @@ export function LoginPanel({ onSuccess }: { onSuccess?: () => void }) {
                 className="h-11 pl-9"
               />
             </div>
-            <div className="relative">
-              <Lock className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="login-password"
-                type="password"
-                placeholder={t('auth.passwordPlaceholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11 pl-9"
+            <PasswordInput
+              id="login-password"
+              placeholder={t('auth.passwordPlaceholder')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {isRegister && (
+              <PasswordInput
+                id="login-confirm-password"
+                placeholder={t('auth.confirmPasswordPlaceholder')}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
               />
-            </div>
+            )}
             <Button type="submit" className="h-11 w-full" disabled={loading}>
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="size-4 animate-spin" />
-                  {t('auth.loggingIn')}
+                  {t(isRegister ? 'auth.registering' : 'auth.loggingIn')}
                 </span>
               ) : (
-                t('auth.submit')
+                t(isRegister ? 'auth.registerSubmit' : 'auth.submit')
               )}
             </Button>
           </form>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            {t(isRegister ? 'auth.haveAccount' : 'auth.noAccount')}{' '}
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              {t(isRegister ? 'auth.toLogin' : 'auth.toRegister')}
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>

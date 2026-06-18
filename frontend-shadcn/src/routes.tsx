@@ -8,6 +8,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom';
 // doesn't pull in xgplayer, photoswipe or chart.js on first load.
 const ItemDetailPage = lazy(() => import('@/pages/ItemDetailPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const ChangePasswordPage = lazy(() => import('@/pages/ChangePasswordPage'));
 const RolePage = lazy(() => import('@/pages/RolePage'));
 const SpeedTestPage = lazy(() => import('@/pages/SpeedTestPage'));
 const ToolPage = lazy(() => import('@/pages/ToolPage'));
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
         element: <MasterLayout />,
         children: [
           { path: 'login', element: <LoginPage /> },
+          { path: 'change-password', element: <ProtectedRoute><ChangePasswordPage /></ProtectedRoute> },
           { path: 'tool', element: <ToolPage /> },
           { path: 'speedTest', element: <SpeedTestPage /> },
           { path: 'items', element: <ProtectedRoute><ItemsPage /></ProtectedRoute> },

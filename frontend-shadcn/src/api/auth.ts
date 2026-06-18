@@ -10,6 +10,14 @@ export async function authLogin(username: string, password: string) {
   });
 }
 
+export async function authRegister(username: string, password: string) {
+  return apiRequest<ApiResult<{ id?: number; username?: string }>>(`${CONFIG.apiUrl}/api/auth/register`, {
+    method: 'POST',
+    data: { username, password },
+    auth: false,
+  });
+}
+
 export async function authLogout() {
   return apiRequest<ApiResult<string>>(`${CONFIG.apiUrl}/api/auth/logout`, {
     method: 'POST',
@@ -19,6 +27,13 @@ export async function authLogout() {
 export async function authCurrent() {
   return apiRequest<ApiResult<UserInfo>>(`${CONFIG.apiUrl}/api/auth/current`, {
     method: 'GET',
+  });
+}
+
+export async function authChangePassword(oldPassword: string, newPassword: string) {
+  return apiRequest<ApiResult<unknown>>(`${CONFIG.apiUrl}/api/auth/password`, {
+    method: 'POST',
+    data: { oldPassword, newPassword },
   });
 }
 

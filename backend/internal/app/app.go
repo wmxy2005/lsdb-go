@@ -89,6 +89,7 @@ func New() (*Server, error) {
 	api.Use(middleware.AuthRequired(authSvc))
 	api.GET("/auth/current", authHandler.Current)
 	api.POST("/auth/logout", authHandler.Logout)
+	api.POST("/auth/password", authHandler.ChangePassword)
 	if !cfg.CmdSkipAuth {
 		api.POST("/cmd/:type", commandHandler.Run)
 		api.GET("/pc", monitorHandler.GetPC)
