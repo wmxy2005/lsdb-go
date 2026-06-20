@@ -240,6 +240,8 @@ export default function ItemDetailPage() {
     else toast.error(res.message ?? t("toast.openFolderFailed"));
   };
 
+  const canSync = Boolean(item.base && item.category && item.name);
+
   const imgList1 = item.imgList1 ?? [];
   const imgList2 = item.imgList2 ?? [];
 
@@ -321,7 +323,14 @@ export default function ItemDetailPage() {
             variant="outline"
             icon={<RefreshCw className="size-4" />}
             label={t("action.sync")}
-            onClick={() => setSyncOpen(true)}
+            onClick={() => {
+              if (!canSync) {
+                toast.error(t("toast.operationFailed"));
+                return;
+              }
+              setSyncOpen(true);
+            }}
+            disabled={!canSync}
             className="h-9 rounded-lg border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-xs font-medium"
           />
           <PageActionButton
@@ -546,9 +555,15 @@ export default function ItemDetailPage() {
       <ConsoleDialog
         open={syncOpen}
         onOpenChange={setSyncOpen}
-        path={[item.base, item.category, item.subcategory, item.name]
-          .filter(Boolean)
-          .join("/")}
+        syncTarget={
+          canSync
+            ? {
+                base: item.base ?? "",
+                category: item.category ?? "",
+                item: item.name ?? "",
+              }
+            : undefined
+        }
       />
     </div>
   );

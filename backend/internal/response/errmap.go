@@ -35,6 +35,8 @@ func FailErrNotFound(c *gin.Context, err error, msg string) {
 
 func mapError(err error) (status, code int, msg string) {
 	switch {
+	case errors.As(err, new(*service.CommandOutputError)):
+		return http.StatusBadRequest, 400, err.Error()
 	case errors.Is(err, service.ErrInvalidCredentials):
 		return http.StatusUnauthorized, 401, service.ErrInvalidCredentials.Error()
 	case errors.Is(err, service.ErrInvalidInput):
@@ -52,8 +54,14 @@ func mapError(err error) (status, code int, msg string) {
 	case errors.Is(err, service.ErrUnsupportedCommand),
 		errors.Is(err, service.ErrUnsupportedPlatform),
 		errors.Is(err, service.ErrMissingPath),
+		errors.Is(err, service.ErrMissingBase),
+		errors.Is(err, service.ErrMissingCategory),
+		errors.Is(err, service.ErrMissingItem),
+		errors.Is(err, service.ErrMissingProcessID),
 		errors.Is(err, service.ErrInvalidPath),
-		errors.Is(err, service.ErrUnsafePath):
+		errors.Is(err, service.ErrUnsafePath),
+		errors.Is(err, service.ErrUnsafeValue),
+		errors.Is(err, service.ErrSyncTaskNotFound):
 		return http.StatusBadRequest, 400, err.Error()
 	case errors.Is(err, gorm.ErrDuplicatedKey), isDuplicateConstraint(err):
 		return http.StatusConflict, 409, "conflict"

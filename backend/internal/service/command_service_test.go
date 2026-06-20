@@ -16,11 +16,17 @@ type commandCall struct {
 type fakeCommandRunner struct {
 	calls []commandCall
 	err   error
+	output string
 }
 
 func (r *fakeCommandRunner) Start(name string, args ...string) error {
 	r.calls = append(r.calls, commandCall{name: name, args: append([]string{}, args...)})
 	return r.err
+}
+
+func (r *fakeCommandRunner) Run(name string, args ...string) (string, error) {
+	r.calls = append(r.calls, commandCall{name: name, args: append([]string{}, args...)})
+	return r.output, r.err
 }
 
 func TestCommandServiceRun(t *testing.T) {
@@ -99,6 +105,113 @@ func TestCommandServiceRun(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 		assertNoCommandCalls(t, runner)
+	})
+
+	t.Run("sync", func(t *testing.T) {
+		runner := &fakeCommandRunner{output: "sync ok"}
+		svc := NewCommandServiceWithRunner(t.TempDir(), "windows", runner)
+		output, err := svc.RunWithArgs("sync", "", SyncArgs{
+			Base:     "base",
+			Category: "category",
+			Item:     "item-001",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if output != "sync ok" {
+			t.Fatalf("output = %q", output)
+		}
+		assertCommandCall(t, runner, "powershell", []string{
+			"-NoProfile",
+			"-ExecutionPolicy",
+			"Bypass",
+			"-Command",
+			"& 'D:\\src\\lsdb-from\\download_media_item.ps1' -CondaEnv base --base 'base' --category 'category' --item 'item-001'",
+		})
+	})
+
+	t.Run("sync missing base", func(t *testing.T) {
+		runner := &fakeCommandRunner{}
+		svc := NewCommandServiceWithRunner(t.TempDir(), "windows", runner)
+		_, err := svc.RunWithArgs("sync", "", SyncArgs{
+			Category: "category",
+			Item:     "item-001",
+		})
+		if !errors.Is(err, ErrMissingBase) {
+			t.Fatalf("err = %v", err)
+		}
+		assertNoCommandCalls(t, runner)
+	})
+
+	t.Run("sync missing category", func(t *testing.T) {
+		runner := &fakeCommandRunner{}
+		svc := NewCommandServiceWithRunner(t.TempDir(), "windows", runner)
+		_, err := svc.RunWithArgs("sync", "", SyncArgs{
+			Base: "base",
+			Item: "item-001",
+		})
+		if !errors.Is(err, ErrMissingCategory) {
+			t.Fatalf("err = %v", err)
+		}
+		assertNoCommandCalls(t, runner)
+	})
+
+	t.Run("sync missing item", func(t *testing.T) {
+		runner := &fakeCommandRunner{}
+		svc := NewCommandServiceWithRunner(t.TempDir(), "windows", runner)
+		_, err := svc.RunWithArgs("sync", "", SyncArgs{
+			Base:     "base",
+			Category: "category",
+		})
+		if !errors.Is(err, ErrMissingItem) {
+			t.Fatalf("err = %v", err)
+		}
+		assertNoCommandCalls(t, runner)
+	})
+
+	t.Run("sync unsafe value", func(t *testing.T) {
+		runner := &fakeCommandRunner{}
+		svc := NewCommandServiceWithRunner(t.TempDir(), "windows", runner)
+		_, err := svc.RunWithArgs("sync", "", SyncArgs{
+			Base:     "base",
+			Category: "../actress",
+			Item:     "item-001",
+		})
+		if !errors.Is(err, ErrUnsafeValue) {
+			t.Fatalf("err = %v", err)
+		}
+		assertNoCommandCalls(t, runner)
+	})
+
+	t.Run("sync runner error exposes output", func(t *testing.T) {
+		runErr := errors.New("exit status 1")
+		runner := &fakeCommandRunner{output: "boom", err: runErr}
+		svc := NewCommandServiceWithRunner(t.TempDir(), "windows", runner)
+		output, err := svc.RunWithArgs("sync", "", SyncArgs{
+			Base:     "base",
+			Category: "category",
+			Item:     "item-001",
+		})
+		if output != "boom" {
+			t.Fatalf("output = %q", output)
+		}
+		var outputErr *CommandOutputError
+		if !errors.As(err, &outputErr) {
+			t.Fatalf("err = %T %v", err, err)
+		}
+		if outputErr.Output != "boom" {
+			t.Fatalf("outputErr.Output = %q", outputErr.Output)
+		}
+		if !errors.Is(err, runErr) {
+			t.Fatalf("err = %v", err)
+		}
+		assertCommandCall(t, runner, "powershell", []string{
+			"-NoProfile",
+			"-ExecutionPolicy",
+			"Bypass",
+			"-Command",
+			"& 'D:\\src\\lsdb-from\\download_media_item.ps1' -CondaEnv base --base 'base' --category 'category' --item 'item-001'",
+		})
 	})
 
 	t.Run("unsupported command", func(t *testing.T) {

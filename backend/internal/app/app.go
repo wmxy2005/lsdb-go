@@ -70,12 +70,15 @@ func New() (*Server, error) {
 		"/api/resource",
 		"/api/speedtest",
 		"/api/pc/stream",
+		"/api/cmd/sync/stream",
 	})))
 	r.POST("/api/auth/register", authHandler.Register)
 	r.POST("/api/auth/login", authHandler.Login)
 	r.GET("/api/resource", resourceHandler.Get)
 	if cfg.CmdSkipAuth {
 		r.POST("/api/cmd/:type", commandHandler.Run)
+		r.POST("/api/cmd/sync/start", commandHandler.StartSync)
+		r.GET("/api/cmd/sync/stream", commandHandler.StreamSync)
 		r.GET("/api/pc", monitorHandler.GetPC)
 		r.GET("/api/pc/stream", monitorHandler.StreamPC)
 		r.GET("/api/speedtest/ping", speedTestHandler.Ping)
@@ -83,6 +86,7 @@ func New() (*Server, error) {
 		r.POST("/api/speedtest/upload", speedTestHandler.Upload)
 	} else {
 		r.GET("/api/pc/stream", middleware.AuthHeaderOrQueryRequired(authSvc), monitorHandler.StreamPC)
+		r.GET("/api/cmd/sync/stream", middleware.AuthHeaderOrQueryRequired(authSvc), commandHandler.StreamSync)
 	}
 
 	api := r.Group("/api")
@@ -92,6 +96,7 @@ func New() (*Server, error) {
 	api.POST("/auth/password", authHandler.ChangePassword)
 	if !cfg.CmdSkipAuth {
 		api.POST("/cmd/:type", commandHandler.Run)
+		api.POST("/cmd/sync/start", commandHandler.StartSync)
 		api.GET("/pc", monitorHandler.GetPC)
 	}
 	api.POST("/resource", resourceHandler.Upload)
