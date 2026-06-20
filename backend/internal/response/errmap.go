@@ -39,8 +39,14 @@ func mapError(err error) (status, code int, msg string) {
 		return http.StatusUnauthorized, 401, service.ErrInvalidCredentials.Error()
 	case errors.Is(err, service.ErrInvalidInput):
 		return http.StatusBadRequest, 400, service.ErrInvalidInput.Error()
+	case errors.Is(err, service.ErrItemRenameInvalidName):
+		return http.StatusBadRequest, 400, service.ErrItemRenameInvalidName.Error()
 	case errors.Is(err, service.ErrUsernameTaken):
 		return http.StatusConflict, 409, service.ErrUsernameTaken.Error()
+	case errors.Is(err, service.ErrItemRenameSourceMissing):
+		return http.StatusConflict, 409, service.ErrItemRenameSourceMissing.Error()
+	case errors.Is(err, service.ErrItemRenameTargetExists):
+		return http.StatusConflict, 409, service.ErrItemRenameTargetExists.Error()
 	case errors.Is(err, service.ErrWrongPassword):
 		return http.StatusBadRequest, 400, service.ErrWrongPassword.Error()
 	case errors.Is(err, service.ErrUnsupportedCommand),

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -91,10 +92,135 @@ func (s *ItemService) Create(req model.ItemWrite, userID int64) (map[string]any,
 }
 
 func (s *ItemService) Update(id string, req model.ItemWrite, userID int64) (map[string]any, error) {
-	if err := s.items.Update(id, req); err != nil {
+	current, err := s.items.Get(id, userID)
+	if err != nil {
 		return nil, err
 	}
+	if req.Name != nil {
+		trimmed := strings.TrimSpace(*req.Name)
+		req.Name = &trimmed
+	}
+	plan, err := s.planItemRename(current, req)
+	if err != nil {
+		return nil, err
+	}
+	if plan != nil {
+		if err := plan.Apply(); err != nil {
+			return nil, err
+		}
+		if err := s.items.Update(id, req); err != nil {
+			_ = plan.Rollback()
+			return nil, err
+		}
+	} else {
+		if err := s.items.Update(id, req); err != nil {
+			return nil, err
+		}
+	}
 	return s.Get(id, userID)
+}
+
+type itemRenamePlan struct {
+	oldPath string
+	newPath string
+}
+
+func (p *itemRenamePlan) Apply() error {
+	return renameDirWithCaseSupport(p.oldPath, p.newPath)
+}
+
+func (p *itemRenamePlan) Rollback() error {
+	return renameDirWithCaseSupport(p.newPath, p.oldPath)
+}
+
+func (s *ItemService) planItemRename(current model.Item, req model.ItemWrite) (*itemRenamePlan, error) {
+	if req.Name == nil {
+		return nil, nil
+	}
+	oldName := strings.TrimSpace(current.Name)
+	newName := strings.TrimSpace(*req.Name)
+	if newName == "" {
+		return nil, ErrItemRenameInvalidName
+	}
+	if oldName == newName {
+		return nil, nil
+	}
+	if oldName == "" {
+		return nil, ErrItemRenameSourceMissing
+	}
+	oldPath, err := s.resources.ResolveDir(current.Base, current.Category, current.Subcategory, oldName)
+	if err != nil {
+		return nil, err
+	}
+	newPath, err := s.resources.ResolveDir(current.Base, current.Category, current.Subcategory, newName)
+	if err != nil {
+		return nil, err
+	}
+	oldInfo, err := os.Stat(oldPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, ErrItemRenameSourceMissing
+		}
+		return nil, err
+	}
+	if !oldInfo.IsDir() {
+		return nil, ErrItemRenameSourceMissing
+	}
+	caseOnly, err := samePathDifferentCase(oldPath, newPath)
+	if err != nil {
+		return nil, err
+	}
+	if targetInfo, err := os.Stat(newPath); err == nil {
+		if !targetInfo.IsDir() || !caseOnly {
+			return nil, ErrItemRenameTargetExists
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	if caseOnly {
+		tmpPath := caseOnlyRenameTempPath(newPath)
+		if _, err := os.Stat(tmpPath); err == nil {
+			return nil, ErrItemRenameTargetExists
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+	}
+	return &itemRenamePlan{oldPath: oldPath, newPath: newPath}, nil
+}
+
+func renameDirWithCaseSupport(oldPath, newPath string) error {
+	caseOnly, err := samePathDifferentCase(oldPath, newPath)
+	if err != nil {
+		return err
+	}
+	if !caseOnly {
+		return os.Rename(oldPath, newPath)
+	}
+	tmpPath := caseOnlyRenameTempPath(newPath)
+	if err := os.Rename(oldPath, tmpPath); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpPath, newPath); err != nil {
+		_ = os.Rename(tmpPath, oldPath)
+		return err
+	}
+	return nil
+}
+
+func caseOnlyRenameTempPath(path string) string {
+	return path + ".__lsdb_case_rename_tmp__"
+}
+
+func samePathDifferentCase(a, b string) (bool, error) {
+	aAbs, err := filepath.Abs(a)
+	if err != nil {
+		return false, err
+	}
+	bAbs, err := filepath.Abs(b)
+	if err != nil {
+		return false, err
+	}
+	return strings.EqualFold(aAbs, bAbs), nil
 }
 
 func (s *ItemService) ItemMap(item model.Item, detail bool) map[string]any {

@@ -8,6 +8,9 @@ const BACKEND_ERROR_KEYS: Record<string, string> = {
   'username already exists': 'auth.errUsernameTaken',
   'username and password length >= 6 are required': 'auth.errInvalidInput',
   'current password is incorrect': 'auth.errWrongPassword',
+  'item name is required': 'edit.rename.nameRequired',
+  'item source folder does not exist': 'edit.rename.sourceMissing',
+  'item target folder already exists': 'edit.rename.targetExists',
 };
 
 // Localizes a backend error message: returns the translation for a known

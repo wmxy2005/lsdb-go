@@ -57,12 +57,20 @@ func NewResourceServiceWithDecoder(fileRoot string, decoder imageConfigDecoder) 
 	}
 }
 
+func (s *ResourceService) ResolveDir(base, category, subcategory, name string) (string, error) {
+	return s.resolve(base, category, subcategory, name)
+}
+
 func (s *ResourceService) Resolve(base, category, subcategory, name, filename string) (string, error) {
 	if strings.TrimSpace(filename) == "" {
 		return "", errors.New("filename is required")
 	}
-	parts := []string{s.fileRoot}
-	for _, p := range []string{base, category, subcategory, name, filename} {
+	return s.resolve(base, category, subcategory, name, filename)
+}
+
+func (s *ResourceService) resolve(parts ...string) (string, error) {
+	joined := []string{s.fileRoot}
+	for _, p := range parts {
 		p = strings.TrimSpace(strings.ReplaceAll(p, "\\", "/"))
 		if p == "" {
 			continue
@@ -70,13 +78,13 @@ func (s *ResourceService) Resolve(base, category, subcategory, name, filename st
 		if strings.Contains(p, "..") || strings.HasPrefix(p, "/") {
 			return "", errors.New("unsafe path")
 		}
-		parts = append(parts, p)
+		joined = append(joined, p)
 	}
 	rootAbs, err := filepath.Abs(s.fileRoot)
 	if err != nil {
 		return "", err
 	}
-	pathAbs, err := filepath.Abs(filepath.Join(parts...))
+	pathAbs, err := filepath.Abs(filepath.Join(joined...))
 	if err != nil {
 		return "", err
 	}

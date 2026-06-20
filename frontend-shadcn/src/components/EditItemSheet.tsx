@@ -33,6 +33,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Loader2, Save, FolderOpen, FileText, RotateCcw } from "lucide-react";
+import { apiErrorMessage } from "@/lib/api-error";
 
 function EditSheetSkeleton() {
   return (
@@ -195,6 +196,8 @@ export function EditItemSheet({
   const resCategory = item?.category ?? category;
   const resSubcategory = item?.subcategory ?? subcategory;
   const resName = item?.name ?? name;
+  const trimmedName = name.trim();
+  const isRenameDirty = !isNew && trimmedName !== (item?.name ?? "");
 
   const buildPayload = () => ({
     title,
@@ -203,7 +206,7 @@ export function EditItemSheet({
     base,
     category,
     subcategory,
-    name,
+    name: isNew ? trimmedName : name,
     thumbnail: thumbnail || "",
     roll: roll || "",
     trailer: trailer || "",
@@ -214,6 +217,10 @@ export function EditItemSheet({
   });
 
   const handleSave = async () => {
+    if (!isNew && trimmedName === "") {
+      toast.error(t("edit.rename.nameRequired"));
+      return;
+    }
     setSaving(true);
     const payload = buildPayload();
     const res = isNew
@@ -224,7 +231,7 @@ export function EditItemSheet({
       onOpenChange(false);
       onSaved?.();
     } else {
-      toast.error(res.message ?? t("toast.saveFailed"));
+      toast.error(apiErrorMessage(t, res.message, "toast.saveFailed"));
     }
     setSaving(false);
   };
@@ -337,60 +344,68 @@ export function EditItemSheet({
               <EditSheetSkeleton />
             ) : (
               <div className="space-y-6">
-                {isNew && (
-                  <EditSection title={t("edit.section.storagePath")}>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                          {t("edit.field.base")}
-                        </Label>
-                        <ClearableInput
-                          value={base}
-                          onChange={(e) => setBase(e.target.value)}
-                          placeholder={t("edit.field.basePlaceholder")}
-                          className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
-                          clearLabel={t("common.clear")}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                          {t("edit.field.category")}
-                        </Label>
-                        <ClearableInput
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value)}
-                          placeholder={t("edit.field.categoryPlaceholder")}
-                          className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
-                          clearLabel={t("common.clear")}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                          {t("edit.field.subcategory")}
-                        </Label>
-                        <ClearableInput
-                          value={subcategory}
-                          onChange={(e) => setSubcategory(e.target.value)}
-                          placeholder={t("edit.field.subcategoryPlaceholder")}
-                          className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
-                          clearLabel={t("common.clear")}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                          {t("edit.field.name")}
-                        </Label>
-                        <ClearableInput
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder={t("edit.field.namePlaceholder")}
-                          className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
-                          clearLabel={t("common.clear")}
-                        />
-                      </div>
+                <EditSection title={t("edit.section.storagePath")}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                        {t("edit.field.base")}
+                      </Label>
+                      <ClearableInput
+                        value={base}
+                        onChange={(e) => setBase(e.target.value)}
+                        placeholder={t("edit.field.basePlaceholder")}
+                        className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                        clearLabel={t("common.clear")}
+                        disabled={!isNew}
+                      />
                     </div>
-                  </EditSection>
-                )}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                        {t("edit.field.category")}
+                      </Label>
+                      <ClearableInput
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        placeholder={t("edit.field.categoryPlaceholder")}
+                        className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                        clearLabel={t("common.clear")}
+                        disabled={!isNew}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                        {t("edit.field.subcategory")}
+                      </Label>
+                      <ClearableInput
+                        value={subcategory}
+                        onChange={(e) => setSubcategory(e.target.value)}
+                        placeholder={t("edit.field.subcategoryPlaceholder")}
+                        className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                        clearLabel={t("common.clear")}
+                        disabled={!isNew}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                        {t("edit.field.name")}
+                      </Label>
+                      <ClearableInput
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder={t("edit.field.namePlaceholder")}
+                        className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
+                        clearLabel={t("common.clear")}
+                      />
+                    </div>
+                  </div>
+                  {!isNew && (
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      {isRenameDirty
+                        ? t("edit.rename.pendingHint")
+                        : t("edit.rename.hint")}
+                    </p>
+                  )}
+                </EditSection>
 
                 <EditSection title={t("edit.section.basicInfo")}>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
