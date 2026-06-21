@@ -23,6 +23,10 @@
 -- ALTER TABLE items ADD COLUMN created_at TEXT;
 -- ALTER TABLE items ADD COLUMN updated_at TEXT;
 --
+-- New tables get CURRENT_TIMESTAMP defaults from the GORM model tags.
+-- Existing SQLite columns cannot be altered in-place to add that default;
+-- rebuild the table if an old database needs physical column defaults.
+--
 -- Deduplicate itemfavi before unique index (keep row with max id per user_id+item_id):
 -- DELETE FROM itemfavi WHERE id IN (
 --   SELECT f1.id FROM itemfavi f1

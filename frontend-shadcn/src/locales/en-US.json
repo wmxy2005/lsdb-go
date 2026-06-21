@@ -84,6 +84,7 @@
     "retry": "Retry",
     "goLogin": "Go to login",
     "publishedOn": "Published on {{date}}",
+    "updatedAt": "Updated at {{date}}",
     "dragToReorder": "Drag to reorder",
     "clickToCopy": "Click to copy",
     "themeToggle": "Toggle theme",
@@ -411,6 +412,7 @@
       "hint": "For existing archives, only Name can be changed here. The folder will be renamed after save.",
       "pendingHint": "Resource upload, delete, and preview still use the current saved folder until this rename is saved.",
       "nameRequired": "Name is required to rename this archive.",
+      "enable": "Edit Name",
       "sourceMissing": "The current archive folder does not exist, so rename could not be completed.",
       "targetExists": "A folder with the target name already exists."
     },
@@ -419,10 +421,30 @@
     "reset": "Reset"
   },
   "sync": {
+    "consoleLabel": "Task Console",
     "title": "Sync folder",
     "inProgress": "Syncing...",
     "success": "Sync complete",
-    "failed": "Sync failed"
+    "failed": "Sync failed",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "status": {
+      "idle": "Idle",
+      "running": "Running",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "description": {
+      "idle": "Ready to display task output.",
+      "running": "Streaming live output from the sync task.",
+      "completed": "The sync task finished successfully.",
+      "failed": "The sync task ended with an error."
+    },
+    "target": {
+      "base": "Base",
+      "category": "Category",
+      "item": "Item"
+    }
   },
   "toast": {
     "operationFailed": "Operation failed",

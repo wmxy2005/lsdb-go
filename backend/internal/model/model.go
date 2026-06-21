@@ -21,8 +21,8 @@ type Item struct {
 	Category    string  `json:"category"     gorm:"column:category;index"`
 	Subcategory string  `json:"subcategory"  gorm:"column:subcategory;index"`
 	Name        string  `json:"name"         gorm:"column:name"`
-	CreatedAt   *string `json:"created_at"   gorm:"column:created_at"`
-	UpdatedAt   *string `json:"updated_at"   gorm:"column:updated_at"`
+	CreatedAt   *string `json:"created_at"   gorm:"column:created_at;default:(CURRENT_TIMESTAMP)"`
+	UpdatedAt   *string `json:"updated_at"   gorm:"column:updated_at;default:(CURRENT_TIMESTAMP)"`
 	Title       string  `json:"title"        gorm:"column:title"`
 	Date        *string `json:"date"         gorm:"column:date;index:idx_items_base_date,priority:2;index"`
 	Thumbnail   *string `json:"thumbnail"    gorm:"column:thumbnail"`
@@ -53,11 +53,11 @@ type Role struct {
 func (Role) TableName() string { return "role" }
 
 type Itemfavi struct {
-	ID       int64  `gorm:"column:id;primaryKey;autoIncrement;not null"`
+	ID        int64   `gorm:"column:id;primaryKey;autoIncrement;not null"`
 	UserID    int64   `gorm:"column:user_id;uniqueIndex:idx_itemfavi_user_item"`
 	ItemID    int64   `gorm:"column:item_id;uniqueIndex:idx_itemfavi_user_item"`
-	CreatedAt *string `gorm:"column:created_at"`
-	UpdatedAt *string `gorm:"column:updated_at"`
+	CreatedAt *string `gorm:"column:created_at;default:(CURRENT_TIMESTAMP)"`
+	UpdatedAt *string `gorm:"column:updated_at;default:(CURRENT_TIMESTAMP)"`
 	Expired   int64   `gorm:"column:expired"`
 }
 

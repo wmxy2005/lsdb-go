@@ -40,6 +40,25 @@ import { toast } from "sonner";
 import Player from "xgplayer";
 import "xgplayer/dist/index.min.css";
 
+function formatUpdatedAt(value?: string) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+
+  const normalized = raw.replace("T", " ");
+  const date = normalized.slice(0, 10);
+  const time = normalized.slice(11, 16);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return raw;
+  }
+
+  if (/^\d{2}:\d{2}$/.test(time)) {
+    return `${date} ${time}`;
+  }
+
+  return date;
+}
+
 export default function ItemDetailPage() {
   const { t } = useTranslation();
   const { itemId } = useParams();
@@ -241,6 +260,7 @@ export default function ItemDetailPage() {
   };
 
   const canSync = Boolean(item.base && item.category && item.name);
+  const updatedAt = formatUpdatedAt(item.updated_at);
 
   const imgList1 = item.imgList1 ?? [];
   const imgList2 = item.imgList2 ?? [];
@@ -349,7 +369,7 @@ export default function ItemDetailPage() {
             {item.title}
           </h1>
         )}
-        {(item.date || item.extra) && (
+        {(item.date || updatedAt || item.extra) && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground font-medium">
             {item.date && (
               <span className="flex items-center gap-1.5">
@@ -357,6 +377,12 @@ export default function ItemDetailPage() {
                 {t("common.publishedOn", {
                   date: String(item.date).slice(0, 10),
                 })}
+              </span>
+            )}
+            {updatedAt && (
+              <span className="flex items-center gap-1.5">
+                <RefreshCw className="size-3.5 text-zinc-400" />
+                {t("common.updatedAt", { date: updatedAt })}
               </span>
             )}
             {item.extra && (

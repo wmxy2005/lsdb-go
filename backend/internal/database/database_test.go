@@ -1,11 +1,13 @@
 package database
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"gorm.io/gorm"
 	"lsdb-go/backend/internal/model"
 	"lsdb-go/backend/internal/repository"
 )
@@ -51,6 +53,66 @@ func TestMigrateCreatesItemfaviUniqueIndex(t *testing.T) {
 	}
 	if !db.Migrator().HasIndex(&model.Itemfavi{}, "idx_itemfavi_user_item") {
 		t.Fatal("expected idx_itemfavi_user_item unique index on itemfavi")
+	}
+}
+
+func TestMigrateCreatesTimestampColumnDefaults(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "defaults.db")
+	db, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
+	if err := Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+
+	assertTimestampDefault(t, db, "items", "created_at")
+	assertTimestampDefault(t, db, "items", "updated_at")
+	assertTimestampDefault(t, db, "itemfavi", "created_at")
+	assertTimestampDefault(t, db, "itemfavi", "updated_at")
+
+	if err := db.Exec(`INSERT INTO items(id,name,title,content,tag,tag2,tag3)
+		VALUES (1,'name','title','content','','','')`).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(`INSERT INTO itemfavi(user_id,item_id,expired) VALUES (1,1,0)`).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	assertTimestampGenerated(t, db, "items", "created_at", "id = 1")
+	assertTimestampGenerated(t, db, "items", "updated_at", "id = 1")
+	assertTimestampGenerated(t, db, "itemfavi", "created_at", "user_id = 1 AND item_id = 1")
+	assertTimestampGenerated(t, db, "itemfavi", "updated_at", "user_id = 1 AND item_id = 1")
+}
+
+func assertTimestampDefault(t *testing.T, db *gorm.DB, table string, column string) {
+	t.Helper()
+	var defaultValue sql.NullString
+	if err := db.Raw(`SELECT dflt_value FROM pragma_table_info(?) WHERE name = ?`, table, column).
+		Scan(&defaultValue).Error; err != nil {
+		t.Fatal(err)
+	}
+	if !defaultValue.Valid || !strings.Contains(strings.ToUpper(defaultValue.String), "CURRENT_TIMESTAMP") {
+		t.Fatalf("%s.%s default = %q, want CURRENT_TIMESTAMP", table, column, defaultValue.String)
+	}
+	if strings.Contains(defaultValue.String, `"`) {
+		t.Fatalf("%s.%s default = %q, want unquoted CURRENT_TIMESTAMP expression", table, column, defaultValue.String)
+	}
+}
+
+func assertTimestampGenerated(t *testing.T, db *gorm.DB, table string, column string, where string) {
+	t.Helper()
+	var timestamp sql.NullString
+	if err := db.Raw("SELECT " + column + " FROM " + table + " WHERE " + where).Scan(&timestamp).Error; err != nil {
+		t.Fatal(err)
+	}
+	if !timestamp.Valid || timestamp.String == "" || strings.EqualFold(timestamp.String, "CURRENT_TIMESTAMP") {
+		t.Fatalf("%s.%s generated timestamp = %q, want actual timestamp", table, column, timestamp.String)
 	}
 }
 

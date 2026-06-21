@@ -27,12 +27,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { guardHistoryBack } from "@/lib/history-guard";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, FolderOpen, FileText, RotateCcw } from "lucide-react";
+import { Loader2, Save, FolderOpen, FileText, RotateCcw, Pencil } from "lucide-react";
 import { apiErrorMessage } from "@/lib/api-error";
 
 function EditSheetSkeleton() {
@@ -108,6 +108,7 @@ export function EditItemSheet({
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
   const [name, setName] = useState("");
+  const [nameEditEnabled, setNameEditEnabled] = useState(false);
   const [thumbnail, setThumbnail] = useState("");
   const [roll, setRoll] = useState("");
   const [trailer, setTrailer] = useState("");
@@ -117,10 +118,14 @@ export function EditItemSheet({
   const [imgList, setImgList] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [videoPreview, setVideoPreview] = useState<VideoPreviewState>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!open) setVideoPreview(null);
+    if (!open) {
+      setVideoPreview(null);
+      setNameEditEnabled(false);
+    }
   }, [open]);
 
   // Browser Back closes the sheet instead of navigating away. Nested overlays
@@ -143,6 +148,7 @@ export function EditItemSheet({
     setCategory(item?.category ?? "");
     setSubcategory(item?.subcategory ?? "");
     setName(item?.name ?? "");
+    setNameEditEnabled(false);
     setThumbnail(item?.thumbnail ?? "");
     setRoll(item?.roll ?? "");
     setTrailer(item?.trailer ?? "");
@@ -197,27 +203,34 @@ export function EditItemSheet({
   const resSubcategory = item?.subcategory ?? subcategory;
   const resName = item?.name ?? name;
   const trimmedName = name.trim();
-  const isRenameDirty = !isNew && trimmedName !== (item?.name ?? "");
+  const canEditName = isNew || nameEditEnabled;
+  const showNameEditButton = !isNew && !nameEditEnabled;
+  const shouldSubmitName = isNew || nameEditEnabled;
+  const isRenameDirty =
+    !isNew && nameEditEnabled && trimmedName !== (item?.name ?? "");
 
-  const buildPayload = () => ({
-    title,
-    date,
-    content,
-    base,
-    category,
-    subcategory,
-    name: isNew ? trimmedName : name,
-    thumbnail: thumbnail || "",
-    roll: roll || "",
-    trailer: trailer || "",
-    tags,
-    tags2,
-    tags3,
-    images: imgList,
-  });
+  const buildPayload = () => {
+    const payload: Record<string, unknown> = {
+      title,
+      date,
+      content,
+      base,
+      category,
+      subcategory,
+      thumbnail: thumbnail || "",
+      roll: roll || "",
+      trailer: trailer || "",
+      tags,
+      tags2,
+      tags3,
+      images: imgList,
+    };
+    if (shouldSubmitName) payload.name = trimmedName;
+    return payload;
+  };
 
   const handleSave = async () => {
-    if (!isNew && trimmedName === "") {
+    if (!isNew && nameEditEnabled && trimmedName === "") {
       toast.error(t("edit.rename.nameRequired"));
       return;
     }
@@ -239,6 +252,11 @@ export function EditItemSheet({
   const handleReset = () => {
     resetForm();
     toast.success(t("toast.resetDone"));
+  };
+
+  const handleEnableNameEdit = () => {
+    setNameEditEnabled(true);
+    requestAnimationFrame(() => nameInputRef.current?.focus());
   };
 
   const resourcePath = (filename: string) => ({
@@ -389,13 +407,28 @@ export function EditItemSheet({
                       <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                         {t("edit.field.name")}
                       </Label>
-                      <ClearableInput
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder={t("edit.field.namePlaceholder")}
-                        className="h-9 bg-background/50 border-border/60 rounded-lg text-xs"
-                        clearLabel={t("common.clear")}
-                      />
+                      <div className="relative">
+                        <ClearableInput
+                          ref={nameInputRef}
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder={t("edit.field.namePlaceholder")}
+                          className={`h-9 bg-background/50 border-border/60 rounded-lg text-xs ${showNameEditButton ? "pr-9" : ""}`}
+                          clearLabel={t("common.clear")}
+                          disabled={!canEditName}
+                        />
+                        {showNameEditButton && (
+                          <button
+                            type="button"
+                            aria-label={t("edit.rename.enable")}
+                            title={t("edit.rename.enable")}
+                            onClick={handleEnableNameEdit}
+                            className="absolute right-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {!isNew && (
