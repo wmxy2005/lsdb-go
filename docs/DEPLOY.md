@@ -24,6 +24,7 @@
 | `LSDB_JWT_SECRET` | `dev-secret-change-me` | JWT 签名密钥（**生产必须修改**） |
 | `LSDB_JWT_EXPIRE_DAYS` | `7` | Token 有效期（天） |
 | `LSDB_JWT_REFRESH_DAYS` | `2` | 签发超过该天数后访问 `/auth/current` 触发续期 |
+| `LSDB_CORS_ORIGINS` | 空 | 逗号分隔的允许跨域来源；非空时启用 CORS（开发时可设为 `http://localhost:5173,http://127.0.0.1:5173`）；生产留空或由后端托管前端 |
 | `AUTO_RUN_SERVER` | 无（false） | 桌面端读取：`true` 则启动桌面端时自动拉起后端 |
 | `AUTO_RUN_MINIMIZE` | 无（false） | 桌面端读取：`true` 则启动后隐藏主界面，仅驻留系统托盘 |
 
@@ -39,6 +40,7 @@ LSDB_GIN_MODE=release
 LSDB_JWT_SECRET=dev-secret-change-me
 LSDB_JWT_EXPIRE_DAYS=7
 LSDB_JWT_REFRESH_DAYS=2
+LSDB_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 AUTO_RUN_SERVER=true
 AUTO_RUN_MINIMIZE=true
 ```

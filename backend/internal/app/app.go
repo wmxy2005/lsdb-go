@@ -64,6 +64,9 @@ func New() (*Server, error) {
 		gin.SetMode(mode)
 	}
 	r := gin.Default()
+	if len(cfg.CORSOrigins) > 0 {
+		r.Use(middleware.CORS(cfg.CORSOrigins))
+	}
 	// Compress JSON/static responses; skip raw file bytes, throughput-test
 	// payloads, and the SSE stream (which must not be buffered).
 	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{

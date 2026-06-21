@@ -96,6 +96,28 @@ func TestLoadCurrentDirectoryDotEnvOverridesExecutableDirectory(t *testing.T) {
 	}
 }
 
+func TestLoadCORSOrigins(t *testing.T) {
+	tmp := chdirTemp(t)
+	withExecutablePath(t, filepath.Join(t.TempDir(), "server.exe"))
+	t.Setenv("LSDB_CORS_ORIGINS", "")
+
+	cfg := Load()
+	if cfg.CORSOrigins != nil {
+		t.Fatalf("empty CORSOrigins = %#v, want nil", cfg.CORSOrigins)
+	}
+
+	if err := os.WriteFile(filepath.Join(tmp, ".env"), []byte("LSDB_CORS_ORIGINS=http://localhost:5173, http://127.0.0.1:5173\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg = Load()
+	if len(cfg.CORSOrigins) != 2 {
+		t.Fatalf("CORSOrigins = %#v", cfg.CORSOrigins)
+	}
+	if cfg.CORSOrigins[0] != "http://localhost:5173" || cfg.CORSOrigins[1] != "http://127.0.0.1:5173" {
+		t.Fatalf("CORSOrigins = %#v", cfg.CORSOrigins)
+	}
+}
+
 func TestLoadJWTDaysDefaultAndInvalid(t *testing.T) {
 	tmp := chdirTemp(t)
 	withExecutablePath(t, filepath.Join(t.TempDir(), "server.exe"))

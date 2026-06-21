@@ -45,6 +45,32 @@ func TestNewAppliesConfiguredGinMode(t *testing.T) {
 	}
 }
 
+func TestNewEnablesCORSWhenConfigured(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("LSDB_DB_PATH", filepath.Join(tmp, "test.db"))
+	t.Setenv("LSDB_FILE_ROOT", filepath.Join(tmp, "files"))
+	t.Setenv("LSDB_JWT_SECRET", "test-secret")
+	t.Setenv("LSDB_CORS_ORIGINS", "http://localhost:5173")
+
+	srv, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { sqlDB, _ := srv.DB.DB(); sqlDB.Close() }()
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/auth/login", nil)
+	req.Header.Set("Origin", "http://localhost:5173")
+	rec := httptest.NewRecorder()
+	srv.Router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
+		t.Fatalf("Allow-Origin = %q", got)
+	}
+}
+
 func TestAuthItemsRoleResourceAndFavorites(t *testing.T) {
 	tmp := t.TempDir()
 	dbPath := filepath.Join(tmp, "test.db")
