@@ -120,7 +120,10 @@ function EditGalleryImageItem({
               </Button>
             </div>
 
-            <span className="bg-black/60 text-white backdrop-blur-sm absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)] truncate px-2 py-0.5 rounded-md text-[9px] font-medium font-mono">
+            <span
+              className="bg-black/60 text-white backdrop-blur-sm absolute bottom-1.5 left-1.5 max-w-[calc(100%-12px)] truncate px-2 py-0.5 rounded-md text-[9px] font-medium font-mono"
+              title={filename}
+            >
               {index + 1}. {filename}
             </span>
           </div>
@@ -139,6 +142,7 @@ export function EditImageList({
   category,
   subcategory,
   name,
+  isMaximized = false,
 }: {
   imgList: string[];
   onChange: (imgList: string[]) => void;
@@ -148,6 +152,7 @@ export function EditImageList({
   category: string;
   subcategory: string;
   name: string;
+  isMaximized?: boolean;
 }) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState('');
@@ -208,7 +213,12 @@ export function EditImageList({
             {t('edit.gallery.dragHandleHint')}
           </p>
           <Gallery options={PHOTOSWIPE_OPTIONS} onBeforeOpen={attachPreviewHistory}>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div
+              className={cn(
+                'grid grid-cols-2 gap-3 sm:grid-cols-3',
+                isMaximized && 'lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
+              )}
+            >
               {imgList.map((img, index) => {
                 const src = resolveUrl(base, category, subcategory, name, img);
                 return (
@@ -242,12 +252,20 @@ export function EditImageList({
           <div className="min-w-0 flex-1">
             <Label className="sr-only">{t('edit.gallery.addImage')}</Label>
             <Select value={selected} onValueChange={setSelected}>
-              <SelectTrigger className="h-9 w-full min-w-0 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-primary shadow-none [&>span]:min-w-0 [&>span]:truncate [&>span]:text-left">
+              <SelectTrigger
+                className="h-9 w-full min-w-0 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-primary shadow-none [&>span]:min-w-0 [&>span]:truncate [&>span]:text-left"
+                title={selected || undefined}
+              >
                 <SelectValue placeholder={t('edit.gallery.selectFilePlaceholder')} />
               </SelectTrigger>
               <SelectContent className="rounded-lg border-border/40 min-w-[var(--radix-select-trigger-width)] w-max max-w-[min(24rem,calc(100vw-2rem))]">
                 {addable.map((f) => (
-                  <SelectItem key={f} value={f} className="text-xs rounded-md whitespace-normal break-all">
+                  <SelectItem
+                    key={f}
+                    value={f}
+                    className="text-xs rounded-md whitespace-normal break-all"
+                    title={f}
+                  >
                     {f}
                   </SelectItem>
                 ))}

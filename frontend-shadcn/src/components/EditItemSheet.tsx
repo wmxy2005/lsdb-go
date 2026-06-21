@@ -29,10 +29,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { guardHistoryBack } from "@/lib/history-guard";
+import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, FolderOpen, FileText, RotateCcw, Pencil } from "lucide-react";
+import { Loader2, Save, FolderOpen, FileText, RotateCcw, Pencil, Maximize2, Minimize2, X } from "lucide-react";
 import { apiErrorMessage } from "@/lib/api-error";
 
 function EditSheetSkeleton() {
@@ -117,6 +118,7 @@ export function EditItemSheet({
   const [tags3, setTags3] = useState<string[]>([]);
   const [imgList, setImgList] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [videoPreview, setVideoPreview] = useState<VideoPreviewState>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -125,6 +127,7 @@ export function EditItemSheet({
     if (!open) {
       setVideoPreview(null);
       setNameEditEnabled(false);
+      setIsMaximized(false);
     }
   }, [open]);
 
@@ -306,6 +309,11 @@ export function EditItemSheet({
 
   const isOutsidePreviewTarget = (target: EventTarget | null) =>
     isPhotoSwipeTarget(target) || isMediaPreviewTarget(target);
+  const maximizeLabel = t(
+    isMaximized ? "common.restore" : "common.maximize",
+    isMaximized ? "Restore" : "Maximize",
+  );
+  const closeLabel = t("common.close", "Close");
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange} modal={false}>
@@ -318,7 +326,12 @@ export function EditItemSheet({
           document.body,
         )}
       <SheetContent
-        className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-2xl border-l border-border/40 bg-background/95 backdrop-blur-md"
+        showCloseButton={false}
+        className={cn(
+          "flex h-full w-full flex-col gap-0 p-0 sm:max-w-2xl border-l border-border/40 bg-background/95 backdrop-blur-md",
+          isMaximized &&
+            "!inset-0 !h-[100svh] !w-screen !max-w-none !border-0 sm:!max-w-none",
+        )}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {
           if (isOutsidePreviewTarget(e.target)) e.preventDefault();
@@ -334,11 +347,35 @@ export function EditItemSheet({
             e.preventDefault();
         }}
       >
+        <div className="absolute right-4 top-4 z-20 flex items-center gap-0.5 rounded-md border border-border/50 bg-background/80 p-0.5 shadow-sm shadow-black/5 backdrop-blur-md dark:bg-zinc-950/70">
+          <button
+            type="button"
+            aria-label={maximizeLabel}
+            title={maximizeLabel}
+            onClick={() => setIsMaximized((prev) => !prev)}
+            className="flex size-7 items-center justify-center rounded-[5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            {isMaximized ? (
+              <Minimize2 className="size-3.5" />
+            ) : (
+              <Maximize2 className="size-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            aria-label={closeLabel}
+            title={closeLabel}
+            onClick={() => handleOpenChange(false)}
+            className="flex size-7 items-center justify-center rounded-[5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
         <MediaPreviewProvider
           videoPreview={videoPreview}
           onVideoPreviewChange={setVideoPreview}
         >
-          <SheetHeader className="shrink-0 space-y-1 border-b border-border/40 px-6 py-5 text-left relative bg-zinc-50/50 dark:bg-zinc-900/10">
+          <SheetHeader className="shrink-0 space-y-1 border-b border-border/40 px-6 py-5 pr-24 text-left relative bg-zinc-50/50 dark:bg-zinc-900/10">
             <SheetTitle className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               {isNew ? t("edit.sheet.titleNew") : t("edit.sheet.titleEdit")}
             </SheetTitle>
@@ -531,6 +568,7 @@ export function EditItemSheet({
                     category={resCategory}
                     subcategory={resSubcategory}
                     name={resName}
+                    isMaximized={isMaximized}
                   />
                 </EditSection>
 
@@ -540,6 +578,10 @@ export function EditItemSheet({
                       files={fileOptions}
                       onDelete={handleDeleteFile}
                       onUpload={uploadFile}
+                      base={resBase}
+                      category={resCategory}
+                      subcategory={resSubcategory}
+                      name={resName}
                     />
                   </EditSection>
                 )}

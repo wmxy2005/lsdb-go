@@ -80,6 +80,8 @@
     "add": "添加",
     "cancel": "取消",
     "close": "关闭",
+    "maximize": "最大化",
+    "restore": "还原",
     "clear": "清除",
     "retry": "重试",
     "goLogin": "去登录",

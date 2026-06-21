@@ -17,22 +17,33 @@ type GuardFrame = { close: () => void; closedByBack: boolean };
 
 const stack: GuardFrame[] = [];
 let listening = false;
+let suppressNextPop = false;
 
 function hasGuardEntry(): boolean {
   return (window.history.state as { __historyGuard?: boolean } | null)?.__historyGuard === true;
 }
 
+function stopListeningIfIdle() {
+  if (stack.length === 0 && !suppressNextPop) {
+    window.removeEventListener('popstate', onPopState);
+    listening = false;
+  }
+}
+
 function onPopState() {
+  if (suppressNextPop) {
+    suppressNextPop = false;
+    stopListeningIfIdle();
+    return;
+  }
+
   // Back press: close only the topmost overlay; leave the rest open.
   const frame = stack.pop();
   if (frame) {
     frame.closedByBack = true;
     frame.close();
   }
-  if (stack.length === 0) {
-    window.removeEventListener('popstate', onPopState);
-    listening = false;
-  }
+  stopListeningIfIdle();
 }
 
 export function guardHistoryBack(close: () => void): () => void {
@@ -50,11 +61,9 @@ export function guardHistoryBack(close: () => void): () => void {
     const wasTop = idx === stack.length - 1;
     stack.splice(idx, 1);
     if (!frame.closedByBack && wasTop && hasGuardEntry()) {
+      suppressNextPop = true;
       window.history.back();
     }
-    if (stack.length === 0) {
-      window.removeEventListener('popstate', onPopState);
-      listening = false;
-    }
+    stopListeningIfIdle();
   };
 }

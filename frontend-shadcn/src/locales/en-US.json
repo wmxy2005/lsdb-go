@@ -80,6 +80,8 @@
     "add": "Add",
     "cancel": "Cancel",
     "close": "Close",
+    "maximize": "Maximize",
+    "restore": "Restore",
     "clear": "Clear",
     "retry": "Retry",
     "goLogin": "Go to login",
