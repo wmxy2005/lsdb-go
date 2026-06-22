@@ -6,6 +6,8 @@ backend/*.db
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend-shadcn/node_modules/
+frontend-shadcn/dist/
 
 # Desktop (Tauri)
 desktop/node_modules/

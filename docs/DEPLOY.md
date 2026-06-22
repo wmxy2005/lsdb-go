@@ -100,10 +100,10 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Desktop
 ```
 
 脚本行为：
-- **Frontend**：`npm run build` → 拷贝 `frontend/dist` 到 `build/dist`
+- **Frontend**：在 `frontend-shadcn/` 执行 `npm run build` → 拷贝 `frontend-shadcn/dist` 到 `build/dist`
 - **Backend**：`go build -o build/server.exe ./cmd/server`；从 `.env`(或 `.env.example`) 生成 `build/.env`，并强制写入 `LSDB_FRONTEND_DIST=./dist`
-- **Desktop**：`npm run tauri build` → 拷贝桌面 exe 与 `bundle` 到 `build/`（`desktop-bundle`）
-- 产物统一在 `build/`：`server.exe`、`.env`、`dist/`、桌面可执行文件、`desktop-bundle/`
+- **Desktop**：`npm run tauri:build`（`tauri build --no-bundle`）→ 拷贝桌面 exe 到 `build/`
+- 产物统一在 `build/`：`server.exe`、`.env`、`dist/`、桌面可执行文件
 
 ### 2.2 部署形态（推荐）
 1. 执行 `build.ps1 -All` 生成 `build/`。
@@ -118,7 +118,7 @@ graph LR
   B --> C[server.exe]
   B --> D[.env]
   B --> E[dist/ 前端静态资源]
-  B --> F[桌面 exe + desktop-bundle/]
+  B --> F[桌面 exe]
   C -->|LSDB_FRONTEND_DIST=./dist| E
   F -->|托管启动| C
 ```

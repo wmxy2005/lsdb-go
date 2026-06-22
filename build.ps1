@@ -9,7 +9,7 @@
 $ErrorActionPreference = "Stop"
 
 $RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$FrontendDir = Join-Path $RootDir "frontend"
+$FrontendDir = Join-Path $RootDir "frontend-shadcn"
 $BackendDir = Join-Path $RootDir "backend"
 $DesktopDir = Join-Path $RootDir "desktop"
 $OutputPath = Join-Path $RootDir $OutputDir
@@ -17,8 +17,6 @@ $FrontendDistPath = Join-Path $OutputPath "dist"
 $ServerExePath = Join-Path $OutputPath "server.exe"
 $OutputEnvPath = Join-Path $OutputPath ".env"
 $DesktopTargetReleasePath = Join-Path $DesktopDir "src-tauri\target\release"
-$DesktopBundlePath = Join-Path $DesktopTargetReleasePath "bundle"
-$DesktopBundleOutputPath = Join-Path $OutputPath "desktop-bundle"
 
 $BuildMenuOptions = @(
     @{ Label = "全部 (Frontend + Backend + Desktop)"; Frontend = $true;  Backend = $true;  Desktop = $true;  Cancel = $false }
@@ -104,7 +102,7 @@ function Build-Frontend {
         [string]$FrontendDistPath
     )
 
-    Write-Host "Building frontend..."
+    Write-Host "Building frontend (shadcn)..."
     Push-Location $FrontendDir
     try {
         npm run build
@@ -155,9 +153,7 @@ function Build-Desktop {
     param(
         [string]$DesktopDir,
         [string]$OutputPath,
-        [string]$DesktopTargetReleasePath,
-        [string]$DesktopBundlePath,
-        [string]$DesktopBundleOutputPath
+        [string]$DesktopTargetReleasePath
     )
 
     if (-not (Test-Path $DesktopDir)) {
@@ -168,7 +164,7 @@ function Build-Desktop {
     Write-Host "Building desktop (Tauri)..."
     Push-Location $DesktopDir
     try {
-        npm run tauri build
+        npm run tauri:build
     }
     finally {
         Pop-Location
@@ -183,13 +179,6 @@ function Build-Desktop {
     }
     else {
         Write-Warning "Desktop executable not found under: $DesktopTargetReleasePath"
-    }
-
-    if (Test-Path $DesktopBundlePath) {
-        Copy-Item -Recurse -Force $DesktopBundlePath $DesktopBundleOutputPath
-    }
-    else {
-        Write-Warning "Desktop bundle directory not found: $DesktopBundlePath"
     }
 
     return $desktopExe
@@ -222,9 +211,6 @@ if (-not (Test-Path $OutputPath)) {
 if ($doFrontend -and (Test-Path $FrontendDistPath)) {
     Remove-Item -Recurse -Force $FrontendDistPath
 }
-if ($doDesktop -and (Test-Path $DesktopBundleOutputPath)) {
-    Remove-Item -Recurse -Force $DesktopBundleOutputPath
-}
 
 $desktopExe = $null
 
@@ -240,9 +226,7 @@ if ($doDesktop) {
     $desktopExe = Build-Desktop `
         -DesktopDir $DesktopDir `
         -OutputPath $OutputPath `
-        -DesktopTargetReleasePath $DesktopTargetReleasePath `
-        -DesktopBundlePath $DesktopBundlePath `
-        -DesktopBundleOutputPath $DesktopBundleOutputPath
+        -DesktopTargetReleasePath $DesktopTargetReleasePath
 }
 
 Write-Host "Build output ready:"
@@ -255,7 +239,4 @@ if ($doFrontend) {
 }
 if ($doDesktop -and $desktopExe) {
     Write-Host "  $(Join-Path $OutputPath $desktopExe.Name)"
-}
-if ($doDesktop -and (Test-Path $DesktopBundleOutputPath)) {
-    Write-Host "  $DesktopBundleOutputPath"
 }
