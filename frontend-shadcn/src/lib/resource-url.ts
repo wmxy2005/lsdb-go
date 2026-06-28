@@ -1,4 +1,5 @@
 import { CONFIG, DIR_SEP } from '@/constants';
+import { loadItemsSortPreference, normalizeItemsSort } from '@/lib/items-page-cache';
 
 export function resolvePath(
   resBase: string | undefined,
@@ -49,7 +50,7 @@ export function resolveSearchParamUrl(params: Record<string, unknown>) {
 export function resolveTagUrl(
   tagType: string,
   tag: string,
-  searchInfo?: { sort?: string },
+  searchInfo?: { sort?: string | null },
 ) {
   const param: Record<string, string> = {};
   let paramName = 'tag';
@@ -57,7 +58,11 @@ export function resolveTagUrl(
   else if (tagType === 'category') paramName = 'category';
   else if (tagType === 'subcategory') paramName = 'subcategory';
   param[paramName] = tag;
-  if (searchInfo?.sort) param.sort = searchInfo.sort;
+  const hasExplicitSort = !!searchInfo && Object.prototype.hasOwnProperty.call(searchInfo, 'sort');
+  const sort = hasExplicitSort
+    ? normalizeItemsSort(searchInfo.sort)
+    : loadItemsSortPreference();
+  if (sort) param.sort = sort;
   const query = resolveSearchParamUrl(param);
   return `${CONFIG.searchUrl}${query ? `?${query}` : ''}`;
 }

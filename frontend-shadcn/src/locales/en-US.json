@@ -484,7 +484,7 @@
     "videoLoadFailed": "Video failed to load"
   },
   "action": {
-    "openFolder": "Open folder",
+    "openFolder": "Open",
     "sync": "Sync",
     "edit": "Edit",
     "favorite": "Favorite",

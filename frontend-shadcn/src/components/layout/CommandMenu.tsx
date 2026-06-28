@@ -5,7 +5,7 @@ import { CONFIG } from "@/constants/config"
 import { useAuth } from "@/hooks/use-auth"
 import { useTheme } from "@/providers/ThemeProvider"
 import { cn } from "@/lib/utils"
-import { seedItemsPageData } from "@/lib/items-page-cache"
+import { loadItemsSortPreference, seedItemsPageData } from "@/lib/items-page-cache"
 import { useQuery } from "@tanstack/react-query"
 import { Archive, ArrowRight, FileText, Gauge, Loader2, LogOut, Moon, Search, Sun, Wrench } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -63,6 +63,13 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  const itemSearchSort = loadItemsSortPreference()
+
+  const buildItemsKeywordSearch = useCallback((keyword: string) => {
+    const params = new URLSearchParams({ keyword })
+    if (itemSearchSort) params.set("sort", itemSearchSort)
+    return `?${params.toString()}`
+  }, [itemSearchSort])
 
   const items: CommandItem[] = useMemo(() => [
     {
@@ -123,12 +130,13 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   }, [search])
 
   const { data: searchData, isFetching: isSearchFetching } = useQuery({
-    queryKey: ["command-search", debouncedSearch],
+    queryKey: ["command-search", debouncedSearch, itemSearchSort],
     enabled: open && debouncedSearch.trim().length > 0,
     staleTime: 30_000,
     queryFn: async () => {
       const res = await queryItemList({
         keyword: debouncedSearch.trim(),
+        sort: itemSearchSort ?? undefined,
         page: "1",
         pageSize: "20",
       })
@@ -142,11 +150,11 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
   const hasDebouncedSearch = debouncedSearch.trim().length > 0
 
   const navigateToAllResults = useCallback(() => {
-    const search = `?keyword=${encodeURIComponent(debouncedSearch.trim())}`
+    const search = buildItemsKeywordSearch(debouncedSearch.trim())
     if (searchData?.success) seedItemsPageData(search, searchData)
     navigate(`/items${search}`)
     onOpenChange(false)
-  }, [debouncedSearch, navigate, onOpenChange, searchData])
+  }, [buildItemsKeywordSearch, debouncedSearch, navigate, onOpenChange, searchData])
 
   const selectableRows = useMemo<SelectableRow[]>(() => {
     const rows: SelectableRow[] = []
@@ -206,10 +214,10 @@ export function CommandMenu({ open, onOpenChange }: CommandMenuProps) {
       return
     }
     if (search.trim()) {
-      navigate(`/items?keyword=${encodeURIComponent(search.trim())}`)
+      navigate(`/items${buildItemsKeywordSearch(search.trim())}`)
       onOpenChange(false)
     }
-  }, [navigate, onOpenChange, search, selectableRows, selectedIndex])
+  }, [buildItemsKeywordSearch, navigate, onOpenChange, search, selectableRows, selectedIndex])
 
   useEffect(() => {
     if (open) {

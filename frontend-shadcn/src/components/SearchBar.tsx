@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { loadItemsSortPreference } from '@/lib/items-page-cache';
 
 export function SearchBar({
   variant = 'desktop',
@@ -21,7 +22,10 @@ export function SearchBar({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyword.trim()) return;
-    navigate(`/items?keyword=${encodeURIComponent(keyword.trim())}`);
+    const params = new URLSearchParams({ keyword: keyword.trim() });
+    const sort = loadItemsSortPreference();
+    if (sort) params.set('sort', sort);
+    navigate(`/items?${params.toString()}`);
     onSubmitted?.();
   };
 

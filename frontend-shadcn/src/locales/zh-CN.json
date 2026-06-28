@@ -466,7 +466,7 @@
     "videoLoadFailed": "视频加载失败"
   },
   "action": {
-    "openFolder": "打开文件夹",
+    "openFolder": "打开",
     "sync": "同步",
     "edit": "编辑",
     "favorite": "收藏",

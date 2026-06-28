@@ -18,13 +18,20 @@ import { useItemsListScroll } from '@/hooks/use-items-list-scroll';
 import { useItemsPageData } from '@/hooks/use-items-page-data';
 import { usePageTitle } from '@/hooks/use-page-title-context';
 import { resBaseLabel, resTypeLabel } from '@/lib/i18n-labels';
-import { buildItemsSearch, type ItemsUrlParams } from '@/lib/items-page-cache';
+import {
+  buildItemsSearch,
+  loadItemsSortPreference,
+  normalizeItemsSort,
+  resolveItemsParamsWithPreferences,
+  saveItemsSortPreference,
+  type ItemsUrlParams,
+} from '@/lib/items-page-cache';
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { SlidersHorizontal, Tag, Filter, Search, RotateCcw, Folder, FolderTree } from 'lucide-react';
+import { SlidersHorizontal, Tag, Filter, Search, RotateCcw, Folder, FolderTree, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const filterFieldFocus =
@@ -257,7 +264,8 @@ export default function ItemsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [params] = useQueryStates(searchParsers, { history: 'push' });
-  const urlParams: ItemsUrlParams = useMemo(
+  const [sortPreference, setSortPreference] = useState(() => loadItemsSortPreference());
+  const rawUrlParams: ItemsUrlParams = useMemo(
     () => ({
       keyword: params.keyword,
       category: params.category,
@@ -289,9 +297,14 @@ export default function ItemsPage() {
       params.pageSize,
     ],
   );
+  const urlParams = useMemo(
+    () => resolveItemsParamsWithPreferences(rawUrlParams, sortPreference),
+    [rawUrlParams, sortPreference],
+  );
+  const effectiveSearch = useMemo(() => buildItemsSearch(urlParams), [urlParams]);
   const scrollKey = useMemo(
-    () => `${location.key}${location.search}`,
-    [location.key, location.search],
+    () => `${location.key}${effectiveSearch}`,
+    [location.key, effectiveSearch],
   );
   const groupedResBases = useMemo(() => getGroupedResBases(), []);
 
@@ -312,7 +325,7 @@ export default function ItemsPage() {
   );
 
   const { data, pageInfo, isLoading, isError, shouldRestoreCache, refetch, persistPageData } =
-    useItemsPageData(location);
+    useItemsPageData(location, urlParams, effectiveSearch);
 
   // Remember the last resolved title so re-reads (pagination/filter changes,
   // which briefly clear pageInfo) keep showing it instead of flashing back to
@@ -354,6 +367,13 @@ export default function ItemsPage() {
 
   const applyFilter = (updates: Partial<ItemsUrlParams>) => {
     pushItemsSearch({ ...updates, page: 1 });
+  };
+
+  const handleSortChange = (value: string) => {
+    const sort = normalizeItemsSort(value === '__default__' ? null : value);
+    saveItemsSortPreference(sort);
+    setSortPreference(sort);
+    applyFilter({ sort });
   };
 
   const resetFilter = () => {
@@ -436,7 +456,7 @@ export default function ItemsPage() {
             {/* Sort Selection */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{t('items.filter.sortBy')}</span>
-              <Select value={params.sort ?? '__default__'} onValueChange={(v) => applyFilter({ sort: v === '__default__' ? null : v })}>
+              <Select value={urlParams.sort ?? '__default__'} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/60 rounded-lg text-xs font-medium focus:ring-primary">
                   <SelectValue placeholder={t('items.filter.sortBy')} />
                 </SelectTrigger>
@@ -583,19 +603,32 @@ export default function ItemsPage() {
         <ResultsSummarySkeleton />
       ) : pageInfo ? (
         <div className="flex flex-col gap-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 px-5 py-3 text-xs border border-border/40 backdrop-blur-sm">
-          <div className="flex flex-wrap items-center gap-2 text-zinc-500 dark:text-zinc-400">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-zinc-500 dark:text-zinc-400">
+              {hasFilterChips(pageInfo) && (
+                <>
+                  <FilterChips pageInfo={pageInfo} />
+                  <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                </>
+              )}
+              <span>{t('items.resultCount', { count: pageInfo.total ?? 0 })}</span>
+              {pageInfo.costTime != null && (
+                <>
+                  <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                  <span>{t('items.queryTime', { ms: pageInfo.costTime })}</span>
+                </>
+              )}
+            </div>
             {hasFilterChips(pageInfo) && (
-              <>
-                <FilterChips pageInfo={pageInfo} />
-                <span className="text-zinc-300 dark:text-zinc-700">|</span>
-              </>
-            )}
-            <span>{t('items.resultCount', { count: pageInfo.total ?? 0 })}</span>
-            {pageInfo.costTime != null && (
-              <>
-                <span className="text-zinc-300 dark:text-zinc-700">|</span>
-                <span>{t('items.queryTime', { ms: pageInfo.costTime })}</span>
-              </>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 shrink-0 self-start gap-1.5 rounded-md border border-border/60 bg-background/50 px-2 text-[10px] font-medium text-zinc-500 shadow-none transition-all duration-200 hover:border-border hover:bg-zinc-100/60 hover:text-foreground dark:text-zinc-400 dark:hover:bg-zinc-800/50"
+                onClick={resetFilter}
+              >
+                <X className="size-3" />
+                {t('common.clear')}
+              </Button>
             )}
           </div>
           {pageInfo.roleList && pageInfo.roleList.length > 0 && (

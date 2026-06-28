@@ -3,6 +3,7 @@ import type { ApiResult, PageInfo } from '@/api/types';
 const PAGE_PREFIX = 'lsdb-items-page:';
 const SCROLL_PREFIX = 'lsdb-items-scroll:';
 const SEARCH_PREFIX = 'lsdb-items-search:';
+const SORT_PREF_KEY = 'lsdb-items-sort';
 
 export type ItemsUrlParams = {
   keyword: string | null;
@@ -24,6 +25,38 @@ export function getItemsScrollContainer(): HTMLElement | null {
   return document.querySelector('main');
 }
 
+export function normalizeItemsSort(sort: string | null | undefined): string | null {
+  return sort === 'date' ? sort : null;
+}
+
+export function loadItemsSortPreference(): string | null {
+  try {
+    return normalizeItemsSort(localStorage.getItem(SORT_PREF_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function saveItemsSortPreference(sort: string | null | undefined) {
+  const normalized = normalizeItemsSort(sort);
+  try {
+    if (normalized) localStorage.setItem(SORT_PREF_KEY, normalized);
+    else localStorage.removeItem(SORT_PREF_KEY);
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+export function resolveItemsParamsWithPreferences(
+  params: ItemsUrlParams,
+  sortPreference = loadItemsSortPreference(),
+): ItemsUrlParams {
+  return {
+    ...params,
+    sort: normalizeItemsSort(params.sort) ?? normalizeItemsSort(sortPreference),
+  };
+}
+
 export function parseItemsParamsFromSearch(search: string): ItemsUrlParams {
   const sp = new URLSearchParams(search);
   const page = Number(sp.get('page'));
@@ -39,7 +72,7 @@ export function parseItemsParamsFromSearch(search: string): ItemsUrlParams {
     base: sp.get('base'),
     type: sp.get('type'),
     favi: sp.get('favi'),
-    sort: sp.get('sort'),
+    sort: normalizeItemsSort(sp.get('sort')),
     page: Number.isFinite(page) && page > 0 ? page : 1,
     pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20,
   };
@@ -58,7 +91,7 @@ export function buildItemsSearch(params: ItemsUrlParams): string {
     ['base', params.base],
     ['type', params.type],
     ['favi', params.favi],
-    ['sort', params.sort],
+    ['sort', normalizeItemsSort(params.sort)],
   ];
   for (const [key, value] of fields) {
     if (value != null && value !== '') sp.set(key, value);
@@ -81,7 +114,7 @@ export function itemsParamsToApiParams(params: ItemsUrlParams) {
     base: params.base ?? undefined,
     type: params.type ?? undefined,
     favi: params.favi ?? undefined,
-    sort: params.sort ?? undefined,
+    sort: normalizeItemsSort(params.sort) ?? undefined,
     page: String(params.page),
     pageSize: String(params.pageSize),
   };

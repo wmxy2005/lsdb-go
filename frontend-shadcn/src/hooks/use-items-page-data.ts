@@ -4,11 +4,11 @@ import {
   clearItemsPageCacheOnUnload,
   getItemsScrollContainer,
   itemsParamsToApiParams,
-  parseItemsParamsFromSearch,
   loadItemsPageCache,
   loadItemsScrollState,
   saveItemsPageCache,
   takeItemsPageSeed,
+  type ItemsUrlParams,
 } from '@/lib/items-page-cache';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Location } from 'react-router-dom';
@@ -21,7 +21,11 @@ function computeShouldRestoreCache(
   return fromPopState || navigationType === 'POP';
 }
 
-export function useItemsPageData(location: Location) {
+export function useItemsPageData(
+  location: Location,
+  urlParams: ItemsUrlParams,
+  routerSearch: string,
+) {
   const navigationType = useNavigationType();
   const isPopNavigationRef = useRef(false);
 
@@ -57,9 +61,6 @@ export function useItemsPageData(location: Location) {
 
     const restore = computeShouldRestoreCache(fromPopState, navigationType);
     setShouldRestoreCache(restore);
-
-    const routerSearch = location.search || '';
-    const urlParams = parseItemsParamsFromSearch(routerSearch);
 
     if (restore) {
       const stored = loadItemsPageCache(location.key, routerSearch);
@@ -113,19 +114,17 @@ export function useItemsPageData(location: Location) {
     return () => {
       cancelled = true;
     };
-  }, [location.key, location.search, navigationType]);
+  }, [location.key, routerSearch, navigationType, urlParams]);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
-    const routerSearch = location.search || '';
-    const urlParams = parseItemsParamsFromSearch(routerSearch);
     const res = await queryItemList(itemsParamsToApiParams(urlParams));
     setData(res);
     if (res.success) {
       saveItemsPageCache(location.key, res, routerSearch);
     }
     setIsLoading(false);
-  }, [location.key, location.search]);
+  }, [location.key, routerSearch, urlParams]);
 
   const persistPageData = useCallback(
     (updater: (pageInfo: PageInfo) => PageInfo) => {
@@ -136,9 +135,9 @@ export function useItemsPageData(location: Location) {
         data: updater(current.data),
       };
       setData(updated);
-      saveItemsPageCache(location.key, updated, location.search || '');
+      saveItemsPageCache(location.key, updated, routerSearch);
     },
-    [location.key, location.search],
+    [location.key, routerSearch],
   );
 
   return {
